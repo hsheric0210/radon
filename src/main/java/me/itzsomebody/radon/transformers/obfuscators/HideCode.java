@@ -72,13 +72,10 @@ public class HideCode extends Transformer
 						counter.incrementAndGet();
 				});
 			if (hideFieldsEnabled)
-				cw.getFields().stream().filter(fw -> !excluded(fw) && !ASMUtils.hasAnnotations(fw.getFieldNode())).forEach(fw ->
+				cw.getFields().stream().filter(fw -> !excluded(fw) && !ASMUtils.hasAnnotations(fw.getFieldNode())).filter(fw -> !fw.getAccess().isSynthetic()).forEach(fw ->
 				{
-					if (!fw.getAccess().isSynthetic())
-					{
-						fw.setAccessFlags(fw.getAccessFlags() | ACC_SYNTHETIC);
-						counter.incrementAndGet();
-					}
+					fw.setAccessFlags(fw.getAccessFlags() | ACC_SYNTHETIC);
+					counter.incrementAndGet();
 				});
 		});
 

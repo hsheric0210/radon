@@ -20,6 +20,7 @@ package me.itzsomebody.radon.asm;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -80,8 +81,7 @@ public class StackHeightZeroFinder implements Opcodes
 	public void execute(final boolean debug) throws StackEmulationException
 	{
 		int stackSize = 0; // Emulated stack
-		final Set<LabelNode> excHandlers = new HashSet<>();
-		methodNode.tryCatchBlocks.forEach(tryCatchBlockNode -> excHandlers.add(tryCatchBlockNode.handler));
+		final Set<LabelNode> excHandlers = methodNode.tryCatchBlocks.stream().map(tryCatchBlockNode -> tryCatchBlockNode.handler).collect(Collectors.toSet());
 		for (int i = 0; i < methodNode.instructions.size(); i++)
 		{
 			final AbstractInsnNode insn = methodNode.instructions.get(i);

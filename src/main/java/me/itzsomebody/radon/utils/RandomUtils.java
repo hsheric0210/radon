@@ -21,6 +21,8 @@ package me.itzsomebody.radon.utils;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.objectweb.asm.Type;
 
@@ -62,7 +64,9 @@ public final class RandomUtils
 
 	public static int getRandomIntWithExclusion(final int origin, final int bounds, final Collection<Integer> exclusions)
 	{
-		return ThreadLocalRandom.current().ints(origin, bounds).unordered().filter(value -> !exclusions.contains(value)).findFirst().getAsInt();
+		final List<Integer> list = IntStream.range(origin, bounds).boxed().collect(Collectors.toList());
+		list.removeAll(exclusions);
+		return getRandomElement(list);
 	}
 
 	public static long getRandomLong()

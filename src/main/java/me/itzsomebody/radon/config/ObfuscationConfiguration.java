@@ -56,10 +56,8 @@ public final class ObfuscationConfiguration
 
 		final List<File> libraries = new ArrayList<>();
 		final List<String> libPaths = config.getOrDefault(LIBRARIES, Collections.emptyList());
-		libPaths.forEach(s ->
+		libPaths.stream().map(File::new).forEach(f ->
 		{
-			final File f = new File(s);
-
 			if (f.isDirectory())
 				FileUtils.getSubDirectoryFiles(f, libraries);
 			else
@@ -99,20 +97,15 @@ public final class ObfuscationConfiguration
 		// TRANSFORMERS
 
 		final List<Transformer> transformers = new ArrayList<>();
-		Stream.of(values()).filter(setting -> setting.getTransformer() != null).forEach(setting ->
+		Stream.of(values()).filter(setting -> setting.getTransformer() != null).filter(config::contains).forEach(setting ->
 		{
-			if (config.contains(setting))
+			final Transformer transformer = setting.getTransformer();
+			if (config.get(setting) instanceof Map)
 			{
-				final Transformer transformer = setting.getTransformer();
-
-				if (config.get(setting) instanceof Map)
-				{
-					transformer.setConfiguration(config);
-					transformers.add(transformer);
-				}
-				else if (config.get(setting) instanceof Boolean && (boolean) config.get(setting))
-					transformers.add(transformer);
-			}
+				transformer.setConfiguration(config);
+				transformers.add(transformer);
+			} else if (config.get(setting) instanceof Boolean && (boolean) config.get(setting))
+				transformers.add(transformer);
 		});
 
 		obfConfig.transformers = transformers;

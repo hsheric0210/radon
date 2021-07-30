@@ -1,5 +1,8 @@
 package me.itzsomebody.radon.utils;
 
+import org.objectweb.asm.Attribute;
+
+import java.util.ArrayList;
 import java.util.regex.Pattern;
 
 public interface Constants
@@ -12,4 +15,7 @@ public interface Constants
 	Pattern VIRTCALL_PARAMETER_DELIMITER_PATTERN = Pattern.compile("\u0001\u0001", Pattern.LITERAL);
 
 	Class[] ZERO_LENGTH_CLASS_ARRAY = new Class[0];
+	String[] ZERO_LENGTH_STRING_ARRAY = new String[0];
+	Attribute[] ZERO_SIZE_ATTRIBUTE_ARRAY = new Attribute[0];
+	ArrayList[] ZERO_LENGTH_LIST_ARRAY = new ArrayList[0];
 }

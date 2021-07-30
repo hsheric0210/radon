@@ -24,6 +24,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import me.itzsomebody.radon.asm.ClassWrapper;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.tree.*;
 
@@ -49,17 +50,12 @@ public class Expiration extends Transformer
 	{
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper ->
+		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).map(ClassWrapper::getClassNode).forEach(classNode -> classNode.methods.stream().filter(methodNode -> "<init>".equals(methodNode.name)).forEach(methodNode ->
 		{
-			final ClassNode classNode = classWrapper.getClassNode();
-
-			classNode.methods.stream().filter(methodNode -> "<init>".equals(methodNode.name)).forEach(methodNode ->
-			{
-				final InsnList expirationCode = createExpirationInstructions();
-				methodNode.instructions.insertBefore(methodNode.instructions.getFirst(), expirationCode);
-				counter.incrementAndGet();
-			});
-		});
+			final InsnList expirationCode = createExpirationInstructions();
+			methodNode.instructions.insertBefore(methodNode.instructions.getFirst(), expirationCode);
+			counter.incrementAndGet();
+		}));
 
 		Main.info(String.format("Added %d expiration code blocks.", counter.get()));
 	}

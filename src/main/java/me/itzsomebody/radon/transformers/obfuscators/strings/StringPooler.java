@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
+import me.itzsomebody.radon.asm.MethodWrapper;
 import org.objectweb.asm.tree.*;
 
 import me.itzsomebody.radon.Main;
@@ -47,27 +48,22 @@ public class StringPooler extends StringEncryption
 			final String methodName = uniqueRandomString();
 			final String fieldName = uniqueRandomString();
 
-			cw.getMethods().stream().filter(methodWrapper -> !excluded(methodWrapper) && methodWrapper.hasInstructions()).forEach(methodWrapper ->
+			cw.getMethods().stream().filter(methodWrapper -> !excluded(methodWrapper) && methodWrapper.hasInstructions()).map(MethodWrapper::getInstructions).forEach(insns -> Stream.of(insns.toArray()).filter(insn -> insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof String).forEach(insn ->
 			{
-				final InsnList insns = methodWrapper.getInstructions();
+				final String str = (String) ((LdcInsnNode) insn).cst;
 
-				Stream.of(insns.toArray()).filter(insn -> insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof String).forEach(insn ->
+				if (!master.excludedString(str))
 				{
-					final String str = (String) ((LdcInsnNode) insn).cst;
+					strList.add(str);
 
-					if (!master.excludedString(str))
-					{
-						strList.add(str);
+					final int indexNumber = strList.size() - 1;
 
-						final int indexNumber = strList.size() - 1;
-
-						insns.insertBefore(insn, new FieldInsnNode(GETSTATIC, cw.getName(), fieldName, "[Ljava/lang/String;"));
-						insns.insertBefore(insn, ASMUtils.getNumberInsn(indexNumber));
-						insns.set(insn, new InsnNode(AALOAD));
-						counter.incrementAndGet();
-					}
-				});
-			});
+					insns.insertBefore(insn, new FieldInsnNode(GETSTATIC, cw.getName(), fieldName, "[Ljava/lang/String;"));
+					insns.insertBefore(insn, ASMUtils.getNumberInsn(indexNumber));
+					insns.set(insn, new InsnNode(AALOAD));
+					counter.incrementAndGet();
+				}
+			}));
 
 			if (strList.size() != 0)
 			{

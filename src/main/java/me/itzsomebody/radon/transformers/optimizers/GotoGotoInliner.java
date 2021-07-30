@@ -44,11 +44,9 @@ public class GotoGotoInliner extends Optimizer
 		{
 			final MethodNode methodNode = methodWrapper.getMethodNode();
 
-			Stream.of(methodNode.instructions.toArray()).filter(insn -> insn.getOpcode() == GOTO).forEach(insn ->
+			Stream.of(methodNode.instructions.toArray()).filter(insn -> insn.getOpcode() == GOTO).map(insn -> (JumpInsnNode) insn).forEach(gotoJump ->
 			{
-				final JumpInsnNode gotoJump = (JumpInsnNode) insn;
 				final AbstractInsnNode insnAfterTarget = gotoJump.label.getNext();
-
 				if (insnAfterTarget != null && insnAfterTarget.getOpcode() == GOTO)
 				{
 					final JumpInsnNode secGoto = (JumpInsnNode) insnAfterTarget;

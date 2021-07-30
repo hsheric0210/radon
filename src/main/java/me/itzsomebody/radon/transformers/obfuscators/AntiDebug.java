@@ -23,6 +23,7 @@ import static me.itzsomebody.radon.config.ConfigurationSetting.ANTI_DEBUG;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import me.itzsomebody.radon.asm.ClassWrapper;
 import org.objectweb.asm.tree.*;
 
 import me.itzsomebody.radon.Main;
@@ -52,10 +53,8 @@ public class AntiDebug extends Transformer
 		final AtomicInteger counter = new AtomicInteger();
 		debugOptionIndex = new AtomicInteger();
 
-		getClassWrappers().stream().filter(cw -> !cw.getAccess().isInterface() && !excluded(cw)).forEach(cw ->
+		getClassWrappers().stream().filter(cw -> !cw.getAccess().isInterface() && !excluded(cw)).map(ClassWrapper::getOrCreateClinit).forEach(clinit ->
 		{
-			final MethodNode clinit = cw.getOrCreateClinit();
-
 			final int checkCount = RandomUtils.getRandomInt(1, DEBUG_OPTIONS.length);
 			for (int i = 0; i < checkCount; i++)
 			{
