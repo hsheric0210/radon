@@ -18,6 +18,8 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.flow;
 
+import java.util.Locale;
+
 public enum FlowObfuscationSetting
 {
 	REPLACE_GOTO(new GotoReplacer()),
@@ -41,6 +43,6 @@ public enum FlowObfuscationSetting
 
 	public String getName()
 	{
-		return name().toLowerCase();
+		return name().toLowerCase(Locale.ENGLISH);
 	}
 }

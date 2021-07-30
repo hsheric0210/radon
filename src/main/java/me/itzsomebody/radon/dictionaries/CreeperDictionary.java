@@ -1,5 +1,6 @@
 package me.itzsomebody.radon.dictionaries;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -62,7 +63,7 @@ public class CreeperDictionary implements Dictionary
 	private int index;
 	private int loop;
 
-	private final Set<String> cache = new HashSet<>();
+	private final Collection<String> cache = new HashSet<>();
 	private String lastGenerated;
 
 	@Override

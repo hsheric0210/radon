@@ -20,6 +20,8 @@ package me.itzsomebody.radon.utils;
 
 import java.io.File;
 import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 public final class FileUtils
@@ -60,17 +62,17 @@ public final class FileUtils
 	 *
 	 * @author           Richard Xing
 	 */
-	public static void getSubDirectoryFiles(final File file, final List<File> libraries)
+	public static void getSubDirectoryFiles(final File file, final List<? super File> libraries)
 	{
 		if (!file.isFile() && file.listFiles() != null)
-			Stream.of(file.listFiles()).forEach(f ->
+			Stream.of(Objects.requireNonNull(file.listFiles())).forEach(f ->
 			{
 				// 输出元素名称
 
 				// System.out.println(fileLists[i].getConfigName());
 				if (f.isDirectory())
 					getSubDirectoryFiles(f, libraries);
-				else if (f.getName().toLowerCase().endsWith(".jar"))
+				else if (f.getName().toLowerCase(Locale.ENGLISH).endsWith(".jar"))
 					libraries.add(f);
 			});
 	}

@@ -63,7 +63,7 @@ public final class FieldSetEjector extends AbstractEjectPhase
 
 			if (!result.containsKey(fieldSetInfo))
 			{
-				final ArrayList<FieldInsnNode> list = new ArrayList<>();
+				final List<FieldInsnNode> list = new ArrayList<>();
 				list.add(fieldInsnNode);
 				result.put(fieldSetInfo, list);
 			}
@@ -86,7 +86,7 @@ public final class FieldSetEjector extends AbstractEjectPhase
 		return methodNode;
 	}
 
-	private Map<Integer, InsnList> createJunkArguments(final List<FieldInsnNode> fieldInsnNodes, final boolean isStatic)
+	private Map<Integer, InsnList> createJunkArguments(final List<? extends FieldInsnNode> fieldInsnNodes, final boolean isStatic)
 	{
 		final Map<Integer, InsnList> junkArguments = new HashMap<>();
 
@@ -101,7 +101,7 @@ public final class FieldSetEjector extends AbstractEjectPhase
 				junkProxyArgumentFix.add(new VarInsnNode(ALOAD, 0));
 				junkProxyArgumentFix.add(new TypeInsnNode(CHECKCAST, fieldInsnNode.owner));
 			}
-			junkProxyArgumentFix.add(ASMUtils.getRandomValue(type));
+			junkProxyArgumentFix.add(ASMUtils.getRandomInsn(type));
 			junkProxyArgumentFix.add(fieldInsnNode.clone(null));
 
 			junkArguments.put(ejectorContext.getNextId(), junkProxyArgumentFix);
@@ -109,7 +109,7 @@ public final class FieldSetEjector extends AbstractEjectPhase
 		return junkArguments;
 	}
 
-	private InsnList processFieldSet(final MethodNode methodNode, final Frame<AbstractValue>[] frames, final Map<AbstractInsnNode, InsnList> patches, final FieldInsnNode fieldInsnNode)
+	private InsnList processFieldSet(final MethodNode methodNode, final Frame<AbstractValue>[] frames, final Map<AbstractInsnNode, ? super InsnList> patches, final FieldInsnNode fieldInsnNode)
 	{
 		final InsnList proxyArgumentFix = new InsnList();
 		final Frame<AbstractValue> frame = frames[methodNode.instructions.indexOf(fieldInsnNode)];
@@ -118,7 +118,7 @@ public final class FieldSetEjector extends AbstractEjectPhase
 		final AbstractValue argumentValue = frame.getStack(frame.getStackSize() - 1);
 		if (argumentValue.isConstant() && argumentValue.getUsages().size() == 1)
 		{
-			final AbstractInsnNode valueInsn = ejectorContext.isJunkArguments() ? ASMUtils.getRandomValue(type) : ASMUtils.getDefaultValue(type);
+			final AbstractInsnNode valueInsn = ejectorContext.isJunkArguments() ? ASMUtils.getRandomInsn(type) : ASMUtils.getDefaultValue(type);
 			patches.put(argumentValue.getInsnNode(), ASMUtils.singletonList(valueInsn));
 			if (fieldInsnNode.getOpcode() != PUTSTATIC)
 			{

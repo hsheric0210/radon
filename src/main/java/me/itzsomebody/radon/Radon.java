@@ -52,9 +52,9 @@ public class Radon
 {
 	private final ObfuscationConfiguration config;
 	private final Map<String, ClassTree> hierarchy = new HashMap<>();
-	public Map<String, ClassWrapper> classes = new HashMap<>();
-	public Map<String, ClassWrapper> classPath = new HashMap<>();
-	public Map<String, byte[]> resources = new HashMap<>();
+	public final Map<String, ClassWrapper> classes = new HashMap<>();
+	public final Map<String, ClassWrapper> classPath = new HashMap<>();
+	public final Map<String, byte[]> resources = new HashMap<>();
 
 	public Radon(final ObfuscationConfiguration config)
 	{
@@ -197,9 +197,8 @@ public class Radon
 			{
 				Main.info(String.format("Loading library \"%s\".", file.getAbsolutePath()));
 
-				try
+				try(final ZipFile zipFile = new ZipFile(file))
 				{
-					final ZipFile zipFile = new ZipFile(file);
 					final Enumeration<? extends ZipEntry> entries = zipFile.entries();
 
 					while (entries.hasMoreElements())
@@ -243,9 +242,8 @@ public class Radon
 		{
 			Main.info(String.format("Loading input \"%s\".", input.getAbsolutePath()));
 
-			try
+			try(final ZipFile zipFile = new ZipFile(input))
 			{
-				final ZipFile zipFile = new ZipFile(input);
 				final Enumeration<? extends ZipEntry> entries = zipFile.entries();
 
 				while (entries.hasMoreElements())
@@ -389,7 +387,7 @@ public class Radon
 		if (firstTree == null)
 			throw new MissingClassException("Could not find " + type1 + " in the built class hierarchy");
 
-		final Set<String> allChildren = new HashSet<>();
+		final Collection<String> allChildren = new HashSet<>();
 		final Deque<String> toProcess = new ArrayDeque<>(firstTree.getSubClasses());
 		while (!toProcess.isEmpty())
 		{

@@ -19,8 +19,10 @@
 package me.itzsomebody.radon.transformers.obfuscators.virtualizer;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Modifier;
+import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
@@ -96,23 +98,25 @@ public class Virtualizer extends Transformer implements VMOpcodes
 		return Stream.of(insnList.toArray()).noneMatch(insn -> insn.getOpcode() == INVOKEDYNAMIC || insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof Handle || insn instanceof MultiANewArrayInsnNode || insn instanceof LookupSwitchInsnNode || insn instanceof TableSwitchInsnNode);
 	}
 
-	private void shadeVMRuntime() throws Exception
+	private void shadeVMRuntime() throws URISyntaxException, IOException
 	{
 		final File file = new File(Virtualizer.class.getProtectionDomain().getCodeSource().getLocation().toURI());
-		final ZipFile zip = new ZipFile(file);
-		final Enumeration<? extends ZipEntry> entries = zip.entries();
-		while (entries.hasMoreElements())
+		try (final ZipFile zip = new ZipFile(file))
 		{
-			final ZipEntry zipEntry = entries.nextElement();
+			final Enumeration<? extends ZipEntry> entries = zip.entries();
+			while (entries.hasMoreElements())
+			{
+				final ZipEntry zipEntry = entries.nextElement();
 
-			if (zipEntry.getName().startsWith("me/itzsomebody/vm") && zipEntry.getName().endsWith(".class"))
-				try (final InputStream in = zip.getInputStream(zipEntry))
-				{
-					final ClassReader cr = new ClassReader(in);
-					final ClassWrapper cw = new ClassWrapper(cr, false);
-					getClasses().put(cw.getName(), cw);
-					getClassPath().put(cw.getName(), cw);
-				}
+				if (zipEntry.getName().startsWith("me/itzsomebody/vm") && zipEntry.getName().endsWith(".class"))
+					try (final InputStream in = zip.getInputStream(zipEntry))
+					{
+						final ClassReader cr = new ClassReader(in);
+						final ClassWrapper cw = new ClassWrapper(cr, false);
+						getClasses().put(cw.getName(), cw);
+						getClassPath().put(cw.getName(), cw);
+					}
+			}
 		}
 	}
 
@@ -872,7 +876,7 @@ public class Virtualizer extends Transformer implements VMOpcodes
 		// Not needed
 	}
 
-	private class VirtualizerResult
+	private static class VirtualizerResult
 	{
 		private final ArrayList<Instruction> vmInstructions;
 		private final InsnList vmCall;

@@ -34,7 +34,7 @@ public class Instantiate extends Handler
 		final String ownerName = (String) operands[0];
 		final String[] paramsAsStrings = ((String) operands[1]).split("\u0001\u0001");
 		final Class[] params;
-		if (paramsAsStrings[0].equals("\u0000\u0000\u0000"))
+		if ("\u0000\u0000\u0000".equals(paramsAsStrings[0]))
 			params = new Class[0];
 		else
 			params = stringsToParams(paramsAsStrings);

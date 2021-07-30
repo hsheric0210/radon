@@ -24,6 +24,8 @@ import org.objectweb.asm.tree.*;
 
 import me.itzsomebody.radon.exceptions.RadonException;
 
+import java.util.Arrays;
+
 /**
  * Bytecode utilities for bytecode instructions.
  *
@@ -234,8 +236,7 @@ public final class ASMUtils
 		final InsnList insnList = new InsnList();
 		insnList.add(abstractInsnNode);
 		if (abstractInsnNodes != null)
-			for (final AbstractInsnNode insnNode : abstractInsnNodes)
-				insnList.add(insnNode);
+			Arrays.stream(abstractInsnNodes).forEach(insnList::add);
 
 		return insnList;
 	}
@@ -270,7 +271,30 @@ public final class ASMUtils
 		}
 	}
 
-	public static AbstractInsnNode getRandomValue(final Type type)
+	public static Type getRandomType()
+	{
+		switch (RandomUtils.getRandomInt(5)) // was 8
+		{
+			case 0:
+				return Type.BOOLEAN_TYPE;
+			case 1:
+				return Type.CHAR_TYPE;
+			case 2:
+				return Type.BYTE_TYPE;
+			case 3:
+				return Type.SHORT_TYPE;
+			case 4:
+				return Type.INT_TYPE;
+			case 5:
+				return Type.LONG_TYPE;
+			case 6:
+				return Type.FLOAT_TYPE;
+			default:
+				return Type.DOUBLE_TYPE;
+		}
+	}
+
+	public static AbstractInsnNode getRandomInsn(final Type type)
 	{
 		switch (type.getSort())
 		{

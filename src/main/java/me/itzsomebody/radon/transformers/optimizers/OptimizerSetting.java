@@ -18,6 +18,8 @@
 
 package me.itzsomebody.radon.transformers.optimizers;
 
+import java.util.Locale;
+
 public enum OptimizerSetting
 {
 	INLINE_GOTO_GOTO(new GotoGotoInliner()),
@@ -38,6 +40,6 @@ public enum OptimizerSetting
 
 	public String getName()
 	{
-		return name().toLowerCase();
+		return name().toLowerCase(Locale.ENGLISH);
 	}
 }

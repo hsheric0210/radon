@@ -18,6 +18,8 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.numbers;
 
+import java.util.Locale;
+
 public enum NumberObfuscationSetting
 {
 	CONTEXT_CHECKING(new ContextCheckObfuscator()),
@@ -38,6 +40,6 @@ public enum NumberObfuscationSetting
 
 	public String getName()
 	{
-		return name().toLowerCase();
+		return name().toLowerCase(Locale.ENGLISH);
 	}
 }

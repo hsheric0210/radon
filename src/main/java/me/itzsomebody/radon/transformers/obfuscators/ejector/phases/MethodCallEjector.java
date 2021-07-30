@@ -70,7 +70,7 @@ public final class MethodCallEjector extends AbstractEjectPhase
 
 			if (!result.containsKey(methodCallInfo))
 			{
-				final ArrayList<MethodInsnNode> list = new ArrayList<>();
+				final List<MethodInsnNode> list = new ArrayList<>();
 				list.add(methodInsnNode);
 				result.put(methodCallInfo, list);
 			}
@@ -127,7 +127,7 @@ public final class MethodCallEjector extends AbstractEjectPhase
 			{
 				if (RandomUtils.getRandomBoolean())
 				{
-					junkProxyArgumentFix.add(ASMUtils.getRandomValue(argumentType));
+					junkProxyArgumentFix.add(ASMUtils.getRandomInsn(argumentType));
 					junkProxyArgumentFix.add(new VarInsnNode(ASMUtils.getVarOpcode(argumentType, true), offset + junkVariable));
 				}
 				junkVariable += argumentType.getSize();
@@ -176,7 +176,7 @@ public final class MethodCallEjector extends AbstractEjectPhase
 					final AbstractValue argumentValue = frame.getStack(frame.getStackSize() - argumentTypes.length + i);
 					if (argumentValue.isConstant() && argumentValue.getUsages().size() == 1)
 					{
-						final AbstractInsnNode valueInsn = ejectorContext.isJunkArguments() ? ASMUtils.getRandomValue(argumentType) : ASMUtils.getDefaultValue(argumentType);
+						final AbstractInsnNode valueInsn = ejectorContext.isJunkArguments() ? ASMUtils.getRandomInsn(argumentType) : ASMUtils.getDefaultValue(argumentType);
 						patches.put(argumentValue.getInsnNode(), ASMUtils.singletonList(valueInsn));
 
 						proxyArgumentFix.add(argumentValue.getInsnNode().clone(null));

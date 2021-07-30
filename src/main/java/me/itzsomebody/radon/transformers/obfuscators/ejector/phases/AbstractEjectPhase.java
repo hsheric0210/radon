@@ -59,7 +59,7 @@ public abstract class AbstractEjectPhase implements Opcodes
 		return access;
 	}
 
-	protected static void insertFixes(final MethodNode methodNode, final Map<Integer, InsnList> fixes, final int idVariable)
+	protected static void insertFixes(final MethodNode methodNode, final Map<Integer, ? extends InsnList> fixes, final int idVariable)
 	{
 		final InsnList proxyFix = new InsnList();
 		final LabelNode end = new LabelNode();

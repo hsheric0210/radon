@@ -18,6 +18,8 @@
 
 package me.itzsomebody.radon.exclusions;
 
+import java.util.Locale;
+
 /**
  * All the valid exclusion types in an {@link Enum} representation.
  *
@@ -53,6 +55,6 @@ public enum ExclusionType
 
 	public String getName()
 	{
-		return name().toLowerCase();
+		return name().toLowerCase(Locale.ENGLISH);
 	}
 }

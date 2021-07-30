@@ -23,7 +23,7 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 
 public final class UnknownValue extends AbstractValue
 {
-	public static AbstractValue UNINITIALIZED_VALUE = new UnknownValue(null, null);
+	public static final AbstractValue UNINITIALIZED_VALUE = new UnknownValue(null, null);
 
 	public UnknownValue(final Type type)
 	{

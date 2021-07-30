@@ -18,8 +18,11 @@
 
 package me.itzsomebody.radon.utils;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+
+import org.objectweb.asm.Type;
 
 /**
  * Used to generate various randoms.
@@ -36,12 +39,15 @@ public final class RandomUtils
 
 	public static int getRandomInt(final int bounds)
 	{
+		if (!(bounds > 0))
+			throw new IllegalArgumentException("bound " + bounds + " is zero or negative");
 		return ThreadLocalRandom.current().nextInt(bounds);
 	}
 
 	public static int getRandomInt(final int origin, final int bounds)
 	{
-		return ThreadLocalRandom.current().nextInt(origin, bounds);
+		return origin == bounds ? bounds : ThreadLocalRandom.current().nextInt(origin, bounds);
+
 	}
 
 	public static boolean getRandomBoolean()
@@ -54,6 +60,11 @@ public final class RandomUtils
 		return list.get(getRandomInt(list.size()));
 	}
 
+	public static int getRandomIntWithExclusion(final int origin, final int bounds, final Collection<Integer> exclusions)
+	{
+		return ThreadLocalRandom.current().ints(origin, bounds).unordered().filter(value -> !exclusions.contains(value)).findFirst().getAsInt();
+	}
+
 	public static long getRandomLong()
 	{
 		return ThreadLocalRandom.current().nextLong();
@@ -61,7 +72,15 @@ public final class RandomUtils
 
 	public static long getRandomLong(final long bounds)
 	{
+		if (!(bounds > 0))
+			throw new IllegalArgumentException("bound " + bounds + " is zero or negative");
 		return ThreadLocalRandom.current().nextLong(bounds);
+	}
+
+	public static long getRandomLong(final long origin, final long bounds)
+	{
+		return origin == bounds ? origin : ThreadLocalRandom.current().nextLong(origin, bounds);
+
 	}
 
 	public static float getRandomFloat()
@@ -71,7 +90,14 @@ public final class RandomUtils
 
 	public static float getRandomFloat(final float bounds)
 	{
+		if (!(bounds > 0.0F))
+			throw new IllegalArgumentException("bound " + bounds + " is zero or negative");
 		return (float) ThreadLocalRandom.current().nextDouble(bounds);
+	}
+
+	public static float getRandomFloat(final float origin, final float bounds)
+	{
+		return origin == bounds ? origin : (float) ThreadLocalRandom.current().nextDouble(origin, bounds);
 	}
 
 	public static double getRandomDouble()
@@ -81,10 +107,36 @@ public final class RandomUtils
 
 	public static double getRandomDouble(final double bounds)
 	{
+		if (!(bounds > 0.0))
+			throw new IllegalArgumentException("bound " + bounds + " is zero or negative");
 		return ThreadLocalRandom.current().nextDouble(bounds);
 	}
 
-	private RandomUtils()
+	public static double getRandomDouble(final double origin, final double bounds)
 	{
+		return origin == bounds ? origin : ThreadLocalRandom.current().nextDouble(origin, bounds);
+	}
+
+	public static Object getRandomValue(final Type type)
+	{
+		switch (type.getSort())
+		{
+			case Type.BOOLEAN:
+				return getRandomInt(0, 2);
+			case Type.CHAR:
+				return getRandomInt(Character.MIN_VALUE, Character.MAX_VALUE);
+			case Type.BYTE:
+				return getRandomInt(Byte.MIN_VALUE, Byte.MAX_VALUE);
+			case Type.SHORT:
+				return getRandomInt(Short.MIN_VALUE, Short.MAX_VALUE);
+			case Type.FLOAT:
+				return getRandomFloat();
+			case Type.LONG:
+				return getRandomLong();
+			case Type.DOUBLE:
+				return getRandomDouble();
+			default:
+				return getRandomInt();
+		}
 	}
 }

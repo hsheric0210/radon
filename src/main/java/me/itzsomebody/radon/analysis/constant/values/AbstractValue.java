@@ -18,10 +18,7 @@
 
 package me.itzsomebody.radon.analysis.constant.values;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -40,11 +37,9 @@ public abstract class AbstractValue implements Value
 		usages = new HashSet<>();
 	}
 
-	private static <E> boolean containsAll(final Set<E> self, final Set<E> other)
+	private static <E> boolean containsAll(final Collection<E> self, final Collection<E> other)
 	{
-		if (self.size() < other.size())
-			return false;
-		return self.containsAll(other);
+		return self.size() >= other.size() && self.containsAll(other);
 	}
 
 	public final Set<AbstractInsnNode> getUsages()

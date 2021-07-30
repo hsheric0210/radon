@@ -18,10 +18,7 @@
 
 package me.itzsomebody.radon.transformers.miscellaneous;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.jar.Manifest;
@@ -59,7 +56,7 @@ public class Packer extends Transformer
 		{
 			final ByteArrayOutputStream bos = new ByteArrayOutputStream();
 			final GZIPOutputStream gos = new GZIPOutputStream(bos);
-			final DataOutputStream out = new DataOutputStream(gos);
+			final DataOutput out = new DataOutputStream(gos);
 			out.writeInt(getClassWrappers().size() + getResources().size() - 1);
 
 			final ArrayList<String> toRemove = new ArrayList<>();

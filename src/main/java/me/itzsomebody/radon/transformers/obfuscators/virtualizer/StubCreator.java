@@ -19,6 +19,7 @@
 package me.itzsomebody.radon.transformers.obfuscators.virtualizer;
 
 import java.io.ByteArrayOutputStream;
+import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -55,7 +56,7 @@ public class StubCreator
 	public byte[] createStub() throws IOException
 	{
 		final GZIPOutputStream gzip = new GZIPOutputStream(out);
-		final DataOutputStream dos = new DataOutputStream(gzip);
+		final DataOutput dos = new DataOutputStream(gzip);
 
 		dos.writeShort(instructionLists.size());
 

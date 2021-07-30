@@ -18,10 +18,7 @@
 
 package me.itzsomebody.radon.utils;
 
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.zip.ZipEntry;
@@ -29,9 +26,7 @@ import java.util.zip.ZipFile;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.MethodNode;
 
 /**
  * used to extract a watermark embedded by Radon. Prepare your eyes for cancer code.
@@ -69,27 +64,19 @@ public final class WatermarkUtils
 		}
 
 		final Map<Integer, Character> embedMap = new LinkedHashMap<>();
-		for (final ClassNode classNode : classes.values())
-			for (final MethodNode methodNode : classNode.methods)
-				for (final AbstractInsnNode insn : methodNode.instructions.toArray())
-					if (ASMUtils.isIntInsn(insn) && ASMUtils.isIntInsn(insn.getNext()) && ASMUtils.isIntInsn(insn.getNext().getNext()) && ASMUtils.isIntInsn(insn.getNext().getNext().getNext()) && insn.getNext().getNext().getNext().getNext() != null && insn.getNext().getNext().getNext().getNext().getOpcode() == Opcodes.ISTORE && insn.getNext().getNext().getNext().getNext().getNext() != null && insn.getNext().getNext().getNext().getNext().getNext().getOpcode() == Opcodes.ISTORE && insn.getNext().getNext().getNext().getNext().getNext().getNext() != null && insn.getNext().getNext().getNext().getNext().getNext().getNext().getOpcode() == Opcodes.ISTORE && insn.getNext().getNext().getNext().getNext().getNext().getNext().getNext() != null && insn.getNext().getNext().getNext().getNext().getNext().getNext().getNext().getOpcode() == Opcodes.ISTORE)
-					{
-						final char character = (char) (ASMUtils.getIntegerFromInsn(insn) ^ ASMUtils.getIntegerFromInsn(insn.getNext()));
-						final int index = ASMUtils.getIntegerFromInsn(insn.getNext().getNext()) ^ ASMUtils.getIntegerFromInsn(insn.getNext().getNext().getNext());
-						embedMap.put(index, character);
-					}
-		if (enoughInfo(embedMap))
-			return decrypt(constructString(embedMap), key);
+		classes.values().forEach(classNode -> classNode.methods.forEach(methodNode -> Arrays.stream(methodNode.instructions.toArray()).filter(insn -> ASMUtils.isIntInsn(insn) && ASMUtils.isIntInsn(insn.getNext()) && ASMUtils.isIntInsn(insn.getNext().getNext()) && ASMUtils.isIntInsn(insn.getNext().getNext().getNext()) && insn.getNext().getNext().getNext().getNext() != null && insn.getNext().getNext().getNext().getNext().getOpcode() == Opcodes.ISTORE && insn.getNext().getNext().getNext().getNext().getNext() != null && insn.getNext().getNext().getNext().getNext().getNext().getOpcode() == Opcodes.ISTORE && insn.getNext().getNext().getNext().getNext().getNext().getNext() != null && insn.getNext().getNext().getNext().getNext().getNext().getNext().getOpcode() == Opcodes.ISTORE && insn.getNext().getNext().getNext().getNext().getNext().getNext().getNext() != null && insn.getNext().getNext().getNext().getNext().getNext().getNext().getNext().getOpcode() == Opcodes.ISTORE).forEach(insn ->
+		{
+			final char character = (char) (ASMUtils.getIntegerFromInsn(insn) ^ ASMUtils.getIntegerFromInsn(insn.getNext()));
+			final int index = ASMUtils.getIntegerFromInsn(insn.getNext().getNext()) ^ ASMUtils.getIntegerFromInsn(insn.getNext().getNext().getNext());
+			embedMap.put(index, character);
+		})));
 
-		return "No IDs found.";
+		return enoughInfo(embedMap) ? decrypt(constructString(embedMap), key) : "No IDs found.";
 	}
 
 	private static boolean enoughInfo(final Map<Integer, Character> embedMap)
 	{
-		if (embedMap.size() < 1)
-			return false;
-
-		return IntStream.range(0, embedMap.size()).allMatch(embedMap::containsKey);
+		return embedMap.size() >= 1 && IntStream.range(0, embedMap.size()).allMatch(embedMap::containsKey);
 	}
 
 	private static String constructString(final Map<Integer, Character> embedMap)
@@ -101,11 +88,11 @@ public final class WatermarkUtils
 	{
 		final char[] messageChars = enc.toCharArray();
 		final char[] keyChars = key.toCharArray();
+		final StringBuilder sb = new StringBuilder();
 
-		return IntStream.range(0, messageChars.length).mapToObj(i -> String.valueOf((char) (messageChars[i] ^ keyChars[i % keyChars.length]))).collect(Collectors.joining());
-	}
+		for (int i = 0, j = messageChars.length; i < j; i++)
+			sb.append((char) (messageChars[i] ^ keyChars[i % keyChars.length]));
 
-	private WatermarkUtils()
-	{
+		return sb.toString();
 	}
 }

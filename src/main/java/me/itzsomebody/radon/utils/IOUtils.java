@@ -55,10 +55,10 @@ public final class IOUtils
 			out.close();
 			return out.toByteArray();
 		}
-		catch (final IOException ioe)
+		catch (final IOException | OutOfMemoryError e)
 		{
-			ioe.printStackTrace();
-			throw new RadonException(ioe);
+			e.printStackTrace();
+			throw new RadonException(e);
 		}
 	}
 

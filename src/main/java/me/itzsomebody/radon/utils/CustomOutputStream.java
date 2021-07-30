@@ -19,6 +19,7 @@
 package me.itzsomebody.radon.utils;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 
 public class CustomOutputStream extends OutputStream
 {
@@ -28,10 +29,10 @@ public class CustomOutputStream extends OutputStream
 	public CustomOutputStream(final OutputStream err) throws IOException
 	{
 		final File log = new File("Radon.log");
-		if (!log.exists())
-			log.createNewFile();
+		if (!log.exists() && !log.createNewFile())
+			throw new IOException("Can't create Radon.log");
 
-		bw = new BufferedWriter(new FileWriter(log));
+		bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(log), StandardCharsets.UTF_8));
 		this.err = err;
 	}
 

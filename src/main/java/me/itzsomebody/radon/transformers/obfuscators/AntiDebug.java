@@ -20,6 +20,7 @@ package me.itzsomebody.radon.transformers.obfuscators;
 
 import static me.itzsomebody.radon.config.ConfigurationSetting.ANTI_DEBUG;
 
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.objectweb.asm.tree.*;
@@ -114,9 +115,9 @@ public class AntiDebug extends Transformer
 		final boolean isUpper = RandomUtils.getRandomBoolean();
 		String argument = DEBUG_OPTIONS[debugOptionIndex.incrementAndGet() % DEBUG_OPTIONS.length];
 		if (isUpper)
-			argument = argument.toUpperCase();
+			argument = argument.toUpperCase(Locale.ENGLISH);
 		else
-			argument = argument.toLowerCase();
+			argument = argument.toLowerCase(Locale.ENGLISH);
 
 		final InsnList insnList = new InsnList();
 		insnList.add(new MethodInsnNode(INVOKESTATIC, "java/lang/management/ManagementFactory", "getRuntimeMXBean", "()Ljava/lang/management/RuntimeMXBean;", false));

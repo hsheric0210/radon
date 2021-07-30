@@ -72,9 +72,6 @@ public class CommandSwitchStatement
 	@Override
 	public boolean equals(final Object obj)
 	{
-		if (obj instanceof CommandSwitchStatement)
-			return ((CommandSwitchStatement) obj).name.equals(name) && ((CommandSwitchStatement) obj).nArgs == nArgs;
-
-		return false;
+		return obj instanceof CommandSwitchStatement && ((CommandSwitchStatement) obj).name.equals(name) && ((CommandSwitchStatement) obj).nArgs == nArgs;
 	}
 }

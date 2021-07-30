@@ -19,6 +19,7 @@
 package me.itzsomebody.radon.config;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import me.itzsomebody.radon.transformers.Transformer;
@@ -113,7 +114,7 @@ public enum ConfigurationSetting
 	 */
 	public String getConfigName()
 	{
-		return name().toLowerCase();
+		return name().toLowerCase(Locale.ENGLISH);
 	}
 
 	@Override

@@ -85,7 +85,7 @@ public class Exclusion
 		return exclusionType;
 	}
 
-	public boolean matches(final String other)
+	public boolean matches(final CharSequence other)
 	{
 		return shouldInclude != exclusion.matcher(other).matches();
 	}

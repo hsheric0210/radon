@@ -18,6 +18,7 @@
 
 package me.itzsomebody.radon.transformers.obfuscators;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -54,7 +55,7 @@ public class AntiTamper extends Transformer
 
 		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(cw ->
 		{
-			final Set<MethodWrapper> toProcess = new HashSet<>();
+			final Collection<MethodWrapper> toProcess = new HashSet<>();
 
 			cw.getMethods().stream().filter(mw -> !excluded(mw)).forEach(mw -> Stream.of(mw.getInstructions().toArray()).filter(insn -> insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof String).forEach(insn ->
 			{

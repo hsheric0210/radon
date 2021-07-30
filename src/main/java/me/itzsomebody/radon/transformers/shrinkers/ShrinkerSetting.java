@@ -18,6 +18,8 @@
 
 package me.itzsomebody.radon.transformers.shrinkers;
 
+import java.util.Locale;
+
 public enum ShrinkerSetting
 {
 	REMOVE_DEPRECATED(new DeprecatedAccessRemover()),
@@ -51,6 +53,6 @@ public enum ShrinkerSetting
 
 	public String getName()
 	{
-		return name().toLowerCase();
+		return name().toLowerCase(Locale.ENGLISH);
 	}
 }

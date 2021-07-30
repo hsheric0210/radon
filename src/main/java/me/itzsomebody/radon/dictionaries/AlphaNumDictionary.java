@@ -18,6 +18,7 @@
 
 package me.itzsomebody.radon.dictionaries;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -31,7 +32,7 @@ import me.itzsomebody.radon.utils.RandomUtils;
 public class AlphaNumDictionary implements Dictionary
 {
 	private static final char[] CHARSET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890".toCharArray();
-	private final Set<String> cache = new HashSet<>();
+	private final Collection<String> cache = new HashSet<>();
 	private int index;
 	private int cachedLength;
 	private String lastGenerated;

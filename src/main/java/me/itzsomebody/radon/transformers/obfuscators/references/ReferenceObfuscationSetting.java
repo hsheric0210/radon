@@ -18,6 +18,8 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.references;
 
+import java.util.Locale;
+
 public enum ReferenceObfuscationSetting
 {
 	HIDE_WITH_INDY(new InvokedynamicTransformer()),
@@ -37,6 +39,6 @@ public enum ReferenceObfuscationSetting
 
 	public String getName()
 	{
-		return name().toLowerCase();
+		return name().toLowerCase(Locale.ENGLISH);
 	}
 }

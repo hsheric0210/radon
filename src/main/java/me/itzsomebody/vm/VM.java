@@ -202,9 +202,10 @@ public class VM
 					throw t;
 			}
 
-		JWrapper result = pop();
+		final JWrapper result = pop();
+
 		if (result instanceof JTop)
-			result = pop();
+			return pop();
 
 		return result;
 	}

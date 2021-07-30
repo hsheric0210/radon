@@ -184,39 +184,28 @@ public class ConstantInterpreter extends Interpreter<AbstractValue> implements O
 		switch (insnNode.getOpcode())
 		{
 			case INEG:
-				return intSymbolicValue(insnNode);
-			case LNEG:
-				return longSymbolicValue(insnNode);
-			case FNEG:
-				return floatSymbolicValue(insnNode);
-			case DNEG:
-				return doubleSymbolicValue(insnNode);
+			case INSTANCEOF:
+			case ARRAYLENGTH:
+			case D2I:
+			case F2I:
+			case L2I:
 			case IINC:
 				return intSymbolicValue(insnNode);
+			case LNEG:
+			case D2L:
+			case F2L:
 			case I2L:
 				return longSymbolicValue(insnNode);
+			case FNEG:
+			case D2F:
+			case L2F:
 			case I2F:
 				return floatSymbolicValue(insnNode);
+			case DNEG:
+			case F2D:
+			case L2D:
 			case I2D:
 				return doubleSymbolicValue(insnNode);
-			case L2I:
-				return intSymbolicValue(insnNode);
-			case L2F:
-				return floatSymbolicValue(insnNode);
-			case L2D:
-				return doubleSymbolicValue(insnNode);
-			case F2I:
-				return intSymbolicValue(insnNode);
-			case F2L:
-				return longSymbolicValue(insnNode);
-			case F2D:
-				return doubleSymbolicValue(insnNode);
-			case D2I:
-				return intSymbolicValue(insnNode);
-			case D2L:
-				return longSymbolicValue(insnNode);
-			case D2F:
-				return floatSymbolicValue(insnNode);
 			case I2B:
 				return new UnknownValue(insnNode, Type.BYTE_TYPE);
 			case I2C:
@@ -237,6 +226,11 @@ public class ConstantInterpreter extends Interpreter<AbstractValue> implements O
 			case DRETURN:
 			case ARETURN:
 			case PUTSTATIC:
+			case MONITORENTER:
+			case MONITOREXIT:
+			case IFNULL:
+			case IFNONNULL:
+			case ATHROW:
 				return null;
 			case GETFIELD:
 			{
@@ -253,22 +247,11 @@ public class ConstantInterpreter extends Interpreter<AbstractValue> implements O
 				final TypeInsnNode tinsn = (TypeInsnNode) insnNode;
 				return new UnknownValue(insnNode, Type.getType("[" + Type.getObjectType(tinsn.desc)));
 			}
-			case ARRAYLENGTH:
-				return intSymbolicValue(insnNode);
-			case ATHROW:
-				return null;
 			case CHECKCAST:
 			{
 				final TypeInsnNode tinsn = (TypeInsnNode) insnNode;
 				return new UnknownValue(insnNode, Type.getObjectType(tinsn.desc));
 			}
-			case INSTANCEOF:
-				return intSymbolicValue(insnNode);
-			case MONITORENTER:
-			case MONITOREXIT:
-			case IFNULL:
-			case IFNONNULL:
-				return null;
 			default:
 				throw new IllegalArgumentException("Invalid instruction opcode.");
 		}
@@ -282,28 +265,6 @@ public class ConstantInterpreter extends Interpreter<AbstractValue> implements O
 		switch (insnNode.getOpcode())
 		{
 			case IALOAD:
-				return intSymbolicValue(insnNode);
-			case LALOAD:
-				return longSymbolicValue(insnNode);
-			case FALOAD:
-				return floatSymbolicValue(insnNode);
-			case DALOAD:
-				return doubleSymbolicValue(insnNode);
-			case AALOAD:
-			{
-				final Type arrayType = symbolicValue1.getType();
-				if (arrayType == null)
-					return new UnknownValue(insnNode, null);
-				if (arrayType.getSort() != Type.ARRAY)
-					throw new AnalyzerException(insnNode, symbolicValue1 + " is not array");
-				return new UnknownValue(insnNode, arrayType.getElementType());
-			}
-			case BALOAD:
-				return new UnknownValue(insnNode, Type.BYTE_TYPE);
-			case CALOAD:
-				return new UnknownValue(insnNode, Type.CHAR_TYPE);
-			case SALOAD:
-				return new UnknownValue(insnNode, Type.SHORT_TYPE);
 			case IADD:
 			case ISUB:
 			case IMUL:
@@ -321,6 +282,7 @@ public class ConstantInterpreter extends Interpreter<AbstractValue> implements O
 			case DCMPL:
 			case DCMPG:
 				return intSymbolicValue(insnNode);
+			case LALOAD:
 			case LADD:
 			case LSUB:
 			case LMUL:
@@ -333,18 +295,35 @@ public class ConstantInterpreter extends Interpreter<AbstractValue> implements O
 			case LOR:
 			case LXOR:
 				return longSymbolicValue(insnNode);
+			case FALOAD:
 			case FADD:
 			case FSUB:
 			case FMUL:
 			case FDIV:
 			case FREM:
 				return floatSymbolicValue(insnNode);
+			case DALOAD:
 			case DADD:
 			case DSUB:
 			case DMUL:
 			case DDIV:
 			case DREM:
 				return doubleSymbolicValue(insnNode);
+			case AALOAD:
+			{
+				final Type arrayType = symbolicValue1.getType();
+				if (arrayType == null)
+					return new UnknownValue(insnNode, null);
+				if (arrayType.getSort() != Type.ARRAY)
+					throw new AnalyzerException(insnNode, symbolicValue1 + " is not array");
+				return new UnknownValue(insnNode, arrayType.getElementType());
+			}
+			case BALOAD:
+				return new UnknownValue(insnNode, Type.BYTE_TYPE);
+			case CALOAD:
+				return new UnknownValue(insnNode, Type.CHAR_TYPE);
+			case SALOAD:
+				return new UnknownValue(insnNode, Type.SHORT_TYPE);
 			case IF_ICMPEQ:
 			case IF_ICMPNE:
 			case IF_ICMPLT:

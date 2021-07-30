@@ -1,7 +1,6 @@
 package me.itzsomebody.radon.utils;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
 
 /**
  * @author cookiedragon234 02/Nov/2019
@@ -9,6 +8,7 @@ import java.util.List;
 public class StrSequence
 {
 	private final String[] sequence;
+	private final boolean generateOrdered;
 
 	public StrSequence(final CharSequence sequence)
 	{
@@ -17,47 +17,53 @@ public class StrSequence
 
 	public StrSequence(final char[] sequence)
 	{
-
-		this(new String(sequence).split(""));
+		this(PredefinedPatterns.EMPTY.split(new String(sequence)), false);
 	}
 
-	public StrSequence(final String[] sequence)
+	private StrSequence(final String[] sequence, final boolean generateOrdered)
 	{
 		this.sequence = sequence;
+		this.generateOrdered = generateOrdered;
 	}
 
-	public StrSequence(final Iterable<? extends CharSequence> collection)
+	public StrSequence(final Collection<? extends CharSequence> collection, final boolean generateOrdered)
 	{
-		final List<String> strList = new ArrayList<>();
-		for (final CharSequence charSequence : collection)
-			strList.add(charSequence.toString());
-		sequence = strList.toArray(new String[0]);
+		if (collection == null)
+			throw new IllegalArgumentException(new NullPointerException("collection"));
+
+		sequence = collection.stream().map(CharSequence::toString).toArray(String[]::new);
+		this.generateOrdered = generateOrdered;
 	}
 
-	public int length()
+	public final int length()
 	{
 		return sequence.length;
 	}
 
-	public String strAt(final int index)
+	public final String strAt(final int index)
 	{
 		return sequence[index];
 	}
 
-	public StrSequence subSequence(final int start, final int end)
+	public final StrSequence subSequence(final int start, final int end)
 	{
 		final String[] out = new String[end - start];
 		System.arraycopy(sequence, start, out, 0, end - start);
-		return new StrSequence(out);
+		return new StrSequence(out, generateOrdered);
 	}
 
-	public String[] getSequence()
+	public final String[] getSequence()
 	{
 		return sequence;
 	}
 
+	public final boolean canGenerateOrdered()
+	{
+		return generateOrdered;
+	}
+
 	@Override
-	public String toString()
+	public final String toString()
 	{
 		return String.join("", sequence);
 	}

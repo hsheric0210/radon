@@ -80,7 +80,7 @@ public class Renamer extends Transformer
 		{
 			classWrapper.getMethods().stream().filter(Renamer::methodCanBeRenamed).forEach(methodWrapper ->
 			{
-				final HashSet<String> visited = new HashSet<>();
+				final Set<String> visited = new HashSet<>();
 
 				if (!cannotRenameMethod(radon.getTree(classWrapper.getOriginalName()), methodWrapper, visited))
 					genMethodMappings(methodWrapper, methodWrapper.getOwner().getOriginalName(), methodDictionary.nextUniqueString());
@@ -88,7 +88,7 @@ public class Renamer extends Transformer
 
 			classWrapper.getFields().forEach(fieldWrapper ->
 			{
-				final HashSet<String> visited = new HashSet<>();
+				final Set<String> visited = new HashSet<>();
 
 				if (!cannotRenameField(radon.getTree(classWrapper.getOriginalName()), fieldWrapper, visited))
 					genFieldMappings(fieldWrapper, fieldWrapper.getOwner().getOriginalName(), fieldDictionary.nextUniqueString());
@@ -201,7 +201,7 @@ public class Renamer extends Transformer
 		}
 	}
 
-	private boolean cannotRenameMethod(final ClassTree tree, final MethodWrapper wrapper, final Set<String> visited)
+	private boolean cannotRenameMethod(final ClassTree tree, final MethodWrapper wrapper, final Set<? super String> visited)
 	{
 		final String check = tree.getClassWrapper().getOriginalName() + '.' + wrapper.getOriginalName() + wrapper.getOriginalDescription();
 
@@ -220,10 +220,7 @@ public class Renamer extends Transformer
 		if (!wrapper.getAccess().isStatic())
 		{
 			// We can't rename members which inherit methods from external libraries
-			if (tree.getClassWrapper() != wrapper.getOwner() && tree.getClassWrapper().isLibraryNode() && tree.getClassWrapper().getMethods().stream().anyMatch(mw -> mw.getOriginalName().equals(wrapper.getOriginalName()) && mw.getOriginalDescription().equals(wrapper.getOriginalDescription())))
-				return true;
-
-			return tree.getParentClasses().stream().anyMatch(parent -> cannotRenameMethod(radon.getTree(parent), wrapper, visited)) || tree.getSubClasses().stream().anyMatch(sub -> cannotRenameMethod(radon.getTree(sub), wrapper, visited));
+			return tree.getClassWrapper() != wrapper.getOwner() && tree.getClassWrapper().isLibraryNode() && tree.getClassWrapper().getMethods().stream().anyMatch(mw -> mw.getOriginalName().equals(wrapper.getOriginalName()) && mw.getOriginalDescription().equals(wrapper.getOriginalDescription())) || tree.getParentClasses().stream().anyMatch(parent -> cannotRenameMethod(radon.getTree(parent), wrapper, visited)) || tree.getSubClasses().stream().anyMatch(sub -> cannotRenameMethod(radon.getTree(sub), wrapper, visited));
 		}
 		return tree.getClassWrapper().getAccess().isEnum() && ("valueOf".equals(wrapper.getOriginalName()) || "values".equals(wrapper.getOriginalName()));
 	}
@@ -245,7 +242,7 @@ public class Renamer extends Transformer
 		}
 	}
 
-	private boolean cannotRenameField(final ClassTree tree, final FieldWrapper wrapper, final Set<String> visited)
+	private boolean cannotRenameField(final ClassTree tree, final FieldWrapper wrapper, final Set<? super String> visited)
 	{
 		final String check = tree.getClassWrapper().getOriginalName() + '.' + wrapper.getOriginalName() + '.' + wrapper.getOriginalDescription();
 
@@ -264,10 +261,7 @@ public class Renamer extends Transformer
 		if (!wrapper.getAccess().isStatic())
 		{
 			// We can't rename members which inherit methods from external libraries
-			if (tree.getClassWrapper() != wrapper.getOwner() && tree.getClassWrapper().isLibraryNode() && tree.getClassWrapper().getFields().stream().anyMatch(fw -> fw.getOriginalName().equals(wrapper.getOriginalName()) && fw.getOriginalDescription().equals(wrapper.getOriginalDescription())))
-				return true;
-
-			return tree.getParentClasses().stream().anyMatch(parent -> cannotRenameField(radon.getTree(parent), wrapper, visited)) || tree.getSubClasses().stream().anyMatch(sub -> cannotRenameField(radon.getTree(sub), wrapper, visited));
+			return tree.getClassWrapper() != wrapper.getOwner() && tree.getClassWrapper().isLibraryNode() && tree.getClassWrapper().getFields().stream().anyMatch(fw -> fw.getOriginalName().equals(wrapper.getOriginalName()) && fw.getOriginalDescription().equals(wrapper.getOriginalDescription())) || tree.getParentClasses().stream().anyMatch(parent -> cannotRenameField(radon.getTree(parent), wrapper, visited)) || tree.getSubClasses().stream().anyMatch(sub -> cannotRenameField(radon.getTree(sub), wrapper, visited));
 		}
 
 		return false;

@@ -18,10 +18,7 @@
 
 package me.itzsomebody.radon.cli;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import me.itzsomebody.radon.exceptions.RadonException;
 
@@ -35,7 +32,7 @@ public class CommandArgumentsParser
 	/**
 	 * Currently registered command switches this parser will accept.
 	 */
-	private static final Set<CommandSwitchStatement> SWITCHES = new HashSet<>();
+	private static final Collection<CommandSwitchStatement> SWITCHES = new HashSet<>();
 
 	/**
 	 * Contains the arguments provided to each switch.
@@ -68,7 +65,7 @@ public class CommandArgumentsParser
 
 			boolean knownSwitch = false;
 			for (final CommandSwitchStatement cmdSwitch : SWITCHES)
-				if (cmdSwitch.getName().equals(arg.toLowerCase()))
+				if (cmdSwitch.getName().equals(arg.toLowerCase(Locale.ENGLISH)))
 				{
 					final String[] argsArr = new String[cmdSwitch.getnArgs()];
 
