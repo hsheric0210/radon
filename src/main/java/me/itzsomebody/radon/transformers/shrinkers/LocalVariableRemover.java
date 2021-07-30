@@ -18,34 +18,39 @@
 
 package me.itzsomebody.radon.transformers.shrinkers;
 
-import java.util.concurrent.atomic.AtomicInteger;
 import me.itzsomebody.radon.Main;
 import org.objectweb.asm.tree.MethodNode;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Destroys the local variable table.
  *
  * @author ItzSomebody
  */
-public class LocalVariableRemover extends Shrinker {
-    @Override
-    public void transform() {
-        AtomicInteger counter = new AtomicInteger();
+public class LocalVariableRemover extends Shrinker
+{
+	@Override
+	public void transform()
+	{
+		final AtomicInteger counter = new AtomicInteger();
 
-        getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper ->
-                classWrapper.getMethods().stream().filter(methodWrapper -> !excluded(methodWrapper)
-                        && methodWrapper.getMethodNode().localVariables != null).forEach(methodWrapper -> {
-                    MethodNode methodNode = methodWrapper.getMethodNode();
+		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper ->
+				classWrapper.getMethods().stream().filter(methodWrapper -> !excluded(methodWrapper)
+						&& methodWrapper.getMethodNode().localVariables != null).forEach(methodWrapper ->
+				{
+					final MethodNode methodNode = methodWrapper.getMethodNode();
 
-                    counter.addAndGet(methodNode.localVariables.size());
-                    methodNode.localVariables = null;
-                }));
+					counter.addAndGet(methodNode.localVariables.size());
+					methodNode.localVariables = null;
+				}));
 
-        Main.info(String.format("Removed %d local variables.", counter.get()));
-    }
+		Main.info(String.format("Removed %d local variables.", counter.get()));
+	}
 
-    @Override
-    public String getName() {
-        return "Local variables";
-    }
+	@Override
+	public String getName()
+	{
+		return "Local variables";
+	}
 }

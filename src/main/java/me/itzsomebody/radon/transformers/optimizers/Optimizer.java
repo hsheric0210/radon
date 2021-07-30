@@ -18,12 +18,13 @@
 
 package me.itzsomebody.radon.transformers.optimizers;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Stream;
 import me.itzsomebody.radon.config.Configuration;
 import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.transformers.Transformer;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
 
 import static me.itzsomebody.radon.config.ConfigurationSetting.OPTIMIZER;
 
@@ -32,37 +33,45 @@ import static me.itzsomebody.radon.config.ConfigurationSetting.OPTIMIZER;
  *
  * @author ItzSomebody
  */
-public class Optimizer extends Transformer {
-    private final List<Optimizer> optimizers = new ArrayList<>();
+public class Optimizer extends Transformer
+{
+	private final List<Optimizer> optimizers = new ArrayList<>();
 
-    @Override
-    public void transform() {
-        optimizers.forEach(optimizer -> {
-            optimizer.init(radon);
-            optimizer.transform();
-        });
-    }
+	@Override
+	public void transform()
+	{
+		optimizers.forEach(optimizer ->
+		{
+			optimizer.init(radon);
+			optimizer.transform();
+		});
+	}
 
-    @Override
-    public String getName() {
-        return "Optimizer";
-    }
+	@Override
+	public String getName()
+	{
+		return "Optimizer";
+	}
 
-    @Override
-    public ExclusionType getExclusionType() {
-        return ExclusionType.OPTIMIZER;
-    }
+	@Override
+	public ExclusionType getExclusionType()
+	{
+		return ExclusionType.OPTIMIZER;
+	}
 
-    @Override
-    public void setConfiguration(Configuration config) {
-        Stream.of(OptimizerSetting.values()).filter(setting -> {
-            String path = OPTIMIZER + "." + setting.getName();
+	@Override
+	public void setConfiguration(final Configuration config)
+	{
+		Stream.of(OptimizerSetting.values()).filter(setting ->
+		{
+			final String path = OPTIMIZER + "." + setting.getName();
 
-            if (config.contains(path)) {
-                return config.get(path);
-            }
+			if (config.contains(path))
+			{
+				return config.get(path);
+			}
 
-            return false;
-        }).forEach(setting -> optimizers.add(setting.getOptimizer()));
-    }
+			return false;
+		}).forEach(setting -> optimizers.add(setting.getOptimizer()));
+	}
 }

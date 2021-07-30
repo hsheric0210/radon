@@ -18,100 +18,113 @@
 
 package me.itzsomebody.radon.cli;
 
+import me.itzsomebody.radon.exceptions.RadonException;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import me.itzsomebody.radon.exceptions.RadonException;
 
 /**
  * A lame (but 200x better than the old one) commandline argument parser.
  *
  * @author ItzSomebody
  */
-public class CommandArgumentsParser {
-    /**
-     * Currently registered command switches this parser will accept.
-     */
-    private static final Set<CommandSwitchStatement> SWITCHES = new HashSet<>();
+public class CommandArgumentsParser
+{
+	/**
+	 * Currently registered command switches this parser will accept.
+	 */
+	private static final Set<CommandSwitchStatement> SWITCHES = new HashSet<>();
 
-    /**
-     * Contains the arguments provided to each switch.
-     */
-    private final Map<String, String[]> argMap;
+	/**
+	 * Contains the arguments provided to each switch.
+	 */
+	private final Map<String, String[]> argMap;
 
-    /**
-     * Creates a new {@link CommandArgumentsParser} object which parses the provided commandline arguments.
-     *
-     * @param args provided commandline arguments.
-     */
-    public CommandArgumentsParser(String[] args) {
-        argMap = new HashMap<>();
+	/**
+	 * Creates a new {@link CommandArgumentsParser} object which parses the provided commandline arguments.
+	 *
+	 * @param args provided commandline arguments.
+	 */
+	public CommandArgumentsParser(final String[] args)
+	{
+		argMap = new HashMap<>();
 
-        for (int i = 0; i < args.length; i++) {
-            String arg = args[i];
+		for (int i = 0; i < args.length; i++)
+		{
+			String arg = args[i];
 
-            // Is it a switch?
-            if (arg.startsWith("--"))
-                arg = arg.substring("--".length());
-            else if (arg.startsWith("-"))
-                arg = arg.substring("-".length());
-            else if (arg.startsWith("/"))
-                arg = arg.substring("/".length());
-            else
-                throw new RadonException("Unexpected command argument: " + arg);
+			// Is it a switch?
+			if (arg.startsWith("--"))
+				arg = arg.substring("--".length());
+			else if (arg.startsWith("-"))
+				arg = arg.substring("-".length());
+			else if (arg.startsWith("/"))
+				arg = arg.substring("/".length());
+			else
+				throw new RadonException("Unexpected command argument: " + arg);
 
-            boolean knownSwitch = false;
-            for (CommandSwitchStatement cmdSwitch : SWITCHES)
-                if (cmdSwitch.getName().equals(arg.toLowerCase())) {
-                    String[] argsArr = new String[cmdSwitch.getnArgs()];
+			boolean knownSwitch = false;
+			for (final CommandSwitchStatement cmdSwitch : SWITCHES)
+				if (cmdSwitch.getName().equals(arg.toLowerCase()))
+				{
+					final String[] argsArr = new String[cmdSwitch.getnArgs()];
 
-                    for (int j = 0; j < cmdSwitch.getnArgs(); j++)
-                        try {
-                            argsArr[j] = args[++i];
-                        } catch (ArrayIndexOutOfBoundsException e) {
-                            throw new RadonException(String.format("Command switch \"%s\" expected %d %s, got %d instead.",
-                                    arg, cmdSwitch.getnArgs(), (cmdSwitch.getnArgs() == 1) ? "argument" : "arguments",
-                                    j));
-                        }
+					for (int j = 0; j < cmdSwitch.getnArgs(); j++)
+						try
+						{
+							argsArr[j] = args[++i];
+						}
+						catch (final ArrayIndexOutOfBoundsException e)
+						{
+							throw new RadonException(String.format("Command switch \"%s\" expected %d %s, got %d instead.",
+									arg, cmdSwitch.getnArgs(), cmdSwitch.getnArgs() == 1 ? "argument" : "arguments",
+									j));
+						}
 
-                    argMap.put(arg, argsArr);
-                    knownSwitch = true;
-                    break;
-                }
+					argMap.put(arg, argsArr);
+					knownSwitch = true;
+					break;
+				}
 
-            if (!knownSwitch)
-                throw new RadonException("Unknown command switch: \"" + arg + "\"");
-        }
-    }
+			if (!knownSwitch)
+				throw new RadonException("Unknown command switch: \"" + arg + "\"");
+		}
+	}
 
-    /**
-     * Checks if the provided switch name is present in the commandline arguments.
-     *
-     * @param name switch name to check for.
-     * @return true if the provided switch name is present in the commandline arguments.
-     */
-    public boolean containsSwitch(String name) {
-        return argMap.containsKey(name);
-    }
+	/**
+	 * Checks if the provided switch name is present in the commandline arguments.
+	 *
+	 * @param name switch name to check for.
+	 *
+	 * @return true if the provided switch name is present in the commandline arguments.
+	 */
+	public boolean containsSwitch(final String name)
+	{
+		return argMap.containsKey(name);
+	}
 
-    /**
-     * Returns the arguments to a switch as a String array.
-     *
-     * @param name switch name to perform the lookup.
-     * @return the arguments to a switch as a String array.
-     */
-    public String[] getSwitchArgs(String name) {
-        return argMap.get(name);
-    }
+	/**
+	 * Returns the arguments to a switch as a String array.
+	 *
+	 * @param name switch name to perform the lookup.
+	 *
+	 * @return the arguments to a switch as a String array.
+	 */
+	public String[] getSwitchArgs(final String name)
+	{
+		return argMap.get(name);
+	}
 
-    /**
-     * Registers a new switch the {@link CommandArgumentsParser} will accept.
-     *
-     * @param name  switch name.
-     * @param nArgs number of args this switch will take.
-     */
-    public static void registerCommandSwitch(String name, int nArgs) {
-        SWITCHES.add(new CommandSwitchStatement(name, nArgs));
-    }
+	/**
+	 * Registers a new switch the {@link CommandArgumentsParser} will accept.
+	 *
+	 * @param name  switch name.
+	 * @param nArgs number of args this switch will take.
+	 */
+	public static void registerCommandSwitch(final String name, final int nArgs)
+	{
+		SWITCHES.add(new CommandSwitchStatement(name, nArgs));
+	}
 }

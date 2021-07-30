@@ -18,12 +18,13 @@
 
 package me.itzsomebody.radon.transformers.obfuscators;
 
-import java.util.ArrayList;
 import me.itzsomebody.radon.config.Configuration;
 import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.transformers.Transformer;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.MethodNode;
+
+import java.util.ArrayList;
 
 /**
  * Adds {@code @} annotation to all methods
@@ -32,35 +33,41 @@ import org.objectweb.asm.tree.MethodNode;
  *
  * @author xDark
  */
-public class BadAnnotation extends Transformer {
-    @Override
-    public void transform() {
-        getClassWrappers().stream().filter(cw -> !excluded(cw)).forEach(cw ->
-                cw.getMethods().stream().filter(mw -> !excluded(mw)).forEach(mw -> {
-                    MethodNode methodNode = mw.getMethodNode();
+public class BadAnnotation extends Transformer
+{
+	@Override
+	public void transform()
+	{
+		getClassWrappers().stream().filter(cw -> !excluded(cw)).forEach(cw ->
+				cw.getMethods().stream().filter(mw -> !excluded(mw)).forEach(mw ->
+				{
+					final MethodNode methodNode = mw.getMethodNode();
 
-                    if (methodNode.visibleAnnotations == null)
-                        methodNode.visibleAnnotations = new ArrayList<>();
-                    if (methodNode.invisibleAnnotations == null)
-                        methodNode.invisibleAnnotations = new ArrayList<>();
+					if (methodNode.visibleAnnotations == null)
+						methodNode.visibleAnnotations = new ArrayList<>();
+					if (methodNode.invisibleAnnotations == null)
+						methodNode.invisibleAnnotations = new ArrayList<>();
 
-                    methodNode.visibleAnnotations.add(new AnnotationNode("@"));
-                    methodNode.invisibleAnnotations.add(new AnnotationNode("@"));
-                }));
-    }
+					methodNode.visibleAnnotations.add(new AnnotationNode("@"));
+					methodNode.invisibleAnnotations.add(new AnnotationNode("@"));
+				}));
+	}
 
-    @Override
-    public String getName() {
-        return "Bad Annotations";
-    }
+	@Override
+	public String getName()
+	{
+		return "Bad Annotations";
+	}
 
-    @Override
-    public ExclusionType getExclusionType() {
-        return ExclusionType.BAD_ANNOTATIONS;
-    }
+	@Override
+	public ExclusionType getExclusionType()
+	{
+		return ExclusionType.BAD_ANNOTATIONS;
+	}
 
-    @Override
-    public void setConfiguration(Configuration config) {
-        // Not needed
-    }
+	@Override
+	public void setConfiguration(final Configuration config)
+	{
+		// Not needed
+	}
 }

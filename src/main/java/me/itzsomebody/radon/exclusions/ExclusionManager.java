@@ -26,20 +26,24 @@ import java.util.List;
  *
  * @author ItzSomebody
  */
-public class ExclusionManager {
-    private List<Exclusion> exclusions = new ArrayList<>();
+public class ExclusionManager
+{
+	private final List<Exclusion> exclusions = new ArrayList<>();
 
-    public List<Exclusion> getExclusions() {
-        return this.exclusions;
-    }
+	public List<Exclusion> getExclusions()
+	{
+		return exclusions;
+	}
 
-    public void addExclusion(Exclusion exclusion) {
-        this.exclusions.add(exclusion);
-    }
+	public void addExclusion(final Exclusion exclusion)
+	{
+		exclusions.add(exclusion);
+	}
 
-    public boolean isExcluded(String pattern, ExclusionType type) {
-        return exclusions.stream().anyMatch(exclusion ->
-                (exclusion.getExclusionType() == type || exclusion.getExclusionType() == ExclusionType.GLOBAL)
-                        && exclusion.matches(pattern));
-    }
+	public boolean isExcluded(final String pattern, final ExclusionType type)
+	{
+		return exclusions.stream().anyMatch(exclusion ->
+				(exclusion.getExclusionType() == type || exclusion.getExclusionType() == ExclusionType.GLOBAL)
+						&& exclusion.matches(pattern));
+	}
 }

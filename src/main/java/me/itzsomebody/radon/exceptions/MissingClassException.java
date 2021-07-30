@@ -20,10 +20,12 @@ package me.itzsomebody.radon.exceptions;
 
 import me.itzsomebody.radon.Main;
 
-public class MissingClassException extends RuntimeException {
-    public MissingClassException(String msg) {
-        super(msg);
-        Main.info("Do NOT report an issue about this exception unless you have absolutely made sure that" +
-                " the class reported missing exists in the library list you provided to Radon");
-    }
+public class MissingClassException extends RuntimeException
+{
+	public MissingClassException(final String msg)
+	{
+		super(msg);
+		Main.info("Do NOT report an issue about this exception unless you have absolutely made sure that" +
+				" the class reported missing exists in the library list you provided to Radon");
+	}
 }

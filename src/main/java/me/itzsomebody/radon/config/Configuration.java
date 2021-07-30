@@ -18,100 +18,116 @@
 
 package me.itzsomebody.radon.config;
 
+import org.yaml.snakeyaml.Yaml;
+
 import java.io.InputStream;
 import java.util.Map;
-import org.yaml.snakeyaml.Yaml;
 
 /**
  * Wrapper around the {@link Map} from {@link Yaml#load(InputStream)}.
  *
  * @author ItzSomebody
  */
-public final class Configuration {
-    private final Map<String, Object> config;
+public final class Configuration
+{
+	private final Map<String, Object> config;
 
-    public Configuration(InputStream in) {
-        config = new Yaml().load(in);
-    }
+	public Configuration(final InputStream in)
+	{
+		config = new Yaml().load(in);
+	}
 
-    /**
-     * Checks if the specified path exists in the config.
-     *
-     * @param path Path to check.
-     * @return True if the specified path exists in the config.
-     */
-    public boolean contains(String path) {
-        String[] parts = path.split("\\.");
-        Map current = config;
+	/**
+	 * Checks if the specified path exists in the config.
+	 *
+	 * @param path Path to check.
+	 *
+	 * @return True if the specified path exists in the config.
+	 */
+	public boolean contains(final String path)
+	{
+		final String[] parts = path.split("\\.");
+		Map current = config;
 
-        // walk down the document levels by treating them as maps until last element
-        // since last element is treated as the object we want
-        for (int i = 0; i < parts.length - 1; i++) {
-            String part = parts[i];
-            Object result = current.get(part);
-            if (!(result instanceof Map)) {
-                return false;
-            }
+		// walk down the document levels by treating them as maps until last element
+		// since last element is treated as the object we want
+		for (int i = 0; i < parts.length - 1; i++)
+		{
+			final String part = parts[i];
+			final Object result = current.get(part);
+			if (!(result instanceof Map))
+			{
+				return false;
+			}
 
-            current = (Map) result;
-        }
+			current = (Map) result;
+		}
 
-        return current.containsKey(parts[parts.length - 1]);
-    }
+		return current.containsKey(parts[parts.length - 1]);
+	}
 
-    /**
-     * @see Configuration#contains(String)
-     */
-    public boolean contains(ConfigurationSetting setting) {
-        return contains(setting.getConfigName());
-    }
+	/**
+	 * @see Configuration#contains(String)
+	 */
+	public boolean contains(final ConfigurationSetting setting)
+	{
+		return contains(setting.getConfigName());
+	}
 
-    /**
-     * Get object as desired type from specified path.
-     *
-     * @param path Path of the object to get.
-     * @param <T>  Desired type of object.
-     * @return Object as desired type from specified path.
-     */
-    @SuppressWarnings("unchecked") // Screw type verification reeee
-    public <T> T get(String path) {
-        String[] parts = path.split("\\.");
-        Map current = config;
+	/**
+	 * Get object as desired type from specified path.
+	 *
+	 * @param path Path of the object to get.
+	 * @param <T>  Desired type of object.
+	 *
+	 * @return Object as desired type from specified path.
+	 */
+	@SuppressWarnings("unchecked") // Screw type verification reeee
+	public <T> T get(final String path)
+	{
+		final String[] parts = path.split("\\.");
+		Map current = config;
 
-        // walk down the document levels by treating them as maps until last element
-        // since last element is treated as the object we want
-        for (int i = 0; i < parts.length - 1; i++) {
-            String part = parts[i];
-            current = (Map) current.get(part);
-        }
+		// walk down the document levels by treating them as maps until last element
+		// since last element is treated as the object we want
+		for (int i = 0; i < parts.length - 1; i++)
+		{
+			final String part = parts[i];
+			current = (Map) current.get(part);
+		}
 
-        return (T) current.get(parts[parts.length - 1]);
-    }
+		return (T) current.get(parts[parts.length - 1]);
+	}
 
-    /**
-     * @see Configuration#get(String)
-     */
-    public <T> T get(ConfigurationSetting setting) {
-        return get(setting.getConfigName());
-    }
+	/**
+	 * @see Configuration#get(String)
+	 */
+	public <T> T get(final ConfigurationSetting setting)
+	{
+		return get(setting.getConfigName());
+	}
 
-    public <T> T getOrDefault(String path, T dflt) {
-        T result = get(path);
+	public <T> T getOrDefault(final String path, final T dflt)
+	{
+		final T result = get(path);
 
-        if (result == null) {
-            return dflt;
-        }
+		if (result == null)
+		{
+			return dflt;
+		}
 
-        return result;
-    }
+		return result;
+	}
 
-    public <T> T getOrDefault(ConfigurationSetting setting, T dflt) {
-        T result = get(setting);
+	public <T> T getOrDefault(final ConfigurationSetting setting, final T dflt)
+	{
+		final T result = get(setting);
 
-        if (result == null) {
-            return dflt;
-        }
+		if (result == null)
+		{
+			return dflt;
+		}
 
-        return result;
-    }
+		return result;
+	}
 }

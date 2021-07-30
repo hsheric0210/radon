@@ -18,16 +18,19 @@
 
 package me.itzsomebody.radon.exceptions;
 
-public class RadonException extends RuntimeException {
-    public RadonException() {
-        super();
-    }
+public class RadonException extends RuntimeException
+{
+	public RadonException()
+	{
+	}
 
-    public RadonException(String msg) {
-        super(msg);
-    }
+	public RadonException(final String msg)
+	{
+		super(msg);
+	}
 
-    public RadonException(Throwable t) {
-        super(t);
-    }
+	public RadonException(final Throwable t)
+	{
+		super(t);
+	}
 }

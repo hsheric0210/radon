@@ -18,13 +18,6 @@
 
 package me.itzsomebody.radon.config;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Stream;
-import java.util.zip.Deflater;
 import me.itzsomebody.radon.dictionaries.Dictionary;
 import me.itzsomebody.radon.dictionaries.DictionaryFactory;
 import me.itzsomebody.radon.exceptions.RadonException;
@@ -33,197 +26,229 @@ import me.itzsomebody.radon.exclusions.ExclusionManager;
 import me.itzsomebody.radon.transformers.Transformer;
 import me.itzsomebody.radon.utils.FileUtils;
 
-import static me.itzsomebody.radon.config.ConfigurationSetting.COMPRESSION_LEVEL;
-import static me.itzsomebody.radon.config.ConfigurationSetting.CORRUPT_CRC;
-import static me.itzsomebody.radon.config.ConfigurationSetting.DICTIONARY;
-import static me.itzsomebody.radon.config.ConfigurationSetting.EXCLUSIONS;
-import static me.itzsomebody.radon.config.ConfigurationSetting.INPUT;
-import static me.itzsomebody.radon.config.ConfigurationSetting.LIBRARIES;
-import static me.itzsomebody.radon.config.ConfigurationSetting.OUTPUT;
-import static me.itzsomebody.radon.config.ConfigurationSetting.RANDOMIZED_STRING_LENGTH;
-import static me.itzsomebody.radon.config.ConfigurationSetting.TRASH_CLASSES;
-import static me.itzsomebody.radon.config.ConfigurationSetting.VERIFY;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
+import java.util.zip.Deflater;
 
-public final class ObfuscationConfiguration {
-    public static ObfuscationConfiguration from(Configuration config) {
-        ObfuscationConfiguration obfConfig = new ObfuscationConfiguration();
+import static me.itzsomebody.radon.config.ConfigurationSetting.*;
 
-        // INPUT / OUTPUT
+public final class ObfuscationConfiguration
+{
+	public static ObfuscationConfiguration from(final Configuration config)
+	{
+		final ObfuscationConfiguration obfConfig = new ObfuscationConfiguration();
 
-        if (!config.contains(INPUT)) {
-            throw new RadonException("No input file was specified in the config");
-        }
-        if (!config.contains(OUTPUT)) {
-            throw new RadonException("No output file was specified in the config");
-        }
+		// INPUT / OUTPUT
 
-        obfConfig.setInput(new File((String) config.get(INPUT)));
-        obfConfig.setOutput(new File((String) config.get(OUTPUT)));
+		if (!config.contains(INPUT))
+		{
+			throw new RadonException("No input file was specified in the config");
+		}
+		if (!config.contains(OUTPUT))
+		{
+			throw new RadonException("No output file was specified in the config");
+		}
 
-        // LIBRARIES
+		obfConfig.setInput(new File((String) config.get(INPUT)));
+		obfConfig.setOutput(new File((String) config.get(OUTPUT)));
 
-        List<File> libraries = new ArrayList<>();
-        List<String> libPaths = config.getOrDefault(LIBRARIES, Collections.emptyList());
-        libPaths.forEach(s -> {
-            File f = new File(s);
+		// LIBRARIES
 
-            if (f.isDirectory()) {
-                FileUtils.getSubDirectoryFiles(f, libraries);
-            } else {
-                libraries.add(f);
-            }
-        });
-        obfConfig.setLibraries(libraries);
+		final List<File> libraries = new ArrayList<>();
+		final List<String> libPaths = config.getOrDefault(LIBRARIES, Collections.emptyList());
+		libPaths.forEach(s ->
+		{
+			final File f = new File(s);
 
-        // EXCLUSIONS
+			if (f.isDirectory())
+			{
+				FileUtils.getSubDirectoryFiles(f, libraries);
+			} else
+			{
+				libraries.add(f);
+			}
+		});
+		obfConfig.setLibraries(libraries);
 
-        ExclusionManager manager = new ExclusionManager();
-        List<String> exclusionPatterns = config.getOrDefault(EXCLUSIONS, Collections.emptyList());
-        exclusionPatterns.forEach(s -> manager.addExclusion(new Exclusion(s)));
-        obfConfig.setExclusionManager(manager);
+		// EXCLUSIONS
 
-        // DICTIONARY
+		final ExclusionManager manager = new ExclusionManager();
+		final List<String> exclusionPatterns = config.getOrDefault(EXCLUSIONS, Collections.emptyList());
+		exclusionPatterns.forEach(s -> manager.addExclusion(new Exclusion(s)));
+		obfConfig.setExclusionManager(manager);
 
-        try
-        {
-            String dictionaryName = config.getOrDefault(DICTIONARY, "alphanumeric");
-            obfConfig.setDictionary(DictionaryFactory.get(dictionaryName));
-        }
-        catch(ClassCastException e)
-        {
-            // String array charset
-            List<String> dictionaryCharset = config.getOrDefault(DICTIONARY, Collections.emptyList());
-            obfConfig.setDictionary(DictionaryFactory.getCustom(dictionaryCharset));
-        }
+		// DICTIONARY
 
-        // MISC.
+		try
+		{
+			final String dictionaryName = config.getOrDefault(DICTIONARY, "alphanumeric");
+			obfConfig.setDictionary(DictionaryFactory.get(dictionaryName));
+		}
+		catch (final ClassCastException e)
+		{
+			// String array charset
+			final List<String> dictionaryCharset = config.getOrDefault(DICTIONARY, Collections.emptyList());
+			obfConfig.setDictionary(DictionaryFactory.getCustom(dictionaryCharset));
+		}
 
-        obfConfig.setRandomizedStringLength(config.getOrDefault(RANDOMIZED_STRING_LENGTH, 1));
-        obfConfig.setCompressionLevel(config.getOrDefault(COMPRESSION_LEVEL, Deflater.BEST_COMPRESSION));
-        obfConfig.setVerify(config.getOrDefault(VERIFY, false));
-        obfConfig.setCorruptCrc(config.getOrDefault(CORRUPT_CRC, false));
-        obfConfig.setnTrashClasses(config.getOrDefault(TRASH_CLASSES, 0));
+		// MISC.
 
-        // TRANSFORMERS
+		obfConfig.setRandomizedStringLength(config.getOrDefault(RANDOMIZED_STRING_LENGTH, 1));
+		obfConfig.setCompressionLevel(config.getOrDefault(COMPRESSION_LEVEL, Deflater.BEST_COMPRESSION));
+		obfConfig.setVerify(config.getOrDefault(VERIFY, false));
+		obfConfig.setCorruptCrc(config.getOrDefault(CORRUPT_CRC, false));
+		obfConfig.setnTrashClasses(config.getOrDefault(TRASH_CLASSES, 0));
 
-        List<Transformer> transformers = new ArrayList<>();
-        Stream.of(ConfigurationSetting.values()).filter(setting -> setting.getTransformer() != null).forEach(setting -> {
-            if (config.contains(setting)) {
-                Transformer transformer = setting.getTransformer();
+		// TRANSFORMERS
 
-                if (config.get(setting) instanceof Map) {
-                    transformer.setConfiguration(config);
-                    transformers.add(transformer);
-                } else if (config.get(setting) instanceof Boolean && (boolean) config.get(setting)) {
-                    transformers.add(transformer);
-                }
-            }
-        });
+		final List<Transformer> transformers = new ArrayList<>();
+		Stream.of(values()).filter(setting -> setting.getTransformer() != null).forEach(setting ->
+		{
+			if (config.contains(setting))
+			{
+				final Transformer transformer = setting.getTransformer();
 
-        obfConfig.setTransformers(transformers);
+				if (config.get(setting) instanceof Map)
+				{
+					transformer.setConfiguration(config);
+					transformers.add(transformer);
+				} else if (config.get(setting) instanceof Boolean && (boolean) config.get(setting))
+				{
+					transformers.add(transformer);
+				}
+			}
+		});
 
-        return obfConfig;
-    }
+		obfConfig.setTransformers(transformers);
 
-    private File input;
-    private File output;
-    private List<File> libraries;
-    private ExclusionManager exclusionManager;
+		return obfConfig;
+	}
 
-    private Dictionary dictionary;
-    private int randomizedStringLength;
-    private int compressionLevel;
-    private boolean verify;
-    private boolean corruptCrc;
-    private int nTrashClasses;
+	private File input;
+	private File output;
+	private List<File> libraries;
+	private ExclusionManager exclusionManager;
 
-    private List<Transformer> transformers;
+	private Dictionary dictionary;
+	private int randomizedStringLength;
+	private int compressionLevel;
+	private boolean verify;
+	private boolean corruptCrc;
+	private int nTrashClasses;
 
-    public File getInput() {
-        return input;
-    }
+	private List<Transformer> transformers;
 
-    public void setInput(File input) {
-        this.input = input;
-    }
+	public File getInput()
+	{
+		return input;
+	}
 
-    public File getOutput() {
-        return output;
-    }
+	public void setInput(final File input)
+	{
+		this.input = input;
+	}
 
-    public void setOutput(File output) {
-        this.output = output;
-    }
+	public File getOutput()
+	{
+		return output;
+	}
 
-    public List<File> getLibraries() {
-        return libraries;
-    }
+	public void setOutput(final File output)
+	{
+		this.output = output;
+	}
 
-    public void setLibraries(List<File> libraries) {
-        this.libraries = libraries;
-    }
+	public List<File> getLibraries()
+	{
+		return libraries;
+	}
 
-    public ExclusionManager getExclusionManager() {
-        return exclusionManager;
-    }
+	public void setLibraries(final List<File> libraries)
+	{
+		this.libraries = libraries;
+	}
 
-    public void setExclusionManager(ExclusionManager exclusionManager) {
-        this.exclusionManager = exclusionManager;
-    }
+	public ExclusionManager getExclusionManager()
+	{
+		return exclusionManager;
+	}
 
-    public Dictionary getDictionary() {
-        return dictionary;
-    }
+	public void setExclusionManager(final ExclusionManager exclusionManager)
+	{
+		this.exclusionManager = exclusionManager;
+	}
 
-    public void setDictionary(Dictionary dictionary) {
-        this.dictionary = dictionary;
-    }
+	public Dictionary getDictionary()
+	{
+		return dictionary;
+	}
 
-    public int getRandomizedStringLength() {
-        return randomizedStringLength;
-    }
+	public void setDictionary(final Dictionary dictionary)
+	{
+		this.dictionary = dictionary;
+	}
 
-    public void setRandomizedStringLength(int randomizedStringLength) {
-        this.randomizedStringLength = randomizedStringLength;
-    }
+	public int getRandomizedStringLength()
+	{
+		return randomizedStringLength;
+	}
 
-    public int getCompressionLevel() {
-        return compressionLevel;
-    }
+	public void setRandomizedStringLength(final int randomizedStringLength)
+	{
+		this.randomizedStringLength = randomizedStringLength;
+	}
 
-    public void setCompressionLevel(int compressionLevel) {
-        this.compressionLevel = compressionLevel;
-    }
+	public int getCompressionLevel()
+	{
+		return compressionLevel;
+	}
 
-    public boolean isVerify() {
-        return verify;
-    }
+	public void setCompressionLevel(final int compressionLevel)
+	{
+		this.compressionLevel = compressionLevel;
+	}
 
-    public void setVerify(boolean verify) {
-        this.verify = verify;
-    }
+	public boolean isVerify()
+	{
+		return verify;
+	}
 
-    public boolean isCorruptCrc() {
-        return corruptCrc;
-    }
+	public void setVerify(final boolean verify)
+	{
+		this.verify = verify;
+	}
 
-    public void setCorruptCrc(boolean corruptCrc) {
-        this.corruptCrc = corruptCrc;
-    }
+	public boolean isCorruptCrc()
+	{
+		return corruptCrc;
+	}
 
-    public int getnTrashClasses() {
-        return nTrashClasses;
-    }
+	public void setCorruptCrc(final boolean corruptCrc)
+	{
+		this.corruptCrc = corruptCrc;
+	}
 
-    public void setnTrashClasses(int nTrashClasses) {
-        this.nTrashClasses = nTrashClasses;
-    }
+	public int getnTrashClasses()
+	{
+		return nTrashClasses;
+	}
 
-    public List<Transformer> getTransformers() {
-        return transformers;
-    }
+	public void setnTrashClasses(final int nTrashClasses)
+	{
+		this.nTrashClasses = nTrashClasses;
+	}
 
-    public void setTransformers(List<Transformer> transformers) {
-        this.transformers = transformers;
-    }
+	public List<Transformer> getTransformers()
+	{
+		return transformers;
+	}
+
+	public void setTransformers(final List<Transformer> transformers)
+	{
+		this.transformers = transformers;
+	}
 }

@@ -18,12 +18,13 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.references;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Stream;
 import me.itzsomebody.radon.config.Configuration;
 import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.transformers.Transformer;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
 
 import static me.itzsomebody.radon.config.ConfigurationSetting.REFERENCE_OBFUSCATION;
 
@@ -32,37 +33,45 @@ import static me.itzsomebody.radon.config.ConfigurationSetting.REFERENCE_OBFUSCA
  *
  * @author ItzSomebody
  */
-public class ReferenceObfuscation extends Transformer {
-    private final List<ReferenceObfuscation> referenceObfuscators = new ArrayList<>();
+public class ReferenceObfuscation extends Transformer
+{
+	private final List<ReferenceObfuscation> referenceObfuscators = new ArrayList<>();
 
-    @Override
-    public void transform() {
-        referenceObfuscators.forEach(tranformer -> {
-            tranformer.init(radon);
-            tranformer.transform();
-        });
-    }
+	@Override
+	public void transform()
+	{
+		referenceObfuscators.forEach(tranformer ->
+		{
+			tranformer.init(radon);
+			tranformer.transform();
+		});
+	}
 
-    @Override
-    public String getName() {
-        return "Reference obfuscation";
-    }
+	@Override
+	public String getName()
+	{
+		return "Reference obfuscation";
+	}
 
-    @Override
-    public ExclusionType getExclusionType() {
-        return ExclusionType.REFERENCE_OBFUSCATION;
-    }
+	@Override
+	public ExclusionType getExclusionType()
+	{
+		return ExclusionType.REFERENCE_OBFUSCATION;
+	}
 
-    @Override
-    public void setConfiguration(Configuration config) {
-        Stream.of(ReferenceObfuscationSetting.values()).filter(setting -> {
-            String path = REFERENCE_OBFUSCATION + "." + setting.getName();
+	@Override
+	public void setConfiguration(final Configuration config)
+	{
+		Stream.of(ReferenceObfuscationSetting.values()).filter(setting ->
+		{
+			final String path = REFERENCE_OBFUSCATION + "." + setting.getName();
 
-            if (config.contains(path)) {
-                return config.get(path);
-            }
+			if (config.contains(path))
+			{
+				return config.get(path);
+			}
 
-            return false;
-        }).forEach(setting -> referenceObfuscators.add(setting.getReferenceObfuscation()));
-    }
+			return false;
+		}).forEach(setting -> referenceObfuscators.add(setting.getReferenceObfuscation()));
+	}
 }

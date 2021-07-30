@@ -18,37 +18,43 @@
 
 package me.itzsomebody.radon.transformers.shrinkers;
 
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
 import me.itzsomebody.radon.Main;
 import org.objectweb.asm.Attribute;
 import org.objectweb.asm.tree.ClassNode;
+
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 /**
  * Removes all unknown attributes from the classes.
  *
  * @author ItzSomebody
  */
-public class UnknownAttributesRemover extends Shrinker {
-    @Override
-    public void transform() {
-        AtomicInteger counter = new AtomicInteger();
+public class UnknownAttributesRemover extends Shrinker
+{
+	@Override
+	public void transform()
+	{
+		final AtomicInteger counter = new AtomicInteger();
 
-        getClassWrappers().stream().filter(classWrapper -> excluded(classWrapper)
-                && classWrapper.getClassNode().attrs != null).forEach(classWrapper -> {
-            ClassNode classNode = classWrapper.getClassNode();
+		getClassWrappers().stream().filter(classWrapper -> excluded(classWrapper)
+				&& classWrapper.getClassNode().attrs != null).forEach(classWrapper ->
+		{
+			final ClassNode classNode = classWrapper.getClassNode();
 
-            Stream.of(classNode.attrs.toArray(new Attribute[0])).filter(Attribute::isUnknown).forEach(attr -> {
-                classNode.attrs.remove(attr);
-                counter.incrementAndGet();
-            });
-        });
+			Stream.of(classNode.attrs.toArray(new Attribute[0])).filter(Attribute::isUnknown).forEach(attr ->
+			{
+				classNode.attrs.remove(attr);
+				counter.incrementAndGet();
+			});
+		});
 
-        Main.info(String.format("Removed %d attributes.", counter.get()));
-    }
+		Main.info(String.format("Removed %d attributes.", counter.get()));
+	}
 
-    @Override
-    public String getName() {
-        return "Attributes Remover";
-    }
+	@Override
+	public String getName()
+	{
+		return "Attributes Remover";
+	}
 }

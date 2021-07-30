@@ -18,32 +18,37 @@
 
 package me.itzsomebody.radon.transformers.shrinkers;
 
-import java.util.concurrent.atomic.AtomicInteger;
 import me.itzsomebody.radon.Main;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Strips out invisible parameter annotations.
  *
  * @author ItzSomebody
  */
-public class InvisibleParameterAnnotationsRemover extends Shrinker {
-    @Override
-    public void transform() {
-        AtomicInteger counter = new AtomicInteger();
+public class InvisibleParameterAnnotationsRemover extends Shrinker
+{
+	@Override
+	public void transform()
+	{
+		final AtomicInteger counter = new AtomicInteger();
 
-        getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper ->
-                classWrapper.getMethods().stream().filter(methodWrapper -> !excluded(methodWrapper)
-                        && methodWrapper.getMethodNode().invisibleParameterAnnotations != null).forEach(methodWrapper -> {
+		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper ->
+				classWrapper.getMethods().stream().filter(methodWrapper -> !excluded(methodWrapper)
+						&& methodWrapper.getMethodNode().invisibleParameterAnnotations != null).forEach(methodWrapper ->
+				{
 
-                    counter.addAndGet(methodWrapper.getMethodNode().invisibleAnnotableParameterCount);
-                    methodWrapper.getMethodNode().invisibleParameterAnnotations = null;
-                }));
+					counter.addAndGet(methodWrapper.getMethodNode().invisibleAnnotableParameterCount);
+					methodWrapper.getMethodNode().invisibleParameterAnnotations = null;
+				}));
 
-        Main.info(String.format("Removed %d invisible parameter annotations.", counter.get()));
-    }
+		Main.info(String.format("Removed %d invisible parameter annotations.", counter.get()));
+	}
 
-    @Override
-    public String getName() {
-        return "Invisible Parameter Annotations Remover";
-    }
+	@Override
+	public String getName()
+	{
+		return "Invisible Parameter Annotations Remover";
+	}
 }

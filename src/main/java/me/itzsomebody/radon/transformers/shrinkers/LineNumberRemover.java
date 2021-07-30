@@ -18,40 +18,45 @@
 
 package me.itzsomebody.radon.transformers.shrinkers;
 
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
 import me.itzsomebody.radon.Main;
 import org.objectweb.asm.tree.LineNumberNode;
 import org.objectweb.asm.tree.MethodNode;
+
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 /**
  * Removes line numbers.
  *
  * @author ItzSomebody.
  */
-public class LineNumberRemover extends Shrinker {
-    @Override
-    public void transform() {
-        AtomicInteger counter = new AtomicInteger();
+public class LineNumberRemover extends Shrinker
+{
+	@Override
+	public void transform()
+	{
+		final AtomicInteger counter = new AtomicInteger();
 
-        getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper ->
-                classWrapper.getMethods().stream().filter(methodWrapper -> !excluded(methodWrapper)
-                        && methodWrapper.hasInstructions()).forEach(methodWrapper -> {
-                    MethodNode methodNode = methodWrapper.getMethodNode();
+		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper ->
+				classWrapper.getMethods().stream().filter(methodWrapper -> !excluded(methodWrapper)
+						&& methodWrapper.hasInstructions()).forEach(methodWrapper ->
+				{
+					final MethodNode methodNode = methodWrapper.getMethodNode();
 
-                    Stream.of(methodNode.instructions.toArray()).filter(insn -> insn instanceof LineNumberNode)
-                            .forEach(insn -> {
-                                methodNode.instructions.remove(insn);
-                                counter.incrementAndGet();
-                            });
-                }));
+					Stream.of(methodNode.instructions.toArray()).filter(insn -> insn instanceof LineNumberNode)
+							.forEach(insn ->
+							{
+								methodNode.instructions.remove(insn);
+								counter.incrementAndGet();
+							});
+				}));
 
+		Main.info(String.format("Removed %d line numbers.", counter.get()));
+	}
 
-        Main.info(String.format("Removed %d line numbers.", counter.get()));
-    }
-
-    @Override
-    public String getName() {
-        return "Line numbers";
-    }
+	@Override
+	public String getName()
+	{
+		return "Line numbers";
+	}
 }

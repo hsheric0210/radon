@@ -18,103 +18,105 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.flow;
 
-import java.util.ArrayList;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import me.itzsomebody.radon.Main;
 import me.itzsomebody.radon.asm.StackHeightZeroFinder;
 import me.itzsomebody.radon.exceptions.RadonException;
 import me.itzsomebody.radon.exceptions.StackEmulationException;
 import me.itzsomebody.radon.utils.ASMUtils;
 import me.itzsomebody.radon.utils.RandomUtils;
-import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.FieldInsnNode;
-import org.objectweb.asm.tree.FieldNode;
-import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.JumpInsnNode;
-import org.objectweb.asm.tree.LabelNode;
-import org.objectweb.asm.tree.TableSwitchInsnNode;
-import org.objectweb.asm.tree.VarInsnNode;
+import org.objectweb.asm.tree.*;
 
-public class BogusSwitchJumpInserter extends FlowObfuscation {
-    private static final int PRED_ACCESS = ACC_PUBLIC | ACC_STATIC | ACC_FINAL;
+import java.util.ArrayList;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
-    @Override
-    public void transform() {
-        AtomicInteger counter = new AtomicInteger();
+public class BogusSwitchJumpInserter extends FlowObfuscation
+{
+	private static final int PRED_ACCESS = ACC_PUBLIC | ACC_STATIC | ACC_FINAL;
 
-        getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper -> {
-            AtomicBoolean shouldAdd = new AtomicBoolean();
-            FieldNode predicate = new FieldNode(PRED_ACCESS, uniqueRandomString(), "I", null, null);
+	@Override
+	public void transform()
+	{
+		final AtomicInteger counter = new AtomicInteger();
 
-            classWrapper.getMethods().stream().filter(mw -> !excluded(mw) && mw.hasInstructions()).forEach(mw -> {
-                InsnList insns = mw.getInstructions();
+		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper ->
+		{
+			final AtomicBoolean shouldAdd = new AtomicBoolean();
+			final FieldNode predicate = new FieldNode(PRED_ACCESS, uniqueRandomString(), "I", null, null);
 
-                int leeway = mw.getLeewaySize();
-                int varIndex = mw.getMaxLocals();
-                mw.getMethodNode().maxLocals++; // Prevents breaking of other transformers which rely on this field.
+			classWrapper.getMethods().stream().filter(mw -> !excluded(mw) && mw.hasInstructions()).forEach(mw ->
+			{
+				final InsnList insns = mw.getInstructions();
 
-                StackHeightZeroFinder shzf = new StackHeightZeroFinder(mw.getMethodNode(), insns.getLast());
-                try {
-                    shzf.execute(false);
-                } catch (StackEmulationException e) {
-                    e.printStackTrace();
-                    throw new RadonException(String.format("Error happened while trying to emulate the stack of %s.%s%s",
-                            classWrapper.getName(), mw.getName(), mw.getDescription()));
-                }
+				final int leeway = mw.getLeewaySize();
+				final int varIndex = mw.getMaxLocals();
+				mw.getMethodNode().maxLocals++; // Prevents breaking of other transformers which rely on this field.
 
-                Set<AbstractInsnNode> check = shzf.getEmptyAt();
-                ArrayList<AbstractInsnNode> emptyAt = new ArrayList<>(check);
+				final StackHeightZeroFinder shzf = new StackHeightZeroFinder(mw.getMethodNode(), insns.getLast());
+				try
+				{
+					shzf.execute(false);
+				}
+				catch (final StackEmulationException e)
+				{
+					e.printStackTrace();
+					throw new RadonException(String.format("Error happened while trying to emulate the stack of %s.%s%s",
+							classWrapper.getName(), mw.getName(), mw.getDescription()));
+				}
 
-                if (emptyAt.size() <= 5 || leeway <= 30000)
-                    return;
+				final Set<AbstractInsnNode> check = shzf.getEmptyAt();
+				final ArrayList<AbstractInsnNode> emptyAt = new ArrayList<>(check);
 
-                int nTargets = emptyAt.size() / 2;
+				if (emptyAt.size() <= 5 || leeway <= 30000)
+					return;
 
-                ArrayList<LabelNode> targets = new ArrayList<>();
-                for (int i = 0; i < nTargets; i++)
-                    targets.add(new LabelNode());
+				final int nTargets = emptyAt.size() / 2;
 
-                LabelNode back = new LabelNode();
-                LabelNode dflt = new LabelNode();
-                TableSwitchInsnNode tsin = new TableSwitchInsnNode(0, targets.size() - 1, dflt, targets.toArray(new LabelNode[0]));
+				final ArrayList<LabelNode> targets = new ArrayList<>();
+				for (int i = 0; i < nTargets; i++)
+					targets.add(new LabelNode());
 
-                InsnList block = new InsnList();
-                block.add(new VarInsnNode(ILOAD, varIndex));
-                block.add(new JumpInsnNode(IFEQ, dflt));
-                block.add(back);
-                block.add(new VarInsnNode(ILOAD, varIndex));
-                block.add(tsin);
-                block.add(dflt);
+				final LabelNode back = new LabelNode();
+				final LabelNode dflt = new LabelNode();
+				final TableSwitchInsnNode tsin = new TableSwitchInsnNode(0, targets.size() - 1, dflt, targets.toArray(new LabelNode[0]));
 
-                AbstractInsnNode switchTarget = emptyAt.get(RandomUtils.getRandomInt(emptyAt.size()));
+				final InsnList block = new InsnList();
+				block.add(new VarInsnNode(ILOAD, varIndex));
+				block.add(new JumpInsnNode(IFEQ, dflt));
+				block.add(back);
+				block.add(new VarInsnNode(ILOAD, varIndex));
+				block.add(tsin);
+				block.add(dflt);
 
-                insns.insertBefore(switchTarget, block);
+				final AbstractInsnNode switchTarget = emptyAt.get(RandomUtils.getRandomInt(emptyAt.size()));
 
-                targets.forEach(target -> {
-                    AbstractInsnNode here = insns.getLast();
+				insns.insertBefore(switchTarget, block);
 
-                    InsnList landing = new InsnList();
-                    landing.add(target);
-                    landing.add(ASMUtils.getNumberInsn(RandomUtils.getRandomInt(nTargets)));
-                    landing.add(new VarInsnNode(ISTORE, varIndex));
-                    landing.add(new JumpInsnNode(GOTO, targets.get(RandomUtils.getRandomInt(targets.size()))));
+				targets.forEach(target ->
+				{
+					final AbstractInsnNode here = insns.getLast();
 
-                    insns.insert(here, landing);
-                });
+					final InsnList landing = new InsnList();
+					landing.add(target);
+					landing.add(ASMUtils.getNumberInsn(RandomUtils.getRandomInt(nTargets)));
+					landing.add(new VarInsnNode(ISTORE, varIndex));
+					landing.add(new JumpInsnNode(GOTO, targets.get(RandomUtils.getRandomInt(targets.size()))));
 
-                insns.insert(new VarInsnNode(ISTORE, varIndex));
-                insns.insert(new FieldInsnNode(GETSTATIC, classWrapper.getName(), predicate.name, "I"));
+					insns.insert(here, landing);
+				});
 
-                counter.addAndGet(targets.size());
-                shouldAdd.set(true);
-            });
+				insns.insert(new VarInsnNode(ISTORE, varIndex));
+				insns.insert(new FieldInsnNode(GETSTATIC, classWrapper.getName(), predicate.name, "I"));
 
-            if (shouldAdd.get())
-                classWrapper.addField(predicate);
-        });
+				counter.addAndGet(targets.size());
+				shouldAdd.set(true);
+			});
 
-        Main.info("Inserted " + counter.get() + " bogus switch jumps");
-    }
+			if (shouldAdd.get())
+				classWrapper.addField(predicate);
+		});
+
+		Main.info("Inserted " + counter.get() + " bogus switch jumps");
+	}
 }

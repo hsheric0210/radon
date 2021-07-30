@@ -18,33 +18,38 @@
 
 package me.itzsomebody.radon.transformers.shrinkers;
 
-import java.util.concurrent.atomic.AtomicInteger;
 import me.itzsomebody.radon.Main;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Removes outer methods.
  *
  * @author ItzSomebody
  */
-public class OuterMethodRemover extends Shrinker {
-    @Override
-    public void transform() {
-        AtomicInteger counter = new AtomicInteger();
+public class OuterMethodRemover extends Shrinker
+{
+	@Override
+	public void transform()
+	{
+		final AtomicInteger counter = new AtomicInteger();
 
-        getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)
-                && classWrapper.getClassNode().outerClass != null).forEach(classWrapper -> {
-            classWrapper.getClassNode().outerClass = null;
-            classWrapper.getClassNode().outerMethod = null;
-            classWrapper.getClassNode().outerMethodDesc = null;
+		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)
+				&& classWrapper.getClassNode().outerClass != null).forEach(classWrapper ->
+		{
+			classWrapper.getClassNode().outerClass = null;
+			classWrapper.getClassNode().outerMethod = null;
+			classWrapper.getClassNode().outerMethodDesc = null;
 
-            counter.incrementAndGet();
-        });
+			counter.incrementAndGet();
+		});
 
-        Main.info(String.format("Removed %d outer methods.", counter.get()));
-    }
+		Main.info(String.format("Removed %d outer methods.", counter.get()));
+	}
 
-    @Override
-    public String getName() {
-        return "Outer Method Remover";
-    }
+	@Override
+	public String getName()
+	{
+		return "Outer Method Remover";
+	}
 }

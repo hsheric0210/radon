@@ -21,58 +21,63 @@ package me.itzsomebody.vm;
 import java.io.DataInputStream;
 import java.util.zip.GZIPInputStream;
 
-public class Stub {
-    public Instruction[][] instructions;
+public class Stub
+{
+	public Instruction[][] instructions;
 
-    public Stub() throws Exception {
-        GZIPInputStream gzip = new GZIPInputStream(Stub.class.getResourceAsStream("/radon.vm"));
-        DataInputStream din = new DataInputStream(gzip);
+	public Stub() throws Exception
+	{
+		GZIPInputStream gzip = new GZIPInputStream(Stub.class.getResourceAsStream("/radon.vm"));
+		DataInputStream din = new DataInputStream(gzip);
 
-        int nFunctions = din.readShort();
-        instructions = new Instruction[nFunctions][];
+		int nFunctions = din.readShort();
+		instructions = new Instruction[nFunctions][];
 
-        for (int i = 0; i < nFunctions; i++) {
-            int nInstructions = din.readInt();
-            Instruction[] funcInstructions = new Instruction[nInstructions];
+		for (int i = 0; i < nFunctions; i++)
+		{
+			int nInstructions = din.readInt();
+			Instruction[] funcInstructions = new Instruction[nInstructions];
 
-            for (int j = 0; j < nInstructions; j++) {
-                int opcode = din.readByte();
-                int nOperands = din.readByte();
+			for (int j = 0; j < nInstructions; j++)
+			{
+				int opcode = din.readByte();
+				int nOperands = din.readByte();
 
-                Object[] operands = new Object[nOperands];
+				Object[] operands = new Object[nOperands];
 
-                for (int k = 0; k < nOperands; k++) {
-                    int operandType = din.readByte();
+				for (int k = 0; k < nOperands; k++)
+				{
+					int operandType = din.readByte();
 
-                    switch (operandType) {
-                        case 0: // INT
-                            operands[k] = din.readInt();
-                            break;
-                        case 1: // LONG
-                            operands[k] = din.readLong();
-                            break;
-                        case 2: // FLOAT
-                            operands[k] = Float.intBitsToFloat(din.readInt());
-                            break;
-                        case 3: // DOUBLE
-                            operands[k] = Double.longBitsToDouble(din.readLong());
-                            break;
-                        case 4: // STRING
-                            operands[k] = din.readUTF();
-                            break;
-                        case 5: // CLASS
-                            operands[k] = VM.getClazz(din.readUTF());
-                            break;
-                        default:
-                            throw new VMException();
+					switch (operandType)
+					{
+						case 0: // INT
+							operands[k] = din.readInt();
+							break;
+						case 1: // LONG
+							operands[k] = din.readLong();
+							break;
+						case 2: // FLOAT
+							operands[k] = Float.intBitsToFloat(din.readInt());
+							break;
+						case 3: // DOUBLE
+							operands[k] = Double.longBitsToDouble(din.readLong());
+							break;
+						case 4: // STRING
+							operands[k] = din.readUTF();
+							break;
+						case 5: // CLASS
+							operands[k] = VM.getClazz(din.readUTF());
+							break;
+						default:
+							throw new VMException();
+					}
+				}
 
-                    }
-                }
+				funcInstructions[j] = new Instruction(opcode, operands);
+			}
 
-                funcInstructions[j] = new Instruction(opcode, operands);
-            }
-
-            instructions[i] = funcInstructions;
-        }
-    }
+			instructions[i] = funcInstructions;
+		}
+	}
 }

@@ -18,21 +18,25 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.references;
 
-public enum ReferenceObfuscationSetting {
-    HIDE_WITH_INDY(new InvokedynamicTransformer()),
-    HIDE_WITH_FAST_INDY(new FastInvokedynamicTransformer());
+public enum ReferenceObfuscationSetting
+{
+	HIDE_WITH_INDY(new InvokedynamicTransformer()),
+	HIDE_WITH_FAST_INDY(new FastInvokedynamicTransformer());
 
-    private ReferenceObfuscation referenceObfuscation;
+	private final ReferenceObfuscation referenceObfuscation;
 
-    ReferenceObfuscationSetting(ReferenceObfuscation referenceObfuscation) {
-        this.referenceObfuscation = referenceObfuscation;
-    }
+	ReferenceObfuscationSetting(final ReferenceObfuscation referenceObfuscation)
+	{
+		this.referenceObfuscation = referenceObfuscation;
+	}
 
-    public ReferenceObfuscation getReferenceObfuscation() {
-        return referenceObfuscation;
-    }
+	public ReferenceObfuscation getReferenceObfuscation()
+	{
+		return referenceObfuscation;
+	}
 
-    public String getName() {
-        return name().toLowerCase();
-    }
+	public String getName()
+	{
+		return name().toLowerCase();
+	}
 }

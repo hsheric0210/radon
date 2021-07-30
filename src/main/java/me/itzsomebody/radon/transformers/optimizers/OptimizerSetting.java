@@ -18,22 +18,26 @@
 
 package me.itzsomebody.radon.transformers.optimizers;
 
-public enum OptimizerSetting {
-    INLINE_GOTO_GOTO(new GotoGotoInliner()),
-    INLINE_GOTO_RETURN(new GotoReturnInliner()),
-    REMOVE_NOPS(new NopRemover());
+public enum OptimizerSetting
+{
+	INLINE_GOTO_GOTO(new GotoGotoInliner()),
+	INLINE_GOTO_RETURN(new GotoReturnInliner()),
+	REMOVE_NOPS(new NopRemover());
 
-    private final Optimizer optimizer;
+	private final Optimizer optimizer;
 
-    OptimizerSetting(Optimizer optimizer) {
-        this.optimizer = optimizer;
-    }
+	OptimizerSetting(final Optimizer optimizer)
+	{
+		this.optimizer = optimizer;
+	}
 
-    public Optimizer getOptimizer() {
-        return optimizer;
-    }
+	public Optimizer getOptimizer()
+	{
+		return optimizer;
+	}
 
-    public String getName() {
-        return name().toLowerCase();
-    }
+	public String getName()
+	{
+		return name().toLowerCase();
+	}
 }

@@ -18,18 +18,15 @@
 
 package me.itzsomebody.radon.transformers.obfuscators;
 
-import java.lang.reflect.Modifier;
-import java.util.concurrent.atomic.AtomicInteger;
 import me.itzsomebody.radon.Main;
 import me.itzsomebody.radon.config.Configuration;
 import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.transformers.Transformer;
 import me.itzsomebody.radon.utils.ASMUtils;
-import org.objectweb.asm.tree.FieldInsnNode;
-import org.objectweb.asm.tree.FieldNode;
-import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.LdcInsnNode;
-import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.*;
+
+import java.lang.reflect.Modifier;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Moves initialization of all static fields into {@code <clinit>} of the class
@@ -37,61 +34,68 @@ import org.objectweb.asm.tree.MethodNode;
  * @author ItzSomebody
  * @author superblaubeere27
  */
-public class StaticInitialization extends Transformer {
-    @Override
-    public void transform() {
-        AtomicInteger counter = new AtomicInteger();
+public class StaticInitialization extends Transformer
+{
+	@Override
+	public void transform()
+	{
+		final AtomicInteger counter = new AtomicInteger();
 
-        getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper -> {
-            MethodNode clinit = classWrapper.getOrCreateClinit();
+		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper ->
+		{
+			final MethodNode clinit = classWrapper.getOrCreateClinit();
 
-            classWrapper.getFields().stream().filter(fieldWrapper -> !excluded(fieldWrapper)
-                    && Modifier.isStatic(fieldWrapper.getFieldNode().access)
-                    && fieldWrapper.getFieldNode().value != null).forEach(fieldWrapper -> {
-                FieldNode fieldNode = fieldWrapper.getFieldNode();
-                Object val = fieldNode.value;
+			classWrapper.getFields().stream().filter(fieldWrapper -> !excluded(fieldWrapper)
+					&& Modifier.isStatic(fieldWrapper.getFieldNode().access)
+					&& fieldWrapper.getFieldNode().value != null).forEach(fieldWrapper ->
+			{
+				final FieldNode fieldNode = fieldWrapper.getFieldNode();
+				final Object val = fieldNode.value;
 
-                exit:
-                {
-                    InsnList toAdd = new InsnList();
+				exit:
+				{
+					final InsnList toAdd = new InsnList();
 
-                    if (val instanceof String)
-                        toAdd.insert(new LdcInsnNode(val));
-                    else if (val instanceof Integer)
-                        toAdd.insert(ASMUtils.getNumberInsn((Integer) val));
-                    else if (val instanceof Long)
-                        toAdd.insert(ASMUtils.getNumberInsn((Long) val));
-                    else if (val instanceof Float)
-                        toAdd.insert(ASMUtils.getNumberInsn((Float) val));
-                    else if (val instanceof Double)
-                        toAdd.insert(ASMUtils.getNumberInsn((Double) val));
-                    else
-                        break exit;
+					if (val instanceof String)
+						toAdd.insert(new LdcInsnNode(val));
+					else if (val instanceof Integer)
+						toAdd.insert(ASMUtils.getNumberInsn((Integer) val));
+					else if (val instanceof Long)
+						toAdd.insert(ASMUtils.getNumberInsn((Long) val));
+					else if (val instanceof Float)
+						toAdd.insert(ASMUtils.getNumberInsn((Float) val));
+					else if (val instanceof Double)
+						toAdd.insert(ASMUtils.getNumberInsn((Double) val));
+					else
+						break exit;
 
-                    toAdd.add(new FieldInsnNode(PUTSTATIC, classWrapper.getName(), fieldNode.name, fieldNode.desc));
-                    clinit.instructions.insert(toAdd);
-                    fieldNode.value = null;
+					toAdd.add(new FieldInsnNode(PUTSTATIC, classWrapper.getName(), fieldNode.name, fieldNode.desc));
+					clinit.instructions.insert(toAdd);
+					fieldNode.value = null;
 
-                    counter.incrementAndGet();
-                }
-            });
-        });
+					counter.incrementAndGet();
+				}
+			});
+		});
 
-        Main.info("Moved " + counter.get() + " field values into static block.");
-    }
+		Main.info("Moved " + counter.get() + " field values into static block.");
+	}
 
-    @Override
-    public String getName() {
-        return "Static Initialization";
-    }
+	@Override
+	public String getName()
+	{
+		return "Static Initialization";
+	}
 
-    @Override
-    public ExclusionType getExclusionType() {
-        return ExclusionType.STATIC_INITIALIZATION;
-    }
+	@Override
+	public ExclusionType getExclusionType()
+	{
+		return ExclusionType.STATIC_INITIALIZATION;
+	}
 
-    @Override
-    public void setConfiguration(Configuration config) {
-        // Not needed
-    }
+	@Override
+	public void setConfiguration(final Configuration config)
+	{
+		// Not needed
+	}
 }

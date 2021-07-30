@@ -18,16 +18,11 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.flow;
 
+import me.itzsomebody.radon.Main;
+import org.objectweb.asm.tree.*;
+
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import me.itzsomebody.radon.Main;
-import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.FieldInsnNode;
-import org.objectweb.asm.tree.FieldNode;
-import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.InsnNode;
-import org.objectweb.asm.tree.JumpInsnNode;
-import org.objectweb.asm.tree.VarInsnNode;
 
 /**
  * Replaces GOTO instructions with an expression which is always true. This does nothing more than adding
@@ -35,52 +30,59 @@ import org.objectweb.asm.tree.VarInsnNode;
  *
  * @author ItzSomebody
  */
-public class GotoReplacer extends FlowObfuscation {
-    private static final int PRED_ACCESS = ACC_PUBLIC | ACC_STATIC | ACC_FINAL;
+public class GotoReplacer extends FlowObfuscation
+{
+	private static final int PRED_ACCESS = ACC_PUBLIC | ACC_STATIC | ACC_FINAL;
 
-    @Override
-    public void transform() {
-        AtomicInteger counter = new AtomicInteger();
+	@Override
+	public void transform()
+	{
+		final AtomicInteger counter = new AtomicInteger();
 
-        getClassWrappers().stream().filter(cw -> !excluded(cw)).forEach(cw -> {
-            AtomicBoolean shouldAdd = new AtomicBoolean();
-            FieldNode predicate = new FieldNode(PRED_ACCESS, uniqueRandomString(), "Z", null, null);
+		getClassWrappers().stream().filter(cw -> !excluded(cw)).forEach(cw ->
+		{
+			final AtomicBoolean shouldAdd = new AtomicBoolean();
+			final FieldNode predicate = new FieldNode(PRED_ACCESS, uniqueRandomString(), "Z", null, null);
 
-            cw.getMethods().stream().filter(mw -> !excluded(mw) && mw.hasInstructions()).forEach(mw -> {
-                InsnList insns = mw.getInstructions();
+			cw.getMethods().stream().filter(mw -> !excluded(mw) && mw.hasInstructions()).forEach(mw ->
+			{
+				final InsnList insns = mw.getInstructions();
 
-                int leeway = mw.getLeewaySize();
-                int varIndex = mw.getMaxLocals();
-                mw.getMethodNode().maxLocals++; // Prevents breaking of other transformers which rely on this field.
+				int leeway = mw.getLeewaySize();
+				final int varIndex = mw.getMaxLocals();
+				mw.getMethodNode().maxLocals++; // Prevents breaking of other transformers which rely on this field.
 
-                for (AbstractInsnNode insn : insns.toArray()) {
-                    if (leeway < 10000)
-                        break;
+				for (final AbstractInsnNode insn : insns.toArray())
+				{
+					if (leeway < 10000)
+						break;
 
-                    if (insn.getOpcode() == GOTO) {
-                        insns.insertBefore(insn, new VarInsnNode(ILOAD, varIndex));
-                        insns.insertBefore(insn, new JumpInsnNode(IFEQ, ((JumpInsnNode) insn).label));
-                        insns.insert(insn, new InsnNode(ATHROW));
-                        insns.insert(insn, new InsnNode(ACONST_NULL));
-                        insns.remove(insn);
+					if (insn.getOpcode() == GOTO)
+					{
+						insns.insertBefore(insn, new VarInsnNode(ILOAD, varIndex));
+						insns.insertBefore(insn, new JumpInsnNode(IFEQ, ((JumpInsnNode) insn).label));
+						insns.insert(insn, new InsnNode(ATHROW));
+						insns.insert(insn, new InsnNode(ACONST_NULL));
+						insns.remove(insn);
 
-                        leeway -= 10;
+						leeway -= 10;
 
-                        counter.incrementAndGet();
-                        shouldAdd.set(true);
-                    }
-                }
+						counter.incrementAndGet();
+						shouldAdd.set(true);
+					}
+				}
 
-                if (shouldAdd.get()) {
-                    insns.insert(new VarInsnNode(ISTORE, varIndex));
-                    insns.insert(new FieldInsnNode(GETSTATIC, cw.getName(), predicate.name, "Z"));
-                }
-            });
+				if (shouldAdd.get())
+				{
+					insns.insert(new VarInsnNode(ISTORE, varIndex));
+					insns.insert(new FieldInsnNode(GETSTATIC, cw.getName(), predicate.name, "Z"));
+				}
+			});
 
-            if (shouldAdd.get())
-                cw.addField(predicate);
-        });
+			if (shouldAdd.get())
+				cw.addField(predicate);
+		});
 
-        Main.info("Swapped " + counter.get() + " GOTO instructions");
-    }
+		Main.info("Swapped " + counter.get() + " GOTO instructions");
+	}
 }

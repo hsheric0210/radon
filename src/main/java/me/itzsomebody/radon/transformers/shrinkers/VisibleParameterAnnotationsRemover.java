@@ -18,32 +18,37 @@
 
 package me.itzsomebody.radon.transformers.shrinkers;
 
-import java.util.concurrent.atomic.AtomicInteger;
 import me.itzsomebody.radon.Main;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Strips out visible parameter annotations.
  *
  * @author ItzSomebody
  */
-public class VisibleParameterAnnotationsRemover extends Shrinker {
-    @Override
-    public void transform() {
-        AtomicInteger counter = new AtomicInteger();
+public class VisibleParameterAnnotationsRemover extends Shrinker
+{
+	@Override
+	public void transform()
+	{
+		final AtomicInteger counter = new AtomicInteger();
 
-        getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper ->
-                classWrapper.getMethods().stream().filter(methodWrapper -> !excluded(methodWrapper)
-                        && methodWrapper.getMethodNode().visibleParameterAnnotations != null).forEach(methodWrapper -> {
+		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper ->
+				classWrapper.getMethods().stream().filter(methodWrapper -> !excluded(methodWrapper)
+						&& methodWrapper.getMethodNode().visibleParameterAnnotations != null).forEach(methodWrapper ->
+				{
 
-                    counter.addAndGet(methodWrapper.getMethodNode().visibleAnnotableParameterCount);
-                    methodWrapper.getMethodNode().visibleParameterAnnotations = null;
-                }));
+					counter.addAndGet(methodWrapper.getMethodNode().visibleAnnotableParameterCount);
+					methodWrapper.getMethodNode().visibleParameterAnnotations = null;
+				}));
 
-        Main.info(String.format("Removed %d visible parameter annotations.", counter.get()));
-    }
+		Main.info(String.format("Removed %d visible parameter annotations.", counter.get()));
+	}
 
-    @Override
-    public String getName() {
-        return "Visible Parameter Annotations Remover";
-    }
+	@Override
+	public String getName()
+	{
+		return "Visible Parameter Annotations Remover";
+	}
 }

@@ -26,47 +26,53 @@ import org.objectweb.asm.ClassWriter;
  *
  * @author ItzSomebody
  */
-public class CustomClassWriter extends ClassWriter {
-    private Radon radon;
+public class CustomClassWriter extends ClassWriter
+{
+	private final Radon radon;
 
-    public CustomClassWriter(int flags, Radon radon) {
-        super(flags);
-        this.radon = radon;
-    }
+	public CustomClassWriter(final int flags, final Radon radon)
+	{
+		super(flags);
+		this.radon = radon;
+	}
 
-    @Override
-    protected String getCommonSuperClass(final String type1, final String type2) {
-        if ("java/lang/Object".equals(type1) || "java/lang/Object".equals(type2))
-            return "java/lang/Object";
+	@Override
+	protected String getCommonSuperClass(final String type1, final String type2)
+	{
+		if ("java/lang/Object".equals(type1) || "java/lang/Object".equals(type2))
+			return "java/lang/Object";
 
-        String first = deriveCommonSuperName(type1, type2);
-        String second = deriveCommonSuperName(type2, type1);
-        if (!"java/lang/Object".equals(first))
-            return first;
+		final String first = deriveCommonSuperName(type1, type2);
+		final String second = deriveCommonSuperName(type2, type1);
+		if (!"java/lang/Object".equals(first))
+			return first;
 
-        if (!"java/lang/Object".equals(second))
-            return second;
+		if (!"java/lang/Object".equals(second))
+			return second;
 
-        return getCommonSuperClass(radon.getClassWrapper(type1).getSuperName(), radon.getClassWrapper(type2).getSuperName());
-    }
+		return getCommonSuperClass(radon.getClassWrapper(type1).getSuperName(), radon.getClassWrapper(type2).getSuperName());
+	}
 
-    private String deriveCommonSuperName(final String type1, final String type2) {
-        ClassWrapper first = radon.getClassWrapper(type1);
-        ClassWrapper second = radon.getClassWrapper(type2);
-        if (radon.isAssignableFrom(type1, type2))
-            return type1;
-        else if (radon.isAssignableFrom(type2, type1))
-            return type2;
-        else if (first.getAccess().isInterface() || second.getAccess().isInterface())
-            return "java/lang/Object";
-        else {
-            String temp;
+	private String deriveCommonSuperName(final String type1, final String type2)
+	{
+		ClassWrapper first = radon.getClassWrapper(type1);
+		final ClassWrapper second = radon.getClassWrapper(type2);
+		if (radon.isAssignableFrom(type1, type2))
+			return type1;
+		else if (radon.isAssignableFrom(type2, type1))
+			return type2;
+		else if (first.getAccess().isInterface() || second.getAccess().isInterface())
+			return "java/lang/Object";
+		else
+		{
+			String temp;
 
-            do {
-                temp = first.getSuperName();
-                first = radon.getClassWrapper(temp);
-            } while (!radon.isAssignableFrom(temp, type2));
-            return temp;
-        }
-    }
+			do
+			{
+				temp = first.getSuperName();
+				first = radon.getClassWrapper(temp);
+			} while (!radon.isAssignableFrom(temp, type2));
+			return temp;
+		}
+	}
 }

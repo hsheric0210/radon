@@ -18,12 +18,13 @@
 
 package me.itzsomebody.radon.transformers.shrinkers;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Stream;
 import me.itzsomebody.radon.config.Configuration;
 import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.transformers.Transformer;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
 
 import static me.itzsomebody.radon.config.ConfigurationSetting.SHRINKER;
 
@@ -32,37 +33,45 @@ import static me.itzsomebody.radon.config.ConfigurationSetting.SHRINKER;
  *
  * @author ItzSomebody
  */
-public class Shrinker extends Transformer {
-    private final List<Shrinker> shrinkers = new ArrayList<>();
+public class Shrinker extends Transformer
+{
+	private final List<Shrinker> shrinkers = new ArrayList<>();
 
-    @Override
-    public void transform() {
-        shrinkers.forEach(shrinker -> {
-            shrinker.init(radon);
-            shrinker.transform();
-        });
-    }
+	@Override
+	public void transform()
+	{
+		shrinkers.forEach(shrinker ->
+		{
+			shrinker.init(radon);
+			shrinker.transform();
+		});
+	}
 
-    @Override
-    public String getName() {
-        return "Shrinker";
-    }
+	@Override
+	public String getName()
+	{
+		return "Shrinker";
+	}
 
-    @Override
-    public ExclusionType getExclusionType() {
-        return ExclusionType.SHRINKER;
-    }
+	@Override
+	public ExclusionType getExclusionType()
+	{
+		return ExclusionType.SHRINKER;
+	}
 
-    @Override
-    public void setConfiguration(Configuration config) {
-        Stream.of(ShrinkerSetting.values()).filter(setting -> {
-            String path = SHRINKER + "." + setting.getName();
+	@Override
+	public void setConfiguration(final Configuration config)
+	{
+		Stream.of(ShrinkerSetting.values()).filter(setting ->
+		{
+			final String path = SHRINKER + "." + setting.getName();
 
-            if (config.contains(path)) {
-                return config.get(path);
-            }
+			if (config.contains(path))
+			{
+				return config.get(path);
+			}
 
-            return false;
-        }).forEach(setting -> shrinkers.add(setting.getShrinker()));
-    }
+			return false;
+		}).forEach(setting -> shrinkers.add(setting.getShrinker()));
+	}
 }

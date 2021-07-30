@@ -18,21 +18,14 @@
 
 package me.itzsomebody.radon.transformers.obfuscators;
 
-import java.util.concurrent.atomic.AtomicInteger;
 import me.itzsomebody.radon.Main;
 import me.itzsomebody.radon.config.Configuration;
 import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.transformers.Transformer;
 import me.itzsomebody.radon.utils.RandomUtils;
-import org.objectweb.asm.tree.FieldInsnNode;
-import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.InsnNode;
-import org.objectweb.asm.tree.JumpInsnNode;
-import org.objectweb.asm.tree.LabelNode;
-import org.objectweb.asm.tree.LdcInsnNode;
-import org.objectweb.asm.tree.MethodInsnNode;
-import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.TypeInsnNode;
+import org.objectweb.asm.tree.*;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static me.itzsomebody.radon.config.ConfigurationSetting.ANTI_DEBUG;
 
@@ -41,105 +34,120 @@ import static me.itzsomebody.radon.config.ConfigurationSetting.ANTI_DEBUG;
  *
  * @author vovanre
  */
-public class AntiDebug extends Transformer {
-    private static final String[] DEBUG_OPTIONS = new String[]{"-agentlib:jdwp", "-Xdebug", "-Xrunjdwp:", "-javaagent:"};
+public class AntiDebug extends Transformer
+{
+	private static final String[] DEBUG_OPTIONS = {"-agentlib:jdwp", "-Xdebug", "-Xrunjdwp:", "-javaagent:"};
 
-    private AtomicInteger debugOptionIndex;
-    private String message;
+	private AtomicInteger debugOptionIndex;
+	private String message;
 
-    @Override
-    public void transform() {
-        AtomicInteger counter = new AtomicInteger();
-        debugOptionIndex = new AtomicInteger();
+	@Override
+	public void transform()
+	{
+		final AtomicInteger counter = new AtomicInteger();
+		debugOptionIndex = new AtomicInteger();
 
-        getClassWrappers().stream().filter(cw -> !cw.getAccess().isInterface() && !excluded(cw)).forEach(cw -> {
-            MethodNode clinit = cw.getOrCreateClinit();
+		getClassWrappers().stream().filter(cw -> !cw.getAccess().isInterface() && !excluded(cw)).forEach(cw ->
+		{
+			final MethodNode clinit = cw.getOrCreateClinit();
 
+			final int checkCount = RandomUtils.getRandomInt(1, DEBUG_OPTIONS.length);
+			for (int i = 0; i < checkCount; i++)
+			{
+				clinit.instructions.insert(generateCheck());
+				counter.incrementAndGet();
+			}
+		});
 
-            int checkCount = RandomUtils.getRandomInt(1, DEBUG_OPTIONS.length);
-            for (int i = 0; i < checkCount; i++) {
-                clinit.instructions.insert(generateCheck());
-                counter.incrementAndGet();
-            }
-        });
+		Main.info("Injected " + counter.get() + " anti-debugging checks");
+	}
 
-        Main.info("Injected " + counter.get() + " anti-debugging checks");
-    }
+	private InsnList generateCheck()
+	{
+		final LabelNode notDebugLabel = new LabelNode();
+		final InsnList insnList = new InsnList();
+		insnList.add(createIsDebugList());
+		insnList.add(new JumpInsnNode(IFEQ, notDebugLabel));
 
-    private InsnList generateCheck() {
-        LabelNode notDebugLabel = new LabelNode();
-        InsnList insnList = new InsnList();
-        insnList.add(createIsDebugList());
-        insnList.add(new JumpInsnNode(IFEQ, notDebugLabel));
+		if (RandomUtils.getRandomBoolean())
+		{
+			if (getMessage() != null)
+			{
+				insnList.add(new FieldInsnNode(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;"));
+				insnList.add(new LdcInsnNode(getMessage()));
+				insnList.add(new MethodInsnNode(INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false));
+			}
+			if (RandomUtils.getRandomBoolean())
+			{
+				insnList.add(new LdcInsnNode(RandomUtils.getRandomInt()));
+				insnList.add(new MethodInsnNode(INVOKESTATIC, "java/lang/System", "exit", "(I)V", false));
+			} else
+			{
+				insnList.add(new MethodInsnNode(INVOKESTATIC, "java/lang/Runtime", "getRuntime", "()Ljava/lang/Runtime;", false));
+				insnList.add(new LdcInsnNode(RandomUtils.getRandomInt()));
+				insnList.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Runtime", "halt", "(I)V", false));
+			}
+		} else
+		{
+			String message = getMessage();
+			if (message == null)
+				message = randomString();
 
-        if (RandomUtils.getRandomBoolean()) {
-            if (getMessage() != null) {
-                insnList.add(new FieldInsnNode(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;"));
-                insnList.add(new LdcInsnNode(getMessage()));
-                insnList.add(new MethodInsnNode(INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false));
-            }
-            if (RandomUtils.getRandomBoolean()) {
-                insnList.add(new LdcInsnNode(RandomUtils.getRandomInt()));
-                insnList.add(new MethodInsnNode(INVOKESTATIC, "java/lang/System", "exit", "(I)V", false));
-            } else {
-                insnList.add(new MethodInsnNode(INVOKESTATIC, "java/lang/Runtime", "getRuntime", "()Ljava/lang/Runtime;", false));
-                insnList.add(new LdcInsnNode(RandomUtils.getRandomInt()));
-                insnList.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Runtime", "halt", "(I)V", false));
-            }
-        } else {
-            String message = getMessage();
-            if (message == null)
-                message = randomString();
+			insnList.add(new TypeInsnNode(NEW, "java/lang/RuntimeException"));
+			insnList.add(new InsnNode(DUP));
+			insnList.add(new LdcInsnNode(message));
+			insnList.add(new MethodInsnNode(INVOKESPECIAL, "java/lang/RuntimeException", "<init>", "(Ljava/lang/String;)V", false));
+			insnList.add(new InsnNode(ATHROW));
+		}
+		insnList.add(notDebugLabel);
+		return insnList;
+	}
 
-            insnList.add(new TypeInsnNode(NEW, "java/lang/RuntimeException"));
-            insnList.add(new InsnNode(DUP));
-            insnList.add(new LdcInsnNode(message));
-            insnList.add(new MethodInsnNode(INVOKESPECIAL, "java/lang/RuntimeException", "<init>", "(Ljava/lang/String;)V", false));
-            insnList.add(new InsnNode(ATHROW));
-        }
-        insnList.add(notDebugLabel);
-        return insnList;
-    }
+	private InsnList createIsDebugList()
+	{
+		final boolean isUpper = RandomUtils.getRandomBoolean();
+		String argument = DEBUG_OPTIONS[debugOptionIndex.incrementAndGet() % DEBUG_OPTIONS.length];
+		if (isUpper)
+			argument = argument.toUpperCase();
+		else
+			argument = argument.toLowerCase();
 
-    private InsnList createIsDebugList() {
-        boolean isUpper = RandomUtils.getRandomBoolean();
-        String argument = DEBUG_OPTIONS[debugOptionIndex.incrementAndGet() % DEBUG_OPTIONS.length];
-        if (isUpper)
-            argument = argument.toUpperCase();
-        else
-            argument = argument.toLowerCase();
+		final InsnList insnList = new InsnList();
+		insnList.add(new MethodInsnNode(INVOKESTATIC, "java/lang/management/ManagementFactory", "getRuntimeMXBean", "()Ljava/lang/management/RuntimeMXBean;", false));
+		insnList.add(new MethodInsnNode(INVOKEINTERFACE, "java/lang/management/RuntimeMXBean", "getInputArguments", "()Ljava/util/List;", true));
+		insnList.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Object", "toString", "()Ljava/lang/String;", false));
+		insnList.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/String", isUpper ? "toUpperCase" : "toLowerCase", "()Ljava/lang/String;", false));
+		insnList.add(new LdcInsnNode(argument));
+		insnList.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/String", "contains", "(Ljava/lang/CharSequence;)Z", false));
 
-        InsnList insnList = new InsnList();
-        insnList.add(new MethodInsnNode(INVOKESTATIC, "java/lang/management/ManagementFactory", "getRuntimeMXBean", "()Ljava/lang/management/RuntimeMXBean;", false));
-        insnList.add(new MethodInsnNode(INVOKEINTERFACE, "java/lang/management/RuntimeMXBean", "getInputArguments", "()Ljava/util/List;", true));
-        insnList.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Object", "toString", "()Ljava/lang/String;", false));
-        insnList.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/String", isUpper ? "toUpperCase" : "toLowerCase", "()Ljava/lang/String;", false));
-        insnList.add(new LdcInsnNode(argument));
-        insnList.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/String", "contains", "(Ljava/lang/CharSequence;)Z", false));
+		return insnList;
+	}
 
-        return insnList;
-    }
+	@Override
+	public String getName()
+	{
+		return "Anti-Debug";
+	}
 
-    @Override
-    public String getName() {
-        return "Anti-Debug";
-    }
+	@Override
+	public ExclusionType getExclusionType()
+	{
+		return ExclusionType.ANTI_DEBUG;
+	}
 
-    @Override
-    public ExclusionType getExclusionType() {
-        return ExclusionType.ANTI_DEBUG;
-    }
+	@Override
+	public void setConfiguration(final Configuration config)
+	{
+		setMessage(config.getOrDefault(ANTI_DEBUG + ".message", "Debugger properties detected"));
+	}
 
-    @Override
-    public void setConfiguration(Configuration config) {
-        setMessage(config.getOrDefault(ANTI_DEBUG + ".message", "Debugger properties detected"));
-    }
+	private void setMessage(final String message)
+	{
+		this.message = message;
+	}
 
-    private void setMessage(String message) {
-        this.message = message;
-    }
-
-    private String getMessage() {
-        return message;
-    }
+	private String getMessage()
+	{
+		return message;
+	}
 }

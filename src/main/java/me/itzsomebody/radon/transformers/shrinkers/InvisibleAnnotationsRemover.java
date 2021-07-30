@@ -18,46 +18,54 @@
 
 package me.itzsomebody.radon.transformers.shrinkers;
 
-import java.util.concurrent.atomic.AtomicInteger;
 import me.itzsomebody.radon.Main;
 import org.objectweb.asm.tree.ClassNode;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Removes annotations invisible to the runtime from classes, methods and fields.
  *
  * @author ItzSomebody
  */
-public class InvisibleAnnotationsRemover extends Shrinker {
-    @Override
-    public void transform() {
-        AtomicInteger counter = new AtomicInteger();
+public class InvisibleAnnotationsRemover extends Shrinker
+{
+	@Override
+	public void transform()
+	{
+		final AtomicInteger counter = new AtomicInteger();
 
-        getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper -> {
-            ClassNode classNode = classWrapper.getClassNode();
+		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper ->
+		{
+			final ClassNode classNode = classWrapper.getClassNode();
 
-            if (classNode.invisibleAnnotations != null) {
-                counter.addAndGet(classNode.invisibleAnnotations.size());
-                classNode.invisibleAnnotations = null;
-            }
+			if (classNode.invisibleAnnotations != null)
+			{
+				counter.addAndGet(classNode.invisibleAnnotations.size());
+				classNode.invisibleAnnotations = null;
+			}
 
-            classWrapper.getFields().stream().filter(fieldWrapper -> !excluded(fieldWrapper)
-                    && fieldWrapper.getFieldNode().invisibleAnnotations != null).forEach(fieldWrapper -> {
-                counter.addAndGet(fieldWrapper.getFieldNode().invisibleAnnotations.size());
-                fieldWrapper.getFieldNode().invisibleAnnotations = null;
-            });
+			classWrapper.getFields().stream().filter(fieldWrapper -> !excluded(fieldWrapper)
+					&& fieldWrapper.getFieldNode().invisibleAnnotations != null).forEach(fieldWrapper ->
+			{
+				counter.addAndGet(fieldWrapper.getFieldNode().invisibleAnnotations.size());
+				fieldWrapper.getFieldNode().invisibleAnnotations = null;
+			});
 
-            classWrapper.getMethods().stream().filter(methodWrapper -> !excluded(methodWrapper)
-                    && methodWrapper.getMethodNode().invisibleAnnotations != null).forEach(methodWrapper -> {
-                counter.addAndGet(methodWrapper.getMethodNode().invisibleAnnotations.size());
-                methodWrapper.getMethodNode().invisibleAnnotations = null;
-            });
-        });
+			classWrapper.getMethods().stream().filter(methodWrapper -> !excluded(methodWrapper)
+					&& methodWrapper.getMethodNode().invisibleAnnotations != null).forEach(methodWrapper ->
+			{
+				counter.addAndGet(methodWrapper.getMethodNode().invisibleAnnotations.size());
+				methodWrapper.getMethodNode().invisibleAnnotations = null;
+			});
+		});
 
-        Main.info(String.format("Removed %d invisible annotations.", counter.get()));
-    }
+		Main.info(String.format("Removed %d invisible annotations.", counter.get()));
+	}
 
-    @Override
-    public String getName() {
-        return "Invisible Annotations Remover";
-    }
+	@Override
+	public String getName()
+	{
+		return "Invisible Annotations Remover";
+	}
 }

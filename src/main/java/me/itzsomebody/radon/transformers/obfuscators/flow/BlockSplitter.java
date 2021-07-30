@@ -18,14 +18,11 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.flow;
 
+import me.itzsomebody.radon.Main;
+import org.objectweb.asm.tree.*;
+
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
-import me.itzsomebody.radon.Main;
-import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.JumpInsnNode;
-import org.objectweb.asm.tree.LabelNode;
-import org.objectweb.asm.tree.MethodNode;
 
 /**
  * This splits a method's block of code into two blocks: P1 and P2 and then inserting P2 behind P1.
@@ -37,72 +34,79 @@ import org.objectweb.asm.tree.MethodNode;
  *
  * @author ItzSomebody
  */
-public class BlockSplitter extends FlowObfuscation {
-    // used to limit number of recursive calls on doSplit()
-    private static final int LIMIT_SIZE = 11;
+public class BlockSplitter extends FlowObfuscation
+{
+	// used to limit number of recursive calls on doSplit()
+	private static final int LIMIT_SIZE = 11;
 
-    @Override
-    public void transform() {
-        AtomicInteger counter = new AtomicInteger();
+	@Override
+	public void transform()
+	{
+		final AtomicInteger counter = new AtomicInteger();
 
-        getClassWrappers().stream().filter(cw -> !excluded(cw)).forEach(cw ->
-                cw.getMethods().stream().filter(mw -> !excluded(mw)).forEach(mw -> {
-                    doSplit(mw.getMethodNode(), counter, 0);
-                }));
+		getClassWrappers().stream().filter(cw -> !excluded(cw)).forEach(cw ->
+				cw.getMethods().stream().filter(mw -> !excluded(mw)).forEach(mw ->
+				{
+					doSplit(mw.getMethodNode(), counter, 0);
+				}));
 
-        Main.info("Split " + counter.get() + " blocks");
-    }
+		Main.info("Split " + counter.get() + " blocks");
+	}
 
-    private static void doSplit(MethodNode methodNode, AtomicInteger counter, int callStackSize) {
-        InsnList insns = methodNode.instructions;
+	private static void doSplit(final MethodNode methodNode, final AtomicInteger counter, final int callStackSize)
+	{
+		final InsnList insns = methodNode.instructions;
 
-        if (insns.size() > 10 && callStackSize < LIMIT_SIZE) {
-            LabelNode p1 = new LabelNode();
-            LabelNode p2 = new LabelNode();
+		if (insns.size() > 10 && callStackSize < LIMIT_SIZE)
+		{
+			final LabelNode p1 = new LabelNode();
+			final LabelNode p2 = new LabelNode();
 
-            AbstractInsnNode p2Start = insns.get((insns.size() - 1) / 2);
-            AbstractInsnNode p2End = insns.getLast();
+			final AbstractInsnNode p2Start = insns.get((insns.size() - 1) / 2);
+			final AbstractInsnNode p2End = insns.getLast();
 
-            AbstractInsnNode p1Start = insns.getFirst();
+			final AbstractInsnNode p1Start = insns.getFirst();
 
-            // We can't have trap ranges mutilated by block splitting
-            if (methodNode.tryCatchBlocks.stream().anyMatch(tcbn ->
-                    insns.indexOf(tcbn.end) >= insns.indexOf(p2Start)
-                            && insns.indexOf(tcbn.start) <= insns.indexOf(p2Start)))
-                return;
+			// We can't have trap ranges mutilated by block splitting
+			if (methodNode.tryCatchBlocks.stream().anyMatch(tcbn ->
+					insns.indexOf(tcbn.end) >= insns.indexOf(p2Start)
+							&& insns.indexOf(tcbn.start) <= insns.indexOf(p2Start)))
+				return;
 
-            ArrayList<AbstractInsnNode> insnNodes = new ArrayList<>();
-            AbstractInsnNode currentInsn = p1Start;
+			final ArrayList<AbstractInsnNode> insnNodes = new ArrayList<>();
+			AbstractInsnNode currentInsn = p1Start;
 
-            InsnList p1Block = new InsnList();
+			final InsnList p1Block = new InsnList();
 
-            while (currentInsn != p2Start) {
-                insnNodes.add(currentInsn);
+			while (currentInsn != p2Start)
+			{
+				insnNodes.add(currentInsn);
 
-                currentInsn = currentInsn.getNext();
-            }
+				currentInsn = currentInsn.getNext();
+			}
 
-            insnNodes.forEach(insn -> {
-                insns.remove(insn);
-                p1Block.add(insn);
-            });
+			insnNodes.forEach(insn ->
+			{
+				insns.remove(insn);
+				p1Block.add(insn);
+			});
 
-            p1Block.insert(p1);
-            p1Block.add(new JumpInsnNode(GOTO, p2));
+			p1Block.insert(p1);
+			p1Block.add(new JumpInsnNode(GOTO, p2));
 
-            insns.insert(p2End, p1Block);
-            insns.insertBefore(p2Start, new JumpInsnNode(GOTO, p1));
-            insns.insertBefore(p2Start, p2);
+			insns.insert(p2End, p1Block);
+			insns.insertBefore(p2Start, new JumpInsnNode(GOTO, p1));
+			insns.insertBefore(p2Start, p2);
 
-            counter.incrementAndGet();
+			counter.incrementAndGet();
 
-            // We might have messed up variable ranges when rearranging the block order.
-            if (methodNode.localVariables != null)
-                new ArrayList<>(methodNode.localVariables).stream().filter(lvn ->
-                        insns.indexOf(lvn.end) < insns.indexOf(lvn.start)
-                ).forEach(methodNode.localVariables::remove);
+			// We might have messed up variable ranges when rearranging the block order.
+			if (methodNode.localVariables != null)
+				new ArrayList<>(methodNode.localVariables).stream().filter(lvn ->
+						insns.indexOf(lvn.end) < insns.indexOf(lvn.start)
+				).forEach(methodNode.localVariables::remove);
 
-            doSplit(methodNode, counter, callStackSize + 1);
-        }
-    }
+			doSplit(methodNode, counter, callStackSize + 1);
+		}
+	}
 }

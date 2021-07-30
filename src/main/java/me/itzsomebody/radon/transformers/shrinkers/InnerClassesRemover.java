@@ -18,31 +18,36 @@
 
 package me.itzsomebody.radon.transformers.shrinkers;
 
+import me.itzsomebody.radon.Main;
+
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
-import me.itzsomebody.radon.Main;
 
 /**
  * Strips out innerclass information.
  *
  * @author ItzSomebody
  */
-public class InnerClassesRemover extends Shrinker {
-    @Override
-    public void transform() {
-        AtomicInteger counter = new AtomicInteger();
+public class InnerClassesRemover extends Shrinker
+{
+	@Override
+	public void transform()
+	{
+		final AtomicInteger counter = new AtomicInteger();
 
-        getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)
-                && classWrapper.getClassNode().innerClasses != null).forEach(classWrapper -> {
-            counter.addAndGet(classWrapper.getClassNode().innerClasses.size());
-            classWrapper.getClassNode().innerClasses = new ArrayList<>();
-        });
+		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)
+				&& classWrapper.getClassNode().innerClasses != null).forEach(classWrapper ->
+		{
+			counter.addAndGet(classWrapper.getClassNode().innerClasses.size());
+			classWrapper.getClassNode().innerClasses = new ArrayList<>();
+		});
 
-        Main.info(String.format("Removed %d inner classes.", counter.get()));
-    }
+		Main.info(String.format("Removed %d inner classes.", counter.get()));
+	}
 
-    @Override
-    public String getName() {
-        return "Inner Classes Remover";
-    }
+	@Override
+	public String getName()
+	{
+		return "Inner Classes Remover";
+	}
 }

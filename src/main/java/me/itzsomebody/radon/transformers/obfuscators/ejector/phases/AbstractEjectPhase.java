@@ -30,62 +30,69 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
 
-public abstract class AbstractEjectPhase implements Opcodes {
-    protected final EjectorContext ejectorContext;
+public abstract class AbstractEjectPhase implements Opcodes
+{
+	protected final EjectorContext ejectorContext;
 
-    public AbstractEjectPhase(EjectorContext ejectorContext) {
-        this.ejectorContext = ejectorContext;
-    }
+	public AbstractEjectPhase(final EjectorContext ejectorContext)
+	{
+		this.ejectorContext = ejectorContext;
+	}
 
-    // TODO: Improve name generation logic
-    protected static String getProxyMethodName(MethodNode methodNode) {
-        String name = methodNode.name.replace('<', '_').replace('>', '_');
-        return name + "$" + Math.abs(RandomUtils.getRandomInt());
-    }
+	// TODO: Improve name generation logic
+	protected static String getProxyMethodName(final MethodNode methodNode)
+	{
+		final String name = methodNode.name.replace('<', '_').replace('>', '_');
+		return name + "$" + Math.abs(RandomUtils.getRandomInt());
+	}
 
-    protected static int getRandomAccess() {
-        int access = ACC_STATIC;
-        if (RandomUtils.getRandomBoolean())
-            access += ACC_PRIVATE;
-        if (RandomUtils.getRandomBoolean())
-            access += ACC_SYNTHETIC;
-        if (RandomUtils.getRandomBoolean())
-            access += ACC_BRIDGE;
-        return access;
-    }
+	protected static int getRandomAccess()
+	{
+		int access = ACC_STATIC;
+		if (RandomUtils.getRandomBoolean())
+			access += ACC_PRIVATE;
+		if (RandomUtils.getRandomBoolean())
+			access += ACC_SYNTHETIC;
+		if (RandomUtils.getRandomBoolean())
+			access += ACC_BRIDGE;
+		return access;
+	}
 
-    protected static void insertFixes(MethodNode methodNode, Map<Integer, InsnList> fixes, int idVariable) {
-        InsnList proxyFix = new InsnList();
-        LabelNode end = new LabelNode();
+	protected static void insertFixes(final MethodNode methodNode, final Map<Integer, InsnList> fixes, final int idVariable)
+	{
+		final InsnList proxyFix = new InsnList();
+		final LabelNode end = new LabelNode();
 
-        ArrayList<Integer> keys = new ArrayList<>(fixes.keySet());
-        Collections.shuffle(keys);
+		final ArrayList<Integer> keys = new ArrayList<>(fixes.keySet());
+		Collections.shuffle(keys);
 
-        keys.forEach(id -> {
-            int xorKey = RandomUtils.getRandomInt();
+		keys.forEach(id ->
+		{
+			final int xorKey = RandomUtils.getRandomInt();
 
-            InsnList insnList = fixes.get(id);
-            proxyFix.add(new VarInsnNode(Opcodes.ILOAD, idVariable));
-            proxyFix.add(new LdcInsnNode(xorKey));
-            proxyFix.add(new InsnNode(IXOR));
-            proxyFix.add(new LdcInsnNode(id ^ xorKey));
-            LabelNode labelNode = new LabelNode();
-            proxyFix.add(new JumpInsnNode(Opcodes.IF_ICMPNE, labelNode));
+			final InsnList insnList = fixes.get(id);
+			proxyFix.add(new VarInsnNode(Opcodes.ILOAD, idVariable));
+			proxyFix.add(new LdcInsnNode(xorKey));
+			proxyFix.add(new InsnNode(IXOR));
+			proxyFix.add(new LdcInsnNode(id ^ xorKey));
+			final LabelNode labelNode = new LabelNode();
+			proxyFix.add(new JumpInsnNode(Opcodes.IF_ICMPNE, labelNode));
 
-            proxyFix.add(insnList);
-            proxyFix.add(new JumpInsnNode(Opcodes.GOTO, end));
-            proxyFix.add(labelNode);
-        });
+			proxyFix.add(insnList);
+			proxyFix.add(new JumpInsnNode(Opcodes.GOTO, end));
+			proxyFix.add(labelNode);
+		});
 
-        proxyFix.add(end);
-        methodNode.instructions.insert(proxyFix);
-    }
+		proxyFix.add(end);
+		methodNode.instructions.insert(proxyFix);
+	}
 
-    public abstract void process(MethodWrapper methodWrapper, Frame<AbstractValue>[] frames);
+	public abstract void process(MethodWrapper methodWrapper, Frame<AbstractValue>[] frames);
 
-    protected int getJunkArgumentCount() {
-        if (ejectorContext.getJunkArgumentStrength() == 0)
-            return 0;
-        return RandomUtils.getRandomInt(ejectorContext.getJunkArgumentStrength() / 2, ejectorContext.getJunkArgumentStrength());
-    }
+	protected int getJunkArgumentCount()
+	{
+		if (ejectorContext.getJunkArgumentStrength() == 0)
+			return 0;
+		return RandomUtils.getRandomInt(ejectorContext.getJunkArgumentStrength() / 2, ejectorContext.getJunkArgumentStrength());
+	}
 }

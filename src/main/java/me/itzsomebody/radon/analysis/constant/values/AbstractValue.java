@@ -18,66 +18,79 @@
 
 package me.itzsomebody.radon.analysis.constant.values;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.analysis.Value;
 
-public abstract class AbstractValue implements Value {
-    private final AbstractInsnNode insnNode;
-    private final Type type;
-    private final Set<AbstractInsnNode> usages;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 
-    AbstractValue(AbstractInsnNode insnNode, Type type) {
-        this.insnNode = insnNode;
-        this.type = type;
-        usages = new HashSet<>();
-    }
+public abstract class AbstractValue implements Value
+{
+	private final AbstractInsnNode insnNode;
+	private final Type type;
+	private final Set<AbstractInsnNode> usages;
 
-    private static <E> boolean containsAll(final Set<E> self, final Set<E> other) {
-        if (self.size() < other.size()) {
-            return false;
-        }
-        return self.containsAll(other);
-    }
+	AbstractValue(final AbstractInsnNode insnNode, final Type type)
+	{
+		this.insnNode = insnNode;
+		this.type = type;
+		usages = new HashSet<>();
+	}
 
-    public final Set<AbstractInsnNode> getUsages() {
-        return Collections.unmodifiableSet(usages);
-    }
+	private static <E> boolean containsAll(final Set<E> self, final Set<E> other)
+	{
+		if (self.size() < other.size())
+		{
+			return false;
+		}
+		return self.containsAll(other);
+	}
 
-    public final void addUsage(AbstractInsnNode insnNode) {
-        usages.add(insnNode);
-    }
+	public final Set<AbstractInsnNode> getUsages()
+	{
+		return Collections.unmodifiableSet(usages);
+	}
 
-    public final int getSize() {
-        return type == Type.LONG_TYPE || type == Type.DOUBLE_TYPE ? 2 : 1;
-    }
+	public final void addUsage(final AbstractInsnNode insnNode)
+	{
+		usages.add(insnNode);
+	}
 
-    public abstract boolean isConstant();
+	@Override
+	public final int getSize()
+	{
+		return type == Type.LONG_TYPE || type == Type.DOUBLE_TYPE ? 2 : 1;
+	}
 
-    public AbstractInsnNode getInsnNode() {
-        return insnNode;
-    }
+	public abstract boolean isConstant();
 
-    public Type getType() {
-        return type;
-    }
+	public AbstractInsnNode getInsnNode()
+	{
+		return insnNode;
+	}
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof AbstractValue)) return false;
-        AbstractValue that = (AbstractValue) o;
-        return Objects.equals(insnNode, that.insnNode) &&
-                Objects.equals(type, that.type) &&
-                containsAll(usages, that.usages);
-    }
+	public Type getType()
+	{
+		return type;
+	}
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(insnNode, type, usages);
-    }
+	@Override
+	public boolean equals(final Object o)
+	{
+		if (this == o) return true;
+		if (!(o instanceof AbstractValue)) return false;
+		final AbstractValue that = (AbstractValue) o;
+		return Objects.equals(insnNode, that.insnNode) &&
+				Objects.equals(type, that.type) &&
+				containsAll(usages, that.usages);
+	}
+
+	@Override
+	public int hashCode()
+	{
+		return Objects.hash(insnNode, type, usages);
+	}
 }

@@ -18,14 +18,17 @@
 
 package me.itzsomebody.vm.datatypes;
 
-public class JTop extends JWrapper {
-    private static JTop top;
+public class JTop extends JWrapper
+{
+	private static JTop top;
 
-    private JTop() {
-        // Do nothing
-    }
+	private JTop()
+	{
+		// Do nothing
+	}
 
-    public static JTop getTop() {
-        return top;
-    }
+	public static JTop getTop()
+	{
+		return top;
+	}
 }

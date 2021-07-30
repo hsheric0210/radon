@@ -18,10 +18,6 @@
 
 package me.itzsomebody.radon.transformers.obfuscators;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
 import me.itzsomebody.radon.Main;
 import me.itzsomebody.radon.config.Configuration;
 import me.itzsomebody.radon.exclusions.ExclusionType;
@@ -29,69 +25,84 @@ import me.itzsomebody.radon.transformers.Transformer;
 import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
+
 /**
  * Renames bundled JAR resources to make their purpose less obvious.
  *
  * @author ItzSomebody
  */
-public class ResourceRenamer extends Transformer {
-    private Map<String, String> mappings;
+public class ResourceRenamer extends Transformer
+{
+	private Map<String, String> mappings;
 
-    @Override
-    public void transform() {
-        mappings = new HashMap<>();
-        AtomicInteger counter = new AtomicInteger();
+	@Override
+	public void transform()
+	{
+		mappings = new HashMap<>();
+		final AtomicInteger counter = new AtomicInteger();
 
-        getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper ->
-                classWrapper.getMethods().stream().filter(methodWrapper -> !excluded(methodWrapper)
-                        && methodWrapper.hasInstructions()).forEach(methodWrapper -> {
-                    MethodNode methodNode = methodWrapper.getMethodNode();
+		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper ->
+				classWrapper.getMethods().stream().filter(methodWrapper -> !excluded(methodWrapper)
+						&& methodWrapper.hasInstructions()).forEach(methodWrapper ->
+				{
+					final MethodNode methodNode = methodWrapper.getMethodNode();
 
-                    Stream.of(methodNode.instructions.toArray()).filter(insn -> insn instanceof LdcInsnNode
-                            && ((LdcInsnNode) insn).cst instanceof String).forEach(insn -> {
-                        String s = (String) ((LdcInsnNode) insn).cst;
-                        String resourceName;
+					Stream.of(methodNode.instructions.toArray()).filter(insn -> insn instanceof LdcInsnNode
+							&& ((LdcInsnNode) insn).cst instanceof String).forEach(insn ->
+					{
+						final String s = (String) ((LdcInsnNode) insn).cst;
+						final String resourceName;
 
-                        if (s.startsWith("/"))
-                            resourceName = s.substring(1);
-                        else
-                            resourceName = classWrapper.getOriginalName().substring(0, classWrapper.getOriginalName().lastIndexOf('/') + 1) + s;
+						if (s.startsWith("/"))
+							resourceName = s.substring(1);
+						else
+							resourceName = classWrapper.getOriginalName().substring(0, classWrapper.getOriginalName().lastIndexOf('/') + 1) + s;
 
-                        if (getResources().containsKey(resourceName))
-                            if (mappings.containsKey(resourceName))
-                                ((LdcInsnNode) insn).cst = mappings.get(resourceName);
-                            else {
-                                String newName = '/' + uniqueRandomString();
-                                ((LdcInsnNode) insn).cst = newName;
-                                mappings.put(resourceName, newName);
-                            }
-                    });
-                }));
+						if (getResources().containsKey(resourceName))
+							if (mappings.containsKey(resourceName))
+								((LdcInsnNode) insn).cst = mappings.get(resourceName);
+							else
+							{
+								final String newName = '/' + uniqueRandomString();
+								((LdcInsnNode) insn).cst = newName;
+								mappings.put(resourceName, newName);
+							}
+					});
+				}));
 
-        new HashMap<>(getResources()).forEach((name, b) -> {
-            if (mappings.containsKey(name)) {
-                getResources().remove(name);
-                getResources().put(mappings.get(name).substring(1), b);
+		new HashMap<>(getResources()).forEach((name, b) ->
+		{
+			if (mappings.containsKey(name))
+			{
+				getResources().remove(name);
+				getResources().put(mappings.get(name).substring(1), b);
 
-                counter.incrementAndGet();
-            }
-        });
+				counter.incrementAndGet();
+			}
+		});
 
-        Main.info("Renamed " + counter.get() + " resources");
-    }
+		Main.info("Renamed " + counter.get() + " resources");
+	}
 
-    @Override
-    public ExclusionType getExclusionType() {
-        return ExclusionType.RESOURCE_RENAMER;
-    }
+	@Override
+	public ExclusionType getExclusionType()
+	{
+		return ExclusionType.RESOURCE_RENAMER;
+	}
 
-    @Override
-    public String getName() {
-        return "Resource Renamer";
-    }
+	@Override
+	public String getName()
+	{
+		return "Resource Renamer";
+	}
 
-    @Override
-    public void setConfiguration(Configuration config) {
-        // Not needed
-    }
+	@Override
+	public void setConfiguration(final Configuration config)
+	{
+		// Not needed
+	}
 }

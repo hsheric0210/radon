@@ -27,62 +27,71 @@ import java.util.stream.Stream;
  *
  * @author ItzSomebody
  */
-public class Exclusion {
-    /**
-     * Compiled regex pattern.
-     */
-    private Pattern exclusion;
+public class Exclusion
+{
+	/**
+	 * Compiled regex pattern.
+	 */
+	private Pattern exclusion;
 
-    /**
-     * The exclusion type.
-     */
-    private ExclusionType exclusionType;
+	/**
+	 * The exclusion type.
+	 */
+	private ExclusionType exclusionType;
 
-    /**
-     * Determines if this {@link Exclusion} should be seen as an inclusion or exclusion
-     */
-    private boolean shouldInclude;
+	/**
+	 * Determines if this {@link Exclusion} should be seen as an inclusion or exclusion
+	 */
+	private boolean shouldInclude;
 
-    public Exclusion(String exclusion) {
-        String exc;
+	public Exclusion(final String exclusion)
+	{
+		final String exc;
 
-        if (exclusion.startsWith("!")) {
-            shouldInclude = true;
-            exc = exclusion.substring(1);
-        } else
-            exc = exclusion;
+		if (exclusion.startsWith("!"))
+		{
+			shouldInclude = true;
+			exc = exclusion.substring(1);
+		} else
+			exc = exclusion;
 
-        Optional<ExclusionType> result =
-                Stream.of(ExclusionType.values()).filter(type -> exc.startsWith(type.getName())).findFirst();
+		final Optional<ExclusionType> result =
+				Stream.of(ExclusionType.values()).filter(type -> exc.startsWith(type.getName())).findFirst();
 
-        if (result.isPresent()) {
-            initFields(exc, result.get());
-            return;
-        }
+		if (result.isPresent())
+		{
+			initFields(exc, result.get());
+			return;
+		}
 
-        this.exclusion = Pattern.compile(exc);
-        this.exclusionType = ExclusionType.GLOBAL;
-    }
+		this.exclusion = Pattern.compile(exc);
+		exclusionType = ExclusionType.GLOBAL;
+	}
 
-    public Exclusion(String pattern, ExclusionType type) {
-        this.exclusion = Pattern.compile(pattern);
-        this.exclusionType = type;
-    }
+	public Exclusion(final String pattern, final ExclusionType type)
+	{
+		exclusion = Pattern.compile(pattern);
+		exclusionType = type;
+	}
 
-    private void initFields(String exclusion, ExclusionType type) {
-        this.exclusion = Pattern.compile(exclusion.substring(type.getName().length() + 2));
-        this.exclusionType = type;
-    }
+	private void initFields(final String exclusion, final ExclusionType type)
+	{
+		this.exclusion = Pattern.compile(exclusion.substring(type.getName().length() + 2));
+		exclusionType = type;
+	}
 
-    public ExclusionType getExclusionType() {
-        return exclusionType;
-    }
+	public ExclusionType getExclusionType()
+	{
+		return exclusionType;
+	}
 
-    public boolean matches(String other) {
-        return (shouldInclude) != exclusion.matcher(other).matches();
-    }
+	public boolean matches(final String other)
+	{
+		return shouldInclude != exclusion.matcher(other).matches();
+	}
 
-    public Pattern getPattern() {
-        return exclusion;
-    }
+	public Pattern getPattern()
+	{
+		return exclusion;
+	}
 }

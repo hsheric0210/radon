@@ -18,10 +18,11 @@
 
 package me.itzsomebody.radon.transformers.optimizers;
 
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
 import me.itzsomebody.radon.Main;
 import org.objectweb.asm.tree.MethodNode;
+
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 /**
  * Removes all NOPs found. Do note that ASM's MethodWriter will replace unreachable instructions with NOPs so you might
@@ -29,27 +30,31 @@ import org.objectweb.asm.tree.MethodNode;
  *
  * @author ItzSomebody
  */
-public class NopRemover extends Optimizer {
-    @Override
-    public void transform() {
-        AtomicInteger count = new AtomicInteger();
-        long current = System.currentTimeMillis();
+public class NopRemover extends Optimizer
+{
+	@Override
+	public void transform()
+	{
+		final AtomicInteger count = new AtomicInteger();
+		final long current = System.currentTimeMillis();
 
-        getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper ->
-                classWrapper.getMethods().stream().filter(methodWrapper -> !excluded(methodWrapper)
-                        && methodWrapper.hasInstructions()).forEach(methodWrapper -> {
-                    MethodNode methodNode = methodWrapper.getMethodNode();
+		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper ->
+				classWrapper.getMethods().stream().filter(methodWrapper -> !excluded(methodWrapper)
+						&& methodWrapper.hasInstructions()).forEach(methodWrapper ->
+				{
+					final MethodNode methodNode = methodWrapper.getMethodNode();
 
-                    Stream.of(methodNode.instructions.toArray()).filter(insn -> insn.getOpcode() == NOP)
-                            .forEach(insn -> methodNode.instructions.remove(insn));
-                })
-        );
+					Stream.of(methodNode.instructions.toArray()).filter(insn -> insn.getOpcode() == NOP)
+							.forEach(insn -> methodNode.instructions.remove(insn));
+				})
+		);
 
-        Main.info(String.format("Removed %d NOP instructions. [%dms]", count.get(), tookThisLong(current)));
-    }
+		Main.info(String.format("Removed %d NOP instructions. [%dms]", count.get(), tookThisLong(current)));
+	}
 
-    @Override
-    public String getName() {
-        return "NOP Remover";
-    }
+	@Override
+	public String getName()
+	{
+		return "NOP Remover";
+	}
 }

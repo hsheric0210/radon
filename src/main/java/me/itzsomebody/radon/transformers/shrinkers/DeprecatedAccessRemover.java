@@ -18,41 +18,49 @@
 
 package me.itzsomebody.radon.transformers.shrinkers;
 
-import java.util.concurrent.atomic.AtomicInteger;
 import me.itzsomebody.radon.Main;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Strips out deprecated access flags.
  *
  * @author ItzSomebody
  */
-public class DeprecatedAccessRemover extends Shrinker {
-    @Override
-    public void transform() {
-        AtomicInteger counter = new AtomicInteger();
+public class DeprecatedAccessRemover extends Shrinker
+{
+	@Override
+	public void transform()
+	{
+		final AtomicInteger counter = new AtomicInteger();
 
-        getClassWrappers().stream().filter(cw -> !excluded(cw)).forEach(cw -> {
-            if (cw.getAccess().isDeprecated()) {
-                cw.setAccessFlags(cw.getAccessFlags() & ~ACC_DEPRECATED);
-                counter.incrementAndGet();
-            }
+		getClassWrappers().stream().filter(cw -> !excluded(cw)).forEach(cw ->
+		{
+			if (cw.getAccess().isDeprecated())
+			{
+				cw.setAccessFlags(cw.getAccessFlags() & ~ACC_DEPRECATED);
+				counter.incrementAndGet();
+			}
 
-            cw.getMethods().stream().filter(mw -> !excluded(mw) && mw.getAccess().isDeprecated()).forEach(mw -> {
-                mw.setAccessFlags(mw.getAccessFlags() & ~ACC_DEPRECATED);
-                counter.incrementAndGet();
-            });
+			cw.getMethods().stream().filter(mw -> !excluded(mw) && mw.getAccess().isDeprecated()).forEach(mw ->
+			{
+				mw.setAccessFlags(mw.getAccessFlags() & ~ACC_DEPRECATED);
+				counter.incrementAndGet();
+			});
 
-            cw.getFields().stream().filter(fw -> !excluded(fw) && fw.getAccess().isDeprecated()).forEach(fw -> {
-                fw.setAccessFlags(fw.getAccessFlags() & ~ACC_DEPRECATED);
-                counter.incrementAndGet();
-            });
-        });
+			cw.getFields().stream().filter(fw -> !excluded(fw) && fw.getAccess().isDeprecated()).forEach(fw ->
+			{
+				fw.setAccessFlags(fw.getAccessFlags() & ~ACC_DEPRECATED);
+				counter.incrementAndGet();
+			});
+		});
 
-        Main.info(String.format("Removed %d deprecated access flags.", counter.get()));
-    }
+		Main.info(String.format("Removed %d deprecated access flags.", counter.get()));
+	}
 
-    @Override
-    public String getName() {
-        return "Useless Access Flags Remover";
-    }
+	@Override
+	public String getName()
+	{
+		return "Useless Access Flags Remover";
+	}
 }

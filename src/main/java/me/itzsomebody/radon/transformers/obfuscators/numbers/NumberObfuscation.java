@@ -18,13 +18,14 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.numbers;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Stream;
 import me.itzsomebody.radon.config.Configuration;
 import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.transformers.Transformer;
 import me.itzsomebody.radon.utils.RandomUtils;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
 
 import static me.itzsomebody.radon.config.ConfigurationSetting.NUMBER_OBFUSCATION;
 
@@ -33,113 +34,134 @@ import static me.itzsomebody.radon.config.ConfigurationSetting.NUMBER_OBFUSCATIO
  *
  * @author ItzSomebody
  */
-public class NumberObfuscation extends Transformer {
-    private final List<NumberObfuscation> numberObfuscators = new ArrayList<>();
-    private boolean integerTamperingEnabled;
-    private boolean longTamperingEnabled;
-    private boolean floatTamperingEnabled;
-    private boolean doubleTamperingEnabled;
+public class NumberObfuscation extends Transformer
+{
+	private final List<NumberObfuscation> numberObfuscators = new ArrayList<>();
+	private boolean integerTamperingEnabled;
+	private boolean longTamperingEnabled;
+	private boolean floatTamperingEnabled;
+	private boolean doubleTamperingEnabled;
 
-    protected NumberObfuscation master;
+	protected NumberObfuscation master;
 
-    @Override
-    public void transform() {
-        numberObfuscators.forEach(numberObfuscation -> {
-            numberObfuscation.init(radon);
-            numberObfuscation.initMaster(this);
-            numberObfuscation.transform();
-        });
-    }
+	@Override
+	public void transform()
+	{
+		numberObfuscators.forEach(numberObfuscation ->
+		{
+			numberObfuscation.init(radon);
+			numberObfuscation.initMaster(this);
+			numberObfuscation.transform();
+		});
+	}
 
-    @Override
-    public String getName() {
-        return "Number obfuscation";
-    }
+	@Override
+	public String getName()
+	{
+		return "Number obfuscation";
+	}
 
-    @Override
-    public ExclusionType getExclusionType() {
-        return ExclusionType.NUMBER_OBFUSCATION;
-    }
+	@Override
+	public ExclusionType getExclusionType()
+	{
+		return ExclusionType.NUMBER_OBFUSCATION;
+	}
 
-    @Override
-    public void setConfiguration(Configuration config) {
-        Stream.of(NumberObfuscationSetting.values()).filter(setting -> {
-            String path = NUMBER_OBFUSCATION + "." + setting.getName();
+	@Override
+	public void setConfiguration(final Configuration config)
+	{
+		Stream.of(NumberObfuscationSetting.values()).filter(setting ->
+		{
+			final String path = NUMBER_OBFUSCATION + "." + setting.getName();
 
-            if (config.contains(path)) {
-                return config.get(path);
-            }
+			if (config.contains(path))
+			{
+				return config.get(path);
+			}
 
-            return false;
-        }).forEach(setting -> numberObfuscators.add(setting.getNumberObfuscation()));
+			return false;
+		}).forEach(setting -> numberObfuscators.add(setting.getNumberObfuscation()));
 
-        setDoubleTamperingEnabled(config.getOrDefault(NUMBER_OBFUSCATION + ".double_tampering", false));
-        setFloatTamperingEnabled(config.getOrDefault(NUMBER_OBFUSCATION + ".float_tampering", false));
-        setIntegerTamperingEnabled(config.getOrDefault(NUMBER_OBFUSCATION + ".integer_tampering", false));
-        setLongTamperingEnabled(config.getOrDefault(NUMBER_OBFUSCATION + ".long_tampering", false));
-    }
+		setDoubleTamperingEnabled(config.getOrDefault(NUMBER_OBFUSCATION + ".double_tampering", false));
+		setFloatTamperingEnabled(config.getOrDefault(NUMBER_OBFUSCATION + ".float_tampering", false));
+		setIntegerTamperingEnabled(config.getOrDefault(NUMBER_OBFUSCATION + ".integer_tampering", false));
+		setLongTamperingEnabled(config.getOrDefault(NUMBER_OBFUSCATION + ".long_tampering", false));
+	}
 
-    private void initMaster(NumberObfuscation master) {
-        this.master = master;
-    }
+	private void initMaster(final NumberObfuscation master)
+	{
+		this.master = master;
+	}
 
-    protected static int randomInt(int bounds) {
-        if (bounds <= 0)
-            return RandomUtils.getRandomInt(Integer.MAX_VALUE);
+	protected static int randomInt(final int bounds)
+	{
+		if (bounds <= 0)
+			return RandomUtils.getRandomInt(Integer.MAX_VALUE);
 
-        return RandomUtils.getRandomInt(bounds);
-    }
+		return RandomUtils.getRandomInt(bounds);
+	}
 
-    protected static long randomLong(long bounds) {
-        if (bounds <= 0)
-            return RandomUtils.getRandomLong(Long.MAX_VALUE);
+	protected static long randomLong(final long bounds)
+	{
+		if (bounds <= 0)
+			return RandomUtils.getRandomLong(Long.MAX_VALUE);
 
-        return RandomUtils.getRandomLong(bounds);
-    }
+		return RandomUtils.getRandomLong(bounds);
+	}
 
-    protected static float randomFloat(float bounds) {
-        if (bounds <= 0)
-            return RandomUtils.getRandomFloat(Float.MAX_VALUE);
+	protected static float randomFloat(final float bounds)
+	{
+		if (bounds <= 0)
+			return RandomUtils.getRandomFloat(Float.MAX_VALUE);
 
-        return RandomUtils.getRandomFloat(bounds);
-    }
+		return RandomUtils.getRandomFloat(bounds);
+	}
 
-    protected static double randomDouble(double bounds) {
-        if (bounds <= 0)
-            return RandomUtils.getRandomDouble(Double.MAX_VALUE);
+	protected static double randomDouble(final double bounds)
+	{
+		if (bounds <= 0)
+			return RandomUtils.getRandomDouble(Double.MAX_VALUE);
 
-        return RandomUtils.getRandomDouble(bounds);
-    }
+		return RandomUtils.getRandomDouble(bounds);
+	}
 
-    protected boolean isIntegerTamperingEnabled() {
-        return integerTamperingEnabled;
-    }
+	protected boolean isIntegerTamperingEnabled()
+	{
+		return integerTamperingEnabled;
+	}
 
-    protected void setIntegerTamperingEnabled(boolean integerTamperingEnabled) {
-        this.integerTamperingEnabled = integerTamperingEnabled;
-    }
+	protected void setIntegerTamperingEnabled(final boolean integerTamperingEnabled)
+	{
+		this.integerTamperingEnabled = integerTamperingEnabled;
+	}
 
-    protected boolean isLongTamperingEnabled() {
-        return longTamperingEnabled;
-    }
+	protected boolean isLongTamperingEnabled()
+	{
+		return longTamperingEnabled;
+	}
 
-    protected void setLongTamperingEnabled(boolean longTamperingEnabled) {
-        this.longTamperingEnabled = longTamperingEnabled;
-    }
+	protected void setLongTamperingEnabled(final boolean longTamperingEnabled)
+	{
+		this.longTamperingEnabled = longTamperingEnabled;
+	}
 
-    protected boolean isFloatTamperingEnabled() {
-        return floatTamperingEnabled;
-    }
+	protected boolean isFloatTamperingEnabled()
+	{
+		return floatTamperingEnabled;
+	}
 
-    protected void setFloatTamperingEnabled(boolean floatTamperingEnabled) {
-        this.floatTamperingEnabled = floatTamperingEnabled;
-    }
+	protected void setFloatTamperingEnabled(final boolean floatTamperingEnabled)
+	{
+		this.floatTamperingEnabled = floatTamperingEnabled;
+	}
 
-    protected boolean isDoubleTamperingEnabled() {
-        return doubleTamperingEnabled;
-    }
+	protected boolean isDoubleTamperingEnabled()
+	{
+		return doubleTamperingEnabled;
+	}
 
-    protected void setDoubleTamperingEnabled(boolean doubleTamperingEnabled) {
-        this.doubleTamperingEnabled = doubleTamperingEnabled;
-    }
+	protected void setDoubleTamperingEnabled(final boolean doubleTamperingEnabled)
+	{
+		this.doubleTamperingEnabled = doubleTamperingEnabled;
+	}
 }

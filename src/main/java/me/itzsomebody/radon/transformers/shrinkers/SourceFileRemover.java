@@ -18,30 +18,35 @@
 
 package me.itzsomebody.radon.transformers.shrinkers;
 
-import java.util.concurrent.atomic.AtomicInteger;
 import me.itzsomebody.radon.Main;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Removes the sourcefile attribute.
  *
  * @author ItzSomebody
  */
-public class SourceFileRemover extends Shrinker {
-    @Override
-    public void transform() {
-        AtomicInteger counter = new AtomicInteger();
+public class SourceFileRemover extends Shrinker
+{
+	@Override
+	public void transform()
+	{
+		final AtomicInteger counter = new AtomicInteger();
 
-        getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)
-                && classWrapper.getClassNode().sourceFile != null).forEach(classWrapper -> {
-            classWrapper.getClassNode().sourceFile = null;
-            counter.incrementAndGet();
-        });
+		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)
+				&& classWrapper.getClassNode().sourceFile != null).forEach(classWrapper ->
+		{
+			classWrapper.getClassNode().sourceFile = null;
+			counter.incrementAndGet();
+		});
 
-        Main.info(String.format("Removed %d source name attributes.", counter.get()));
-    }
+		Main.info(String.format("Removed %d source name attributes.", counter.get()));
+	}
 
-    @Override
-    public String getName() {
-        return "Source name";
-    }
+	@Override
+	public String getName()
+	{
+		return "Source name";
+	}
 }

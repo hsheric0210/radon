@@ -1,7 +1,7 @@
 package me.itzsomebody.radon.utils;
 
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author cookiedragon234 02/Nov/2019
@@ -9,55 +9,55 @@ import java.util.ArrayList;
 public class StrSequence
 {
 	private final String[] sequence;
-	
-	public StrSequence(CharSequence sequence)
+
+	public StrSequence(final CharSequence sequence)
 	{
 		this(sequence.toString().toCharArray());
 	}
-	
-	public StrSequence(char[] sequence)
+
+	public StrSequence(final char[] sequence)
 	{
-		
+
 		this(new String(sequence).split(""));
 	}
-	
-	public StrSequence(String[] sequence)
+
+	public StrSequence(final String[] sequence)
 	{
 		this.sequence = sequence;
 	}
-	
-	public StrSequence(Iterable<? extends CharSequence> collection)
+
+	public StrSequence(final Iterable<? extends CharSequence> collection)
 	{
-		List<String> strList = new ArrayList<>();
-		for(CharSequence charSequence : collection)
+		final List<String> strList = new ArrayList<>();
+		for (final CharSequence charSequence : collection)
 		{
 			strList.add(charSequence.toString());
 		}
-		this.sequence = strList.toArray(new String[0]);
+		sequence = strList.toArray(new String[0]);
 	}
-	
+
 	public int length()
 	{
 		return sequence.length;
 	}
-	
-	public String strAt(int index)
+
+	public String strAt(final int index)
 	{
 		return sequence[index];
 	}
-	
-	public StrSequence subSequence(int start, int end)
+
+	public StrSequence subSequence(final int start, final int end)
 	{
-		String[] out = new String[end - start];
+		final String[] out = new String[end - start];
 		System.arraycopy(sequence, start, out, 0, end - start);
 		return new StrSequence(out);
 	}
-	
+
 	public String[] getSequence()
 	{
 		return sequence;
 	}
-	
+
 	@Override
 	public String toString()
 	{

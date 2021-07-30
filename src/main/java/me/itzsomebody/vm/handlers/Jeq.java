@@ -20,12 +20,14 @@ package me.itzsomebody.vm.handlers;
 
 import me.itzsomebody.vm.VM;
 
-public class Jeq extends Handler {
-    @Override
-    public void handle(VM vm, Object[] operands) {
-        int jumpTo = vm.pop().asInt();
+public class Jeq extends Handler
+{
+	@Override
+	public void handle(VM vm, Object[] operands)
+	{
+		int jumpTo = vm.pop().asInt();
 
-        if (vm.pop().asObj() == vm.pop().asObj())
-            vm.setPc(jumpTo);
-    }
+		if (vm.pop().asObj() == vm.pop().asObj())
+			vm.setPc(jumpTo);
+	}
 }

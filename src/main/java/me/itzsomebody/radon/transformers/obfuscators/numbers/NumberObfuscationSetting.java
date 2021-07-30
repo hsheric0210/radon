@@ -18,22 +18,26 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.numbers;
 
-public enum NumberObfuscationSetting {
-    CONTEXT_CHECKING(new ContextCheckObfuscator()),
-    ARITHMETIC_OPERATIONS(new ArithmeticObfuscator()),
-    BITWISE_OPERATIONS(new BitwiseObfuscator());
+public enum NumberObfuscationSetting
+{
+	CONTEXT_CHECKING(new ContextCheckObfuscator()),
+	ARITHMETIC_OPERATIONS(new ArithmeticObfuscator()),
+	BITWISE_OPERATIONS(new BitwiseObfuscator());
 
-    private final NumberObfuscation numberObfuscation;
+	private final NumberObfuscation numberObfuscation;
 
-    NumberObfuscationSetting(NumberObfuscation numberObfuscation) {
-        this.numberObfuscation = numberObfuscation;
-    }
+	NumberObfuscationSetting(final NumberObfuscation numberObfuscation)
+	{
+		this.numberObfuscation = numberObfuscation;
+	}
 
-    public NumberObfuscation getNumberObfuscation() {
-        return numberObfuscation;
-    }
+	public NumberObfuscation getNumberObfuscation()
+	{
+		return numberObfuscation;
+	}
 
-    public String getName() {
-        return name().toLowerCase();
-    }
+	public String getName()
+	{
+		return name().toLowerCase();
+	}
 }

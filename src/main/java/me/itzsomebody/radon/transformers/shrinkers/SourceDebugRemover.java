@@ -18,30 +18,35 @@
 
 package me.itzsomebody.radon.transformers.shrinkers;
 
-import java.util.concurrent.atomic.AtomicInteger;
 import me.itzsomebody.radon.Main;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Removes the sourcedebugextension attribute.
  *
  * @author ItzSomebody
  */
-public class SourceDebugRemover extends Shrinker {
-    @Override
-    public void transform() {
-        AtomicInteger counter = new AtomicInteger();
+public class SourceDebugRemover extends Shrinker
+{
+	@Override
+	public void transform()
+	{
+		final AtomicInteger counter = new AtomicInteger();
 
-        getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)
-                && classWrapper.getClassNode().sourceDebug != null).forEach(classWrapper -> {
-            classWrapper.getClassNode().sourceDebug = null;
-            counter.incrementAndGet();
-        });
+		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)
+				&& classWrapper.getClassNode().sourceDebug != null).forEach(classWrapper ->
+		{
+			classWrapper.getClassNode().sourceDebug = null;
+			counter.incrementAndGet();
+		});
 
-        Main.info(String.format("Remove %d source debug attributes.", counter.get()));
-    }
+		Main.info(String.format("Remove %d source debug attributes.", counter.get()));
+	}
 
-    @Override
-    public String getName() {
-        return "Source debug";
-    }
+	@Override
+	public String getName()
+	{
+		return "Source debug";
+	}
 }

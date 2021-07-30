@@ -18,9 +18,6 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.ejector;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import me.itzsomebody.radon.Main;
 import me.itzsomebody.radon.analysis.constant.ConstantAnalyzer;
 import me.itzsomebody.radon.analysis.constant.values.AbstractValue;
@@ -34,6 +31,10 @@ import me.itzsomebody.radon.transformers.obfuscators.ejector.phases.MethodCallEj
 import org.objectweb.asm.tree.analysis.AnalyzerException;
 import org.objectweb.asm.tree.analysis.Frame;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import static me.itzsomebody.radon.config.ConfigurationSetting.EJECTOR;
 
 /**
@@ -41,93 +42,110 @@ import static me.itzsomebody.radon.config.ConfigurationSetting.EJECTOR;
  *
  * @author vovanre
  */
-public class Ejector extends Transformer {
-    private boolean ejectMethodCalls;
-    private boolean ejectFieldSet;
-    private boolean junkArguments;
-    private int junkArgumentStrength;
+public class Ejector extends Transformer
+{
+	private boolean ejectMethodCalls;
+	private boolean ejectFieldSet;
+	private boolean junkArguments;
+	private int junkArgumentStrength;
 
-    @Override
-    public void transform() {
-        AtomicInteger counter = new AtomicInteger();
+	@Override
+	public void transform()
+	{
+		final AtomicInteger counter = new AtomicInteger();
 
-        getClassWrappers().stream()
-                .filter(classWrapper -> !excluded(classWrapper))
-                .forEach(classWrapper -> processClass(classWrapper, counter));
+		getClassWrappers().stream()
+				.filter(classWrapper -> !excluded(classWrapper))
+				.forEach(classWrapper -> processClass(classWrapper, counter));
 
-        Main.info(String.format("Ejected %d regions.", counter.get()));
-    }
+		Main.info(String.format("Ejected %d regions.", counter.get()));
+	}
 
-    private List<AbstractEjectPhase> getPhases(EjectorContext ejectorContext) {
-        List<AbstractEjectPhase> phases = new ArrayList<>();
-        if (isEjectMethodCalls())
-            phases.add(new MethodCallEjector(ejectorContext));
-        if (isEjectFieldSet())
-            phases.add(new FieldSetEjector(ejectorContext));
-        return phases;
-    }
+	private List<AbstractEjectPhase> getPhases(final EjectorContext ejectorContext)
+	{
+		final List<AbstractEjectPhase> phases = new ArrayList<>();
+		if (isEjectMethodCalls())
+			phases.add(new MethodCallEjector(ejectorContext));
+		if (isEjectFieldSet())
+			phases.add(new FieldSetEjector(ejectorContext));
+		return phases;
+	}
 
-    private void processClass(ClassWrapper classWrapper, AtomicInteger counter) {
-        new ArrayList<>(classWrapper.getMethods()).stream()
-                .filter(methodWrapper -> !excluded(methodWrapper))
-                .filter(methodWrapper -> !"<init>".equals(methodWrapper.getMethodNode().name))
-                .forEach(methodWrapper -> {
-                    EjectorContext ejectorContext = new EjectorContext(counter, classWrapper, junkArguments, junkArgumentStrength);
-                    getPhases(ejectorContext).forEach(ejectPhase -> {
-                        ConstantAnalyzer constantAnalyzer = new ConstantAnalyzer();
-                        try {
-                            Main.info("Analyze: " + classWrapper.getOriginalName() + "::" + methodWrapper.getOriginalName() + methodWrapper.getOriginalDescription());
-                            Frame<AbstractValue>[] frames = constantAnalyzer.analyze(classWrapper.getName(), methodWrapper.getMethodNode());
+	private void processClass(final ClassWrapper classWrapper, final AtomicInteger counter)
+	{
+		new ArrayList<>(classWrapper.getMethods()).stream()
+				.filter(methodWrapper -> !excluded(methodWrapper))
+				.filter(methodWrapper -> !"<init>".equals(methodWrapper.getMethodNode().name))
+				.forEach(methodWrapper ->
+				{
+					final EjectorContext ejectorContext = new EjectorContext(counter, classWrapper, junkArguments, junkArgumentStrength);
+					getPhases(ejectorContext).forEach(ejectPhase ->
+					{
+						final ConstantAnalyzer constantAnalyzer = new ConstantAnalyzer();
+						try
+						{
+							Main.info("Analyze: " + classWrapper.getOriginalName() + "::" + methodWrapper.getOriginalName() + methodWrapper.getOriginalDescription());
+							final Frame<AbstractValue>[] frames = constantAnalyzer.analyze(classWrapper.getName(), methodWrapper.getMethodNode());
 
-                            ejectPhase.process(methodWrapper, frames);
-                        } catch (AnalyzerException e) {
-                            Main.severe("Can't analyze method: " + classWrapper.getOriginalName() + "::" + methodWrapper.getOriginalName() + methodWrapper.getOriginalDescription());
-                            Main.severe(e.toString());
-                        }
-                    });
-                });
-    }
+							ejectPhase.process(methodWrapper, frames);
+						}
+						catch (final AnalyzerException e)
+						{
+							Main.severe("Can't analyze method: " + classWrapper.getOriginalName() + "::" + methodWrapper.getOriginalName() + methodWrapper.getOriginalDescription());
+							Main.severe(e.toString());
+						}
+					});
+				});
+	}
 
-    @Override
-    public ExclusionType getExclusionType() {
-        return ExclusionType.EJECTOR;
-    }
+	@Override
+	public ExclusionType getExclusionType()
+	{
+		return ExclusionType.EJECTOR;
+	}
 
-    @Override
-    public String getName() {
-        return "Ejector";
-    }
+	@Override
+	public String getName()
+	{
+		return "Ejector";
+	}
 
-    @Override
-    public void setConfiguration(Configuration config) {
-        setEjectMethodCalls(config.getOrDefault(EJECTOR + ".eject_call", false));
-        setEjectFieldSet(config.getOrDefault(EJECTOR + ".eject_field_set", false));
-        setJunkArguments(config.getOrDefault(EJECTOR + ".junk_arguments", false));
-        setJunkArgumentStrength(config.getOrDefault(EJECTOR + ".junk_argument_strength", 5));
-    }
+	@Override
+	public void setConfiguration(final Configuration config)
+	{
+		setEjectMethodCalls(config.getOrDefault(EJECTOR + ".eject_call", false));
+		setEjectFieldSet(config.getOrDefault(EJECTOR + ".eject_field_set", false));
+		setJunkArguments(config.getOrDefault(EJECTOR + ".junk_arguments", false));
+		setJunkArgumentStrength(config.getOrDefault(EJECTOR + ".junk_argument_strength", 5));
+	}
 
-    private boolean isEjectMethodCalls() {
-        return ejectMethodCalls;
-    }
+	private boolean isEjectMethodCalls()
+	{
+		return ejectMethodCalls;
+	}
 
-    private void setEjectMethodCalls(boolean ejectMethodCalls) {
-        this.ejectMethodCalls = ejectMethodCalls;
-    }
+	private void setEjectMethodCalls(final boolean ejectMethodCalls)
+	{
+		this.ejectMethodCalls = ejectMethodCalls;
+	}
 
+	private boolean isEjectFieldSet()
+	{
+		return ejectFieldSet;
+	}
 
-    private boolean isEjectFieldSet() {
-        return ejectFieldSet;
-    }
+	private void setEjectFieldSet(final boolean ejectFieldSet)
+	{
+		this.ejectFieldSet = ejectFieldSet;
+	}
 
-    private void setEjectFieldSet(boolean ejectFieldSet) {
-        this.ejectFieldSet = ejectFieldSet;
-    }
+	private void setJunkArguments(final boolean junkArguments)
+	{
+		this.junkArguments = junkArguments;
+	}
 
-    private void setJunkArguments(boolean junkArguments) {
-        this.junkArguments = junkArguments;
-    }
-
-    private void setJunkArgumentStrength(int junkArgumentStrength) {
-        this.junkArgumentStrength = Math.min(junkArgumentStrength, 50);
-    }
+	private void setJunkArgumentStrength(final int junkArgumentStrength)
+	{
+		this.junkArgumentStrength = Math.min(junkArgumentStrength, 50);
+	}
 }

@@ -18,9 +18,6 @@
 
 package me.itzsomebody.radon.transformers.miscellaneous;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
 import me.itzsomebody.radon.Main;
 import me.itzsomebody.radon.asm.ClassWrapper;
 import me.itzsomebody.radon.asm.MethodWrapper;
@@ -32,6 +29,10 @@ import me.itzsomebody.radon.utils.RandomUtils;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.VarInsnNode;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+
 import static me.itzsomebody.radon.config.ConfigurationSetting.WATERMARK;
 
 /**
@@ -39,101 +40,116 @@ import static me.itzsomebody.radon.config.ConfigurationSetting.WATERMARK;
  *
  * @author ItzSomebody.
  */
-public class Watermarker extends Transformer {
-    private String message;
-    private String key;
+public class Watermarker extends Transformer
+{
+	private String message;
+	private String key;
 
-    @Override
-    public void transform() {
-        ArrayList<ClassWrapper> classWrappers = new ArrayList<>(this.getClassWrappers());
+	@Override
+	public void transform()
+	{
+		final ArrayList<ClassWrapper> classWrappers = new ArrayList<>(getClassWrappers());
 
-        for (int i = 0; i < 3; i++) { // Two extra injections helps with reliability of watermark to be extracted
-            Deque<Character> watermark = cipheredWatermark();
-            while (!watermark.isEmpty()) {
-                ClassWrapper classWrapper;
-                int counter = 0;
+		for (int i = 0; i < 3; i++)
+		{ // Two extra injections helps with reliability of watermark to be extracted
+			final Deque<Character> watermark = cipheredWatermark();
+			while (!watermark.isEmpty())
+			{
+				ClassWrapper classWrapper;
+				int counter = 0;
 
-                do {
-                    classWrapper = classWrappers.get(RandomUtils.getRandomInt(0, classWrappers.size()));
-                    counter++;
+				do
+				{
+					classWrapper = classWrappers.get(RandomUtils.getRandomInt(0, classWrappers.size()));
+					counter++;
 
-                    if (counter > 20)
-                        throw new IllegalStateException("Radon couldn't find any methods to embed a watermark in after " + counter + " tries.");
-                } while (classWrapper.getMethods().size() == 0);
+					if (counter > 20)
+						throw new IllegalStateException("Radon couldn't find any methods to embed a watermark in after " + counter + " tries.");
+				} while (classWrapper.getMethods().size() == 0);
 
-                MethodWrapper mw = classWrapper.getMethods().get(RandomUtils.getRandomInt(0, classWrapper.getClassNode().methods.size()));
-                if (mw.hasInstructions()) {
-                    mw.getInstructions().insert(createInstructions(watermark, mw.getMaxLocals()));
-                    mw.setMaxLocals(mw.getMaxLocals());
-                }
-            }
-        }
+				final MethodWrapper mw = classWrapper.getMethods().get(RandomUtils.getRandomInt(0, classWrapper.getClassNode().methods.size()));
+				if (mw.hasInstructions())
+				{
+					mw.getInstructions().insert(createInstructions(watermark, mw.getMaxLocals()));
+					mw.setMaxLocals(mw.getMaxLocals());
+				}
+			}
+		}
 
-        Main.info("Successfully embedded watermark.");
-    }
+		Main.info("Successfully embedded watermark.");
+	}
 
-    private static InsnList createInstructions(Deque<Character> watermark, int offset) {
-        int xorKey = RandomUtils.getRandomInt();
-        int watermarkChar = watermark.pop() ^ xorKey;
-        int indexXorKey = RandomUtils.getRandomInt();
-        int watermarkIndex = watermark.size() ^ indexXorKey;
+	private static InsnList createInstructions(final Deque<Character> watermark, final int offset)
+	{
+		final int xorKey = RandomUtils.getRandomInt();
+		final int watermarkChar = watermark.pop() ^ xorKey;
+		final int indexXorKey = RandomUtils.getRandomInt();
+		final int watermarkIndex = watermark.size() ^ indexXorKey;
 
-        InsnList instructions = new InsnList();
-        instructions.add(ASMUtils.getNumberInsn(xorKey));
-        instructions.add(ASMUtils.getNumberInsn(watermarkChar));
-        instructions.add(ASMUtils.getNumberInsn(indexXorKey));
-        instructions.add(ASMUtils.getNumberInsn(watermarkIndex));
+		final InsnList instructions = new InsnList();
+		instructions.add(ASMUtils.getNumberInsn(xorKey));
+		instructions.add(ASMUtils.getNumberInsn(watermarkChar));
+		instructions.add(ASMUtils.getNumberInsn(indexXorKey));
+		instructions.add(ASMUtils.getNumberInsn(watermarkIndex));
 
-        // Local variable x where x is the max locals allowed in method can be the top of a long or double so we add 1
-        instructions.add(new VarInsnNode(ISTORE, offset + 1));
-        instructions.add(new VarInsnNode(ISTORE, offset + 2));
-        instructions.add(new VarInsnNode(ISTORE, offset + 3));
-        instructions.add(new VarInsnNode(ISTORE, offset + 4));
+		// Local variable x where x is the max locals allowed in method can be the top of a long or double so we add 1
+		instructions.add(new VarInsnNode(ISTORE, offset + 1));
+		instructions.add(new VarInsnNode(ISTORE, offset + 2));
+		instructions.add(new VarInsnNode(ISTORE, offset + 3));
+		instructions.add(new VarInsnNode(ISTORE, offset + 4));
 
-        return instructions;
-    }
+		return instructions;
+	}
 
-    // Really weak cipher, lul.
-    private Deque<Character> cipheredWatermark() {
-        char[] messageChars = getMessage().toCharArray();
-        char[] keyChars = getKey().toCharArray();
-        Deque<Character> returnThis = new ArrayDeque<>();
+	// Really weak cipher, lul.
+	private Deque<Character> cipheredWatermark()
+	{
+		final char[] messageChars = getMessage().toCharArray();
+		final char[] keyChars = getKey().toCharArray();
+		final Deque<Character> returnThis = new ArrayDeque<>();
 
-        for (int i = 0; i < messageChars.length; i++)
-            returnThis.push((char) (messageChars[i] ^ keyChars[i % keyChars.length]));
+		for (int i = 0; i < messageChars.length; i++)
+			returnThis.push((char) (messageChars[i] ^ keyChars[i % keyChars.length]));
 
-        return returnThis;
-    }
+		return returnThis;
+	}
 
-    @Override
-    public ExclusionType getExclusionType() {
-        return ExclusionType.WATERMARKER;
-    }
+	@Override
+	public ExclusionType getExclusionType()
+	{
+		return ExclusionType.WATERMARKER;
+	}
 
-    @Override
-    public void setConfiguration(Configuration config) {
-        setMessage(config.getOrDefault(WATERMARK + ".message", "blah"));
-        setKey(config.getOrDefault(WATERMARK + ".key", "blah"));
-    }
+	@Override
+	public void setConfiguration(final Configuration config)
+	{
+		setMessage(config.getOrDefault(WATERMARK + ".message", "blah"));
+		setKey(config.getOrDefault(WATERMARK + ".key", "blah"));
+	}
 
-    @Override
-    public String getName() {
-        return "Watermarker";
-    }
+	@Override
+	public String getName()
+	{
+		return "Watermarker";
+	}
 
-    private String getMessage() {
-        return message;
-    }
+	private String getMessage()
+	{
+		return message;
+	}
 
-    private void setMessage(String message) {
-        this.message = message;
-    }
+	private void setMessage(final String message)
+	{
+		this.message = message;
+	}
 
-    private String getKey() {
-        return key;
-    }
+	private String getKey()
+	{
+		return key;
+	}
 
-    private void setKey(String key) {
-        this.key = key;
-    }
+	private void setKey(final String key)
+	{
+		this.key = key;
+	}
 }

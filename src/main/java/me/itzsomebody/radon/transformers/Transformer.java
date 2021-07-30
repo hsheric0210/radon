@@ -18,9 +18,6 @@
 
 package me.itzsomebody.radon.transformers;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Map;
 import me.itzsomebody.radon.Radon;
 import me.itzsomebody.radon.asm.ClassWrapper;
 import me.itzsomebody.radon.asm.FieldWrapper;
@@ -31,91 +28,112 @@ import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.utils.RandomUtils;
 import org.objectweb.asm.Opcodes;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Map;
+
 /**
  * Abstract transformer for all the transformers. \o/
  *
  * @author ItzSomebody
  */
-public abstract class Transformer implements Opcodes {
-    protected Radon radon;
+public abstract class Transformer implements Opcodes
+{
+	protected Radon radon;
 
-    public final void init(Radon radon) {
-        this.radon = radon;
-    }
+	public final void init(final Radon radon)
+	{
+		this.radon = radon;
+	}
 
-    protected final boolean excluded(String str) {
-        return this.radon.getConfig().getExclusionManager().isExcluded(str, getExclusionType());
-    }
+	protected final boolean excluded(final String str)
+	{
+		return radon.getConfig().getExclusionManager().isExcluded(str, getExclusionType());
+	}
 
-    protected final boolean excluded(ClassWrapper classWrapper) {
-        return this.excluded(classWrapper.getOriginalName());
-    }
+	protected final boolean excluded(final ClassWrapper classWrapper)
+	{
+		return excluded(classWrapper.getOriginalName());
+	}
 
-    protected final boolean excluded(MethodWrapper methodWrapper) {
-        return this.excluded(methodWrapper.getOwner().getOriginalName() + '.' + methodWrapper.getOriginalName()
-                + methodWrapper.getOriginalDescription());
-    }
+	protected final boolean excluded(final MethodWrapper methodWrapper)
+	{
+		return excluded(methodWrapper.getOwner().getOriginalName() + '.' + methodWrapper.getOriginalName()
+				+ methodWrapper.getOriginalDescription());
+	}
 
-    protected final boolean excluded(FieldWrapper fieldWrapper) {
-        return this.excluded(fieldWrapper.getOwner().getOriginalName() + '.' + fieldWrapper.getOriginalName() + '.'
-                + fieldWrapper.getOriginalDescription());
-    }
+	protected final boolean excluded(final FieldWrapper fieldWrapper)
+	{
+		return excluded(fieldWrapper.getOwner().getOriginalName() + '.' + fieldWrapper.getOriginalName() + '.'
+				+ fieldWrapper.getOriginalDescription());
+	}
 
-    protected final long tookThisLong(long from) {
-        return System.currentTimeMillis() - from;
-    }
+	protected final long tookThisLong(final long from)
+	{
+		return System.currentTimeMillis() - from;
+	}
 
-    protected Dictionary getDictionary() {
-        return radon.getConfig().getDictionary();
-    }
+	protected Dictionary getDictionary()
+	{
+		return radon.getConfig().getDictionary();
+	}
 
-    protected String lastGeneratedString() {
-        return getDictionary().lastUniqueString();
-    }
+	protected String lastGeneratedString()
+	{
+		return getDictionary().lastUniqueString();
+	}
 
-    protected String nextUniqueString() {
-        return getDictionary().nextUniqueString();
-    }
+	protected String nextUniqueString()
+	{
+		return getDictionary().nextUniqueString();
+	}
 
-    protected String randomString() {
-        return getDictionary().randomString(radon.getConfig().getRandomizedStringLength());
-    }
+	protected String randomString()
+	{
+		return getDictionary().randomString(radon.getConfig().getRandomizedStringLength());
+	}
 
-    protected String uniqueRandomString() {
-        return getDictionary().uniqueRandomString(radon.getConfig().getRandomizedStringLength());
-    }
+	protected String uniqueRandomString()
+	{
+		return getDictionary().uniqueRandomString(radon.getConfig().getRandomizedStringLength());
+	}
 
-    public String randomClassName() {
-        Collection<String> classNames = getClasses().keySet();
-        ArrayList<String> list = new ArrayList<>(classNames);
+	public String randomClassName()
+	{
+		final Collection<String> classNames = getClasses().keySet();
+		final ArrayList<String> list = new ArrayList<>(classNames);
 
-        String first = list.get(RandomUtils.getRandomInt(classNames.size()));
-        String second = list.get(RandomUtils.getRandomInt(classNames.size()));
+		final String first = list.get(RandomUtils.getRandomInt(classNames.size()));
+		final String second = list.get(RandomUtils.getRandomInt(classNames.size()));
 
-        return first + '$' + second.substring(second.lastIndexOf("/") + 1);
-    }
+		return first + '$' + second.substring(second.lastIndexOf("/") + 1);
+	}
 
-    protected final Map<String, ClassWrapper> getClasses() {
-        return this.radon.classes;
-    }
+	protected final Map<String, ClassWrapper> getClasses()
+	{
+		return radon.classes;
+	}
 
-    protected final Collection<ClassWrapper> getClassWrappers() {
-        return this.radon.classes.values();
-    }
+	protected final Collection<ClassWrapper> getClassWrappers()
+	{
+		return radon.classes.values();
+	}
 
-    protected final Map<String, ClassWrapper> getClassPath() {
-        return this.radon.classPath;
-    }
+	protected final Map<String, ClassWrapper> getClassPath()
+	{
+		return radon.classPath;
+	}
 
-    protected final Map<String, byte[]> getResources() {
-        return this.radon.resources;
-    }
+	protected final Map<String, byte[]> getResources()
+	{
+		return radon.resources;
+	}
 
-    public abstract void transform();
+	public abstract void transform();
 
-    public abstract String getName();
+	public abstract String getName();
 
-    public abstract ExclusionType getExclusionType();
+	public abstract ExclusionType getExclusionType();
 
-    public abstract void setConfiguration(Configuration config);
+	public abstract void setConfiguration(Configuration config);
 }

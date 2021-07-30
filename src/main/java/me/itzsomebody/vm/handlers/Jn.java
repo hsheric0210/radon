@@ -20,12 +20,14 @@ package me.itzsomebody.vm.handlers;
 
 import me.itzsomebody.vm.VM;
 
-public class Jn extends Handler {
-    @Override
-    public void handle(VM vm, Object[] operands) {
-        int jumpTo = vm.pop().asInt();
+public class Jn extends Handler
+{
+	@Override
+	public void handle(VM vm, Object[] operands)
+	{
+		int jumpTo = vm.pop().asInt();
 
-        if (vm.pop().asObj() == null)
-            vm.setPc(jumpTo);
-    }
+		if (vm.pop().asObj() == null)
+			vm.setPc(jumpTo);
+	}
 }

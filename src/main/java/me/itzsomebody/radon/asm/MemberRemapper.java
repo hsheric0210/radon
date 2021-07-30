@@ -18,22 +18,26 @@
 
 package me.itzsomebody.radon.asm;
 
-import java.util.Map;
 import org.objectweb.asm.commons.SimpleRemapper;
+
+import java.util.Map;
 
 /**
  * Custom implementation of ASM's SimpleRemapper taking in account for field descriptions.
  *
  * @author ItzSomebody
  */
-public class MemberRemapper extends SimpleRemapper {
-    public MemberRemapper(final Map<String, String> mappings) {
-        super(mappings);
-    }
+public class MemberRemapper extends SimpleRemapper
+{
+	public MemberRemapper(final Map<String, String> mappings)
+	{
+		super(mappings);
+	}
 
-    @Override
-    public String mapFieldName(String owner, String name, String desc) {
-        String remappedName = map(owner + '.' + name + '.' + desc);
-        return (remappedName != null) ? remappedName : name;
-    }
+	@Override
+	public String mapFieldName(final String owner, final String name, final String desc)
+	{
+		final String remappedName = map(owner + '.' + name + '.' + desc);
+		return remappedName != null ? remappedName : name;
+	}
 }

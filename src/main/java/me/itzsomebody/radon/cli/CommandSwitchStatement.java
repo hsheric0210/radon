@@ -23,52 +23,57 @@ package me.itzsomebody.radon.cli;
  *
  * @author ItzSomebody.
  */
-public class CommandSwitchStatement {
-    /**
-     * The name of the switch.
-     */
-    private final String name;
+public class CommandSwitchStatement
+{
+	/**
+	 * The name of the switch.
+	 */
+	private final String name;
 
-    /**
-     * Number of args this switch takes.
-     */
-    private final int nArgs;
+	/**
+	 * Number of args this switch takes.
+	 */
+	private final int nArgs;
 
-    /**
-     * Creates a new {@link CommandSwitchStatement}.
-     *
-     * @param name  the name of this switch.
-     * @param nArgs number of args this switch takes.
-     */
-    public CommandSwitchStatement(String name, int nArgs) {
-        this.name = name;
-        this.nArgs = nArgs;
-    }
+	/**
+	 * Creates a new {@link CommandSwitchStatement}.
+	 *
+	 * @param name  the name of this switch.
+	 * @param nArgs number of args this switch takes.
+	 */
+	public CommandSwitchStatement(final String name, final int nArgs)
+	{
+		this.name = name;
+		this.nArgs = nArgs;
+	}
 
-    /**
-     * Returns the name of this switch.
-     *
-     * @return the name of this switch.
-     */
-    public String getName() {
-        return name;
-    }
+	/**
+	 * Returns the name of this switch.
+	 *
+	 * @return the name of this switch.
+	 */
+	public String getName()
+	{
+		return name;
+	}
 
-    /**
-     * Returns the number of args this switch takes.
-     *
-     * @return the number of args this switch takes.
-     */
-    public int getnArgs() {
-        return nArgs;
-    }
+	/**
+	 * Returns the number of args this switch takes.
+	 *
+	 * @return the number of args this switch takes.
+	 */
+	public int getnArgs()
+	{
+		return nArgs;
+	}
 
-    @Override
-    public boolean equals(Object obj) {
-        if (obj instanceof CommandSwitchStatement)
-            return (((CommandSwitchStatement) obj).getName().equals(this.getName()))
-                    && ((CommandSwitchStatement) obj).getnArgs() == this.getnArgs();
+	@Override
+	public boolean equals(final Object obj)
+	{
+		if (obj instanceof CommandSwitchStatement)
+			return ((CommandSwitchStatement) obj).getName().equals(getName())
+					&& ((CommandSwitchStatement) obj).getnArgs() == getnArgs();
 
-        return false;
-    }
+		return false;
+	}
 }

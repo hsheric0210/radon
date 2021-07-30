@@ -18,7 +18,6 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.numbers;
 
-import java.util.concurrent.atomic.AtomicInteger;
 import me.itzsomebody.radon.Main;
 import me.itzsomebody.radon.utils.ASMUtils;
 import me.itzsomebody.radon.utils.RandomUtils;
@@ -26,182 +25,196 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
  * Splits integer and long constants into random bitwise operations.
  *
  * @author ItzSomebody
  */
-public class BitwiseObfuscator extends NumberObfuscation {
-    @Override
-    public void transform() {
-        AtomicInteger counter = new AtomicInteger();
+public class BitwiseObfuscator extends NumberObfuscation
+{
+	@Override
+	public void transform()
+	{
+		final AtomicInteger counter = new AtomicInteger();
 
-        getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper ->
-                classWrapper.getMethods().stream().filter(methodWrapper -> !excluded(methodWrapper)
-                        && methodWrapper.hasInstructions()).forEach(methodWrapper -> {
-                    int leeway = methodWrapper.getLeewaySize();
-                    InsnList methodInstructions = methodWrapper.getInstructions();
+		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper ->
+				classWrapper.getMethods().stream().filter(methodWrapper -> !excluded(methodWrapper)
+						&& methodWrapper.hasInstructions()).forEach(methodWrapper ->
+				{
+					final int leeway = methodWrapper.getLeewaySize();
+					final InsnList methodInstructions = methodWrapper.getInstructions();
 
-                    for (AbstractInsnNode insn : methodInstructions.toArray()) {
-                        if (leeway < 10000)
-                            break;
+					for (final AbstractInsnNode insn : methodInstructions.toArray())
+					{
+						if (leeway < 10000)
+							break;
 
-                        if (ASMUtils.isIntInsn(insn) && master.isIntegerTamperingEnabled()) {
-                            InsnList insns = obfuscateNumber(ASMUtils.getIntegerFromInsn(insn));
+						if (ASMUtils.isIntInsn(insn) && master.isIntegerTamperingEnabled())
+						{
+							final InsnList insns = obfuscateNumber(ASMUtils.getIntegerFromInsn(insn));
 
-                            methodInstructions.insert(insn, insns);
-                            methodInstructions.remove(insn);
+							methodInstructions.insert(insn, insns);
+							methodInstructions.remove(insn);
 
-                            counter.incrementAndGet();
-                        } else if (ASMUtils.isLongInsn(insn) && master.isLongTamperingEnabled()) {
-                            InsnList insns = obfuscateNumber(ASMUtils.getLongFromInsn(insn));
+							counter.incrementAndGet();
+						} else if (ASMUtils.isLongInsn(insn) && master.isLongTamperingEnabled())
+						{
+							final InsnList insns = obfuscateNumber(ASMUtils.getLongFromInsn(insn));
 
-                            methodInstructions.insert(insn, insns);
-                            methodInstructions.remove(insn);
+							methodInstructions.insert(insn, insns);
+							methodInstructions.remove(insn);
 
-                            counter.incrementAndGet();
-                        }
-                    }
-                }));
+							counter.incrementAndGet();
+						}
+					}
+				}));
 
-        Main.info("Split " + counter.get() + " number constants into bitwise instructions");
-    }
+		Main.info("Split " + counter.get() + " number constants into bitwise instructions");
+	}
 
-    private InsnList obfuscateNumber(int originalNum) {
-        int current = randomInt(originalNum);
+	private InsnList obfuscateNumber(final int originalNum)
+	{
+		int current = randomInt(originalNum);
 
-        InsnList insns = new InsnList();
-        insns.add(ASMUtils.getNumberInsn(current));
+		final InsnList insns = new InsnList();
+		insns.add(ASMUtils.getNumberInsn(current));
 
-        for (int i = 0; i < RandomUtils.getRandomInt(2, 6); i++) {
-            int operand;
+		for (int i = 0; i < RandomUtils.getRandomInt(2, 6); i++)
+		{
+			final int operand;
 
-            switch (RandomUtils.getRandomInt(6)) {
-                case 0:
-                    operand = randomInt(current);
+			switch (RandomUtils.getRandomInt(6))
+			{
+				case 0:
+					operand = randomInt(current);
 
-                    insns.add(ASMUtils.getNumberInsn(operand));
-                    insns.add(new InsnNode(IAND));
+					insns.add(ASMUtils.getNumberInsn(operand));
+					insns.add(new InsnNode(IAND));
 
-                    current &= operand;
-                    break;
-                case 1:
-                    operand = randomInt(current);
+					current &= operand;
+					break;
+				case 1:
+					operand = randomInt(current);
 
-                    insns.add(ASMUtils.getNumberInsn(operand));
-                    insns.add(new InsnNode(IOR));
+					insns.add(ASMUtils.getNumberInsn(operand));
+					insns.add(new InsnNode(IOR));
 
-                    current |= operand;
-                    break;
-                case 2:
-                    operand = randomInt(current);
+					current |= operand;
+					break;
+				case 2:
+					operand = randomInt(current);
 
-                    insns.add(ASMUtils.getNumberInsn(operand));
-                    insns.add(new InsnNode(IXOR));
+					insns.add(ASMUtils.getNumberInsn(operand));
+					insns.add(new InsnNode(IXOR));
 
-                    current ^= operand;
-                    break;
-                case 3:
-                    operand = RandomUtils.getRandomInt(1, 5);
+					current ^= operand;
+					break;
+				case 3:
+					operand = RandomUtils.getRandomInt(1, 5);
 
-                    insns.add(ASMUtils.getNumberInsn(operand));
-                    insns.add(new InsnNode(ISHL));
+					insns.add(ASMUtils.getNumberInsn(operand));
+					insns.add(new InsnNode(ISHL));
 
-                    current <<= operand;
-                    break;
-                case 4:
-                    operand = RandomUtils.getRandomInt(1, 5);
+					current <<= operand;
+					break;
+				case 4:
+					operand = RandomUtils.getRandomInt(1, 5);
 
-                    insns.add(ASMUtils.getNumberInsn(operand));
-                    insns.add(new InsnNode(ISHR));
+					insns.add(ASMUtils.getNumberInsn(operand));
+					insns.add(new InsnNode(ISHR));
 
-                    current >>= operand;
-                    break;
-                case 5:
-                default:
-                    operand = RandomUtils.getRandomInt(1, 5);
+					current >>= operand;
+					break;
+				case 5:
+				default:
+					operand = RandomUtils.getRandomInt(1, 5);
 
-                    insns.add(ASMUtils.getNumberInsn(operand));
-                    insns.add(new InsnNode(IUSHR));
+					insns.add(ASMUtils.getNumberInsn(operand));
+					insns.add(new InsnNode(IUSHR));
 
-                    current >>>= operand;
-                    break;
-            }
-        }
+					current >>>= operand;
+					break;
+			}
+		}
 
-        int correctionOperand = originalNum ^ current;
-        insns.add(ASMUtils.getNumberInsn(correctionOperand));
-        insns.add(new InsnNode(IXOR));
+		final int correctionOperand = originalNum ^ current;
+		insns.add(ASMUtils.getNumberInsn(correctionOperand));
+		insns.add(new InsnNode(IXOR));
 
-        return insns;
-    }
+		return insns;
+	}
 
-    private InsnList obfuscateNumber(long originalNum) {
-        long current = randomLong(originalNum);
+	private InsnList obfuscateNumber(final long originalNum)
+	{
+		long current = randomLong(originalNum);
 
-        InsnList insns = new InsnList();
-        insns.add(ASMUtils.getNumberInsn(current));
+		final InsnList insns = new InsnList();
+		insns.add(ASMUtils.getNumberInsn(current));
 
-        for (int i = 0; i < RandomUtils.getRandomInt(2, 6); i++) {
-            long operand;
+		for (int i = 0; i < RandomUtils.getRandomInt(2, 6); i++)
+		{
+			final long operand;
 
-            switch (RandomUtils.getRandomInt(6)) {
-                case 0:
-                    operand = randomLong(current);
+			switch (RandomUtils.getRandomInt(6))
+			{
+				case 0:
+					operand = randomLong(current);
 
-                    insns.add(ASMUtils.getNumberInsn(operand));
-                    insns.add(new InsnNode(LAND));
+					insns.add(ASMUtils.getNumberInsn(operand));
+					insns.add(new InsnNode(LAND));
 
-                    current &= operand;
-                    break;
-                case 1:
-                    operand = randomLong(current);
+					current &= operand;
+					break;
+				case 1:
+					operand = randomLong(current);
 
-                    insns.add(ASMUtils.getNumberInsn(operand));
-                    insns.add(new InsnNode(LOR));
+					insns.add(ASMUtils.getNumberInsn(operand));
+					insns.add(new InsnNode(LOR));
 
-                    current |= operand;
-                    break;
-                case 2:
-                    operand = randomLong(current);
+					current |= operand;
+					break;
+				case 2:
+					operand = randomLong(current);
 
-                    insns.add(ASMUtils.getNumberInsn(operand));
-                    insns.add(new InsnNode(LXOR));
+					insns.add(ASMUtils.getNumberInsn(operand));
+					insns.add(new InsnNode(LXOR));
 
-                    current ^= operand;
-                    break;
-                case 3:
-                    operand = RandomUtils.getRandomInt(1, 32);
+					current ^= operand;
+					break;
+				case 3:
+					operand = RandomUtils.getRandomInt(1, 32);
 
-                    insns.add(ASMUtils.getNumberInsn((int) operand));
-                    insns.add(new InsnNode(LSHL));
+					insns.add(ASMUtils.getNumberInsn((int) operand));
+					insns.add(new InsnNode(LSHL));
 
-                    current <<= operand;
-                    break;
-                case 4:
-                    operand = RandomUtils.getRandomInt(1, 32);
+					current <<= operand;
+					break;
+				case 4:
+					operand = RandomUtils.getRandomInt(1, 32);
 
-                    insns.add(ASMUtils.getNumberInsn((int) operand));
-                    insns.add(new InsnNode(LSHR));
+					insns.add(ASMUtils.getNumberInsn((int) operand));
+					insns.add(new InsnNode(LSHR));
 
-                    current >>= operand;
-                    break;
-                case 5:
-                default:
-                    operand = RandomUtils.getRandomInt(1, 32);
+					current >>= operand;
+					break;
+				case 5:
+				default:
+					operand = RandomUtils.getRandomInt(1, 32);
 
-                    insns.add(ASMUtils.getNumberInsn((int) operand));
-                    insns.add(new InsnNode(LUSHR));
+					insns.add(ASMUtils.getNumberInsn((int) operand));
+					insns.add(new InsnNode(LUSHR));
 
-                    current >>>= operand;
-                    break;
-            }
-        }
+					current >>>= operand;
+					break;
+			}
+		}
 
-        long correctionOperand = originalNum ^ current;
-        insns.add(ASMUtils.getNumberInsn(correctionOperand));
-        insns.add(new InsnNode(LXOR));
+		final long correctionOperand = originalNum ^ current;
+		insns.add(ASMUtils.getNumberInsn(correctionOperand));
+		insns.add(new InsnNode(LXOR));
 
-        return insns;
-    }
+		return insns;
+	}
 }

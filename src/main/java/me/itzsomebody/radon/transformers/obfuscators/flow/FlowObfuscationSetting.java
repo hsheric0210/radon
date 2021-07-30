@@ -18,25 +18,29 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.flow;
 
-public enum FlowObfuscationSetting {
-    REPLACE_GOTO(new GotoReplacer()),
-    INSERT_BOGUS_SWITCH_JUMPS(new BogusSwitchJumpInserter()),
-    INSERT_BOGUS_JUMPS(new BogusJumpInserter()),
-    MUTILATE_NULL_CHECK(new NullCheckMutilator()),
-    SPLIT_BLOCKS(new BlockSplitter()),
-    FAKE_CATCH_BLOCKS(new FakeCatchBlocks());
+public enum FlowObfuscationSetting
+{
+	REPLACE_GOTO(new GotoReplacer()),
+	INSERT_BOGUS_SWITCH_JUMPS(new BogusSwitchJumpInserter()),
+	INSERT_BOGUS_JUMPS(new BogusJumpInserter()),
+	MUTILATE_NULL_CHECK(new NullCheckMutilator()),
+	SPLIT_BLOCKS(new BlockSplitter()),
+	FAKE_CATCH_BLOCKS(new FakeCatchBlocks());
 
-    private final FlowObfuscation flowObfuscation;
+	private final FlowObfuscation flowObfuscation;
 
-    FlowObfuscationSetting(FlowObfuscation flowObfuscation) {
-        this.flowObfuscation = flowObfuscation;
-    }
+	FlowObfuscationSetting(final FlowObfuscation flowObfuscation)
+	{
+		this.flowObfuscation = flowObfuscation;
+	}
 
-    public FlowObfuscation getFlowObfuscation() {
-        return flowObfuscation;
-    }
+	public FlowObfuscation getFlowObfuscation()
+	{
+		return flowObfuscation;
+	}
 
-    public String getName() {
-        return name().toLowerCase();
-    }
+	public String getName()
+	{
+		return name().toLowerCase();
+	}
 }

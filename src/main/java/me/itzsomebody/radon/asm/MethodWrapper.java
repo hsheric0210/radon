@@ -18,7 +18,6 @@
 
 package me.itzsomebody.radon.asm;
 
-import java.util.List;
 import me.itzsomebody.radon.asm.accesses.Access;
 import me.itzsomebody.radon.asm.accesses.MethodAccess;
 import org.objectweb.asm.commons.CodeSizeEvaluator;
@@ -26,152 +25,174 @@ import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 
+import java.util.List;
+
 /**
  * Wrapper for MethodNodes.
  *
  * @author ItzSomebody
  */
-public class MethodWrapper {
-    // https://docs.oracle.com/javase/specs/jvms/se12/html/jvms-4.html#jvms-4.7.3
-    private static final int MAX_CODE_SIZE = 65535;
+public class MethodWrapper
+{
+	// https://docs.oracle.com/javase/specs/jvms/se12/html/jvms-4.html#jvms-4.7.3
+	private static final int MAX_CODE_SIZE = 65535;
 
-    private MethodNode methodNode;
-    private final String originalName;
-    private final String originalDescription;
+	private MethodNode methodNode;
+	private final String originalName;
+	private final String originalDescription;
 
-    private final Access access;
-    private final ClassWrapper owner;
+	private final Access access;
+	private final ClassWrapper owner;
 
-    /**
-     * Creates a MethodWrapper object.
-     *
-     * @param methodNode the {@link MethodNode} this wrapper represents.
-     * @param owner      the owner of this represented method.
-     */
-    public MethodWrapper(MethodNode methodNode, ClassWrapper owner) {
-        this.methodNode = methodNode;
-        this.originalName = methodNode.name;
-        this.originalDescription = methodNode.desc;
-        this.access = new MethodAccess(this);
-        this.owner = owner;
-    }
+	/**
+	 * Creates a MethodWrapper object.
+	 *
+	 * @param methodNode the {@link MethodNode} this wrapper represents.
+	 * @param owner      the owner of this represented method.
+	 */
+	public MethodWrapper(final MethodNode methodNode, final ClassWrapper owner)
+	{
+		this.methodNode = methodNode;
+		originalName = methodNode.name;
+		originalDescription = methodNode.desc;
+		access = new MethodAccess(this);
+		this.owner = owner;
+	}
 
-    /**
-     * Attached MethodNode.
-     */
-    public MethodNode getMethodNode() {
-        return methodNode;
-    }
+	/**
+	 * Attached MethodNode.
+	 */
+	public MethodNode getMethodNode()
+	{
+		return methodNode;
+	}
 
-    public void setMethodNode(MethodNode methodNode) {
-        this.methodNode = methodNode;
-    }
+	public void setMethodNode(final MethodNode methodNode)
+	{
+		this.methodNode = methodNode;
+	}
 
-    /**
-     * @return owner of this wrapper.
-     */
-    public ClassWrapper getOwner() {
-        return owner;
-    }
+	/**
+	 * @return owner of this wrapper.
+	 */
+	public ClassWrapper getOwner()
+	{
+		return owner;
+	}
 
-    /**
-     * @return original name of wrapped {@link MethodNode}.
-     */
-    public String getOriginalName() {
-        return originalName;
-    }
+	/**
+	 * @return original name of wrapped {@link MethodNode}.
+	 */
+	public String getOriginalName()
+	{
+		return originalName;
+	}
 
-    /**
-     * @return original description of wrapped {@link MethodNode}
-     */
-    public String getOriginalDescription() {
-        return originalDescription;
-    }
+	/**
+	 * @return original description of wrapped {@link MethodNode}
+	 */
+	public String getOriginalDescription()
+	{
+		return originalDescription;
+	}
 
-    /**
-     * @return the current name of wrapped {@link MethodNode}.
-     */
-    public String getName() {
-        return methodNode.name;
-    }
+	/**
+	 * @return the current name of wrapped {@link MethodNode}.
+	 */
+	public String getName()
+	{
+		return methodNode.name;
+	}
 
-    /**
-     * @return the current description of wrapped {@link MethodNode}.
-     */
-    public String getDescription() {
-        return methodNode.desc;
-    }
+	/**
+	 * @return the current description of wrapped {@link MethodNode}.
+	 */
+	public String getDescription()
+	{
+		return methodNode.desc;
+	}
 
-    /**
-     * @return the current {@link InsnList} of wrapped {@link MethodNode}.
-     */
-    public InsnList getInstructions() {
-        return methodNode.instructions;
-    }
+	/**
+	 * @return the current {@link InsnList} of wrapped {@link MethodNode}.
+	 */
+	public InsnList getInstructions()
+	{
+		return methodNode.instructions;
+	}
 
-    public void setInstructions(InsnList instructions) {
-        methodNode.instructions = instructions;
-    }
+	public void setInstructions(final InsnList instructions)
+	{
+		methodNode.instructions = instructions;
+	}
 
-    /**
-     * @return the current {@link TryCatchBlockNode}s of wrapped {@link MethodNode}.
-     */
-    public List<TryCatchBlockNode> getTryCatchBlocks() {
-        return methodNode.tryCatchBlocks;
-    }
+	/**
+	 * @return the current {@link TryCatchBlockNode}s of wrapped {@link MethodNode}.
+	 */
+	public List<TryCatchBlockNode> getTryCatchBlocks()
+	{
+		return methodNode.tryCatchBlocks;
+	}
 
-    /**
-     * @return {@link MethodAccess} wrapper of represented {@link MethodNode}'s access flags.
-     */
-    public Access getAccess() {
-        return access;
-    }
+	/**
+	 * @return {@link MethodAccess} wrapper of represented {@link MethodNode}'s access flags.
+	 */
+	public Access getAccess()
+	{
+		return access;
+	}
 
-    /**
-     * @return raw access flags of wrapped {@link MethodNode}.
-     */
-    public int getAccessFlags() {
-        return methodNode.access;
-    }
+	/**
+	 * @return raw access flags of wrapped {@link MethodNode}.
+	 */
+	public int getAccessFlags()
+	{
+		return methodNode.access;
+	}
 
-    /**
-     * @param access access flags to set.
-     */
-    public void setAccessFlags(int access) {
-        methodNode.access = access;
-    }
+	/**
+	 * @param access access flags to set.
+	 */
+	public void setAccessFlags(final int access)
+	{
+		methodNode.access = access;
+	}
 
-    /**
-     * @return the current max allocation of local variables (registers) of wrapped {@link MethodNode}.
-     */
-    public int getMaxLocals() {
-        return methodNode.maxLocals;
-    }
+	/**
+	 * @return the current max allocation of local variables (registers) of wrapped {@link MethodNode}.
+	 */
+	public int getMaxLocals()
+	{
+		return methodNode.maxLocals;
+	}
 
-    public void setMaxLocals(int maxLocals) {
-        methodNode.maxLocals = maxLocals;
-    }
+	public void setMaxLocals(final int maxLocals)
+	{
+		methodNode.maxLocals = maxLocals;
+	}
 
-    /**
-     * @return true if the wrapped {@link MethodNode} represented by this wrapper contains instructions.
-     */
-    public boolean hasInstructions() {
-        return methodNode.instructions != null && methodNode.instructions.size() > 0;
-    }
+	/**
+	 * @return true if the wrapped {@link MethodNode} represented by this wrapper contains instructions.
+	 */
+	public boolean hasInstructions()
+	{
+		return methodNode.instructions != null && methodNode.instructions.size() > 0;
+	}
 
-    /**
-     * @return computes and returns the size of the wrapped {@link MethodNode}.
-     */
-    public int getCodeSize() {
-        CodeSizeEvaluator cse = new CodeSizeEvaluator(null);
-        methodNode.accept(cse);
-        return cse.getMaxSize();
-    }
+	/**
+	 * @return computes and returns the size of the wrapped {@link MethodNode}.
+	 */
+	public int getCodeSize()
+	{
+		final CodeSizeEvaluator cse = new CodeSizeEvaluator(null);
+		methodNode.accept(cse);
+		return cse.getMaxSize();
+	}
 
-    /**
-     * @return the leeway between the current size of the wrapped {@link MethodNode} and the max allowed size.
-     */
-    public int getLeewaySize() {
-        return MAX_CODE_SIZE - getCodeSize();
-    }
+	/**
+	 * @return the leeway between the current size of the wrapped {@link MethodNode} and the max allowed size.
+	 */
+	public int getLeewaySize()
+	{
+		return MAX_CODE_SIZE - getCodeSize();
+	}
 }
