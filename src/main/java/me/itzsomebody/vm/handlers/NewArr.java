@@ -18,18 +18,18 @@
 
 package me.itzsomebody.vm.handlers;
 
+import java.lang.reflect.Array;
+
 import me.itzsomebody.vm.VM;
 import me.itzsomebody.vm.datatypes.JObject;
-
-import java.lang.reflect.Array;
 
 public class NewArr extends Handler
 {
 	@Override
-	public void handle(VM vm, Object[] operands) throws Exception
+	public void handle(final VM vm, final Object[] operands) throws Exception
 	{
-		int size = vm.pop().asInt();
-		Class clazz = VM.getClazz((String) operands[0]);
+		final int size = vm.pop().asInt();
+		final Class clazz = VM.getClazz((String) operands[0]);
 		vm.push(new JObject(Array.newInstance(clazz, size)));
 	}
 }

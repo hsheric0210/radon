@@ -18,12 +18,12 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.ejector;
 
-import me.itzsomebody.radon.asm.ClassWrapper;
-import me.itzsomebody.radon.utils.RandomUtils;
-
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import me.itzsomebody.radon.asm.ClassWrapper;
+import me.itzsomebody.radon.utils.RandomUtils;
 
 public final class EjectorContext
 {

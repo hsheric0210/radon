@@ -18,6 +18,15 @@
 
 package me.itzsomebody.radon.transformers.miscellaneous;
 
+import static me.itzsomebody.radon.config.ConfigurationSetting.WATERMARK;
+
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+
+import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.VarInsnNode;
+
 import me.itzsomebody.radon.Main;
 import me.itzsomebody.radon.asm.ClassWrapper;
 import me.itzsomebody.radon.asm.MethodWrapper;
@@ -26,14 +35,6 @@ import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.transformers.Transformer;
 import me.itzsomebody.radon.utils.ASMUtils;
 import me.itzsomebody.radon.utils.RandomUtils;
-import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.VarInsnNode;
-
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
-
-import static me.itzsomebody.radon.config.ConfigurationSetting.WATERMARK;
 
 /**
  * Embeds a watermark into random classes.
@@ -65,7 +66,8 @@ public class Watermarker extends Transformer
 
 					if (counter > 20)
 						throw new IllegalStateException("Radon couldn't find any methods to embed a watermark in after " + counter + " tries.");
-				} while (classWrapper.getMethods().size() == 0);
+				}
+				while (classWrapper.getMethods().size() == 0);
 
 				final MethodWrapper mw = classWrapper.getMethods().get(RandomUtils.getRandomInt(0, classWrapper.getClassNode().methods.size()));
 				if (mw.hasInstructions())
@@ -104,11 +106,11 @@ public class Watermarker extends Transformer
 	// Really weak cipher, lul.
 	private Deque<Character> cipheredWatermark()
 	{
-		final char[] messageChars = getMessage().toCharArray();
-		final char[] keyChars = getKey().toCharArray();
+		final char[] messageChars = message.toCharArray();
+		final char[] keyChars = key.toCharArray();
 		final Deque<Character> returnThis = new ArrayDeque<>();
 
-		for (int i = 0; i < messageChars.length; i++)
+		for (int i = 0, j = messageChars.length; i < j; i++)
 			returnThis.push((char) (messageChars[i] ^ keyChars[i % keyChars.length]));
 
 		return returnThis;

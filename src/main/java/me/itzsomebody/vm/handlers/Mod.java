@@ -25,7 +25,7 @@ import me.itzsomebody.vm.datatypes.*;
 public class Mod extends Handler
 {
 	@Override
-	public void handle(VM vm, Object[] operands)
+	public void handle(final VM vm, final Object[] operands)
 	{
 		JWrapper wrapper = vm.pop();
 		if (wrapper instanceof JTop)
@@ -33,8 +33,8 @@ public class Mod extends Handler
 
 		if (wrapper instanceof JInteger)
 		{
-			int first = vm.pop().asInt();
-			int second = wrapper.asInt();
+			final int first = vm.pop().asInt();
+			final int second = wrapper.asInt();
 
 			vm.push(new JInteger(first % second));
 			return;
@@ -42,8 +42,8 @@ public class Mod extends Handler
 		if (wrapper instanceof JLong)
 		{
 			vm.pop();
-			long first = vm.pop().asLong();
-			long second = wrapper.asLong();
+			final long first = vm.pop().asLong();
+			final long second = wrapper.asLong();
 
 			vm.push(new JLong(first % second));
 			vm.push(JTop.getTop());
@@ -51,8 +51,8 @@ public class Mod extends Handler
 		}
 		if (wrapper instanceof JFloat)
 		{
-			float first = vm.pop().asFloat();
-			float second = wrapper.asFloat();
+			final float first = vm.pop().asFloat();
+			final float second = wrapper.asFloat();
 
 			vm.push(new JFloat(first % second));
 			return;
@@ -60,8 +60,8 @@ public class Mod extends Handler
 		if (wrapper instanceof JDouble)
 		{
 			vm.pop();
-			double first = vm.pop().asDouble();
-			double second = wrapper.asDouble();
+			final double first = vm.pop().asDouble();
+			final double second = wrapper.asDouble();
 
 			vm.push(new JDouble(first % second));
 			vm.push(JTop.getTop());

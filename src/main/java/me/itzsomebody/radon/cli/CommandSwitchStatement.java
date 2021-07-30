@@ -38,8 +38,10 @@ public class CommandSwitchStatement
 	/**
 	 * Creates a new {@link CommandSwitchStatement}.
 	 *
-	 * @param name  the name of this switch.
-	 * @param nArgs number of args this switch takes.
+	 * @param name
+	 *              the name of this switch.
+	 * @param nArgs
+	 *              number of args this switch takes.
 	 */
 	public CommandSwitchStatement(final String name, final int nArgs)
 	{
@@ -71,8 +73,7 @@ public class CommandSwitchStatement
 	public boolean equals(final Object obj)
 	{
 		if (obj instanceof CommandSwitchStatement)
-			return ((CommandSwitchStatement) obj).getName().equals(getName())
-					&& ((CommandSwitchStatement) obj).getnArgs() == getnArgs();
+			return ((CommandSwitchStatement) obj).name.equals(name) && ((CommandSwitchStatement) obj).nArgs == nArgs;
 
 		return false;
 	}

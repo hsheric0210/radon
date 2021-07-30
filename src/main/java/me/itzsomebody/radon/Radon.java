@@ -18,6 +18,19 @@
 
 package me.itzsomebody.radon;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.Field;
+import java.util.*;
+import java.util.zip.*;
+
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.commons.JSRInlinerAdapter;
+import org.objectweb.asm.tree.MethodNode;
+
 import me.itzsomebody.radon.asm.ClassTree;
 import me.itzsomebody.radon.asm.ClassWrapper;
 import me.itzsomebody.radon.config.ObfuscationConfiguration;
@@ -29,18 +42,6 @@ import me.itzsomebody.radon.transformers.miscellaneous.TrashClasses;
 import me.itzsomebody.radon.utils.FileUtils;
 import me.itzsomebody.radon.utils.IOUtils;
 import me.itzsomebody.radon.utils.RandomUtils;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.commons.JSRInlinerAdapter;
-import org.objectweb.asm.tree.MethodNode;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.reflect.Field;
-import java.util.*;
-import java.util.zip.*;
 
 /**
  * This class is how Radon processes the provided {@link ObfuscationConfiguration} to produce an obfuscated jar.
@@ -68,9 +69,9 @@ public class Radon
 		loadClassPath();
 		loadInput();
 
-		final List<Transformer> transformers = getConfig().getTransformers();
+		final List<Transformer> transformers = config.getTransformers();
 
-		if (getConfig().getnTrashClasses() > 0)
+		if (config.getnTrashClasses() > 0)
 			transformers.add(new TrashClasses());
 		if (transformers.isEmpty())
 			throw new RadonException("No transformers are enabled.");
@@ -114,7 +115,7 @@ public class Radon
 		try
 		{
 			final ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(output));
-			zos.setLevel(getConfig().getCompressionLevel());
+			zos.setLevel(config.getCompressionLevel());
 
 			if (config.isCorruptCrc())
 				try
@@ -190,7 +191,7 @@ public class Radon
 
 	private void loadClassPath()
 	{
-		getConfig().getLibraries().forEach(file ->
+		config.getLibraries().forEach(file ->
 		{
 			if (file.exists())
 			{
@@ -228,14 +229,15 @@ public class Radon
 					Main.severe(String.format("IOException happened while trying to load classes from \"%s\".", file.getAbsolutePath()));
 					e.printStackTrace();
 				}
-			} else
+			}
+			else
 				Main.warning(String.format("Library \"%s\" could not be found and will be ignored.", file.getAbsolutePath()));
 		});
 	}
 
 	private void loadInput()
 	{
-		final File input = getConfig().getInput();
+		final File input = config.getInput();
 
 		if (input.exists())
 		{
@@ -295,7 +297,8 @@ public class Radon
 				e.printStackTrace();
 				throw new RadonException(e);
 			}
-		} else
+		}
+		else
 		{
 			Main.severe(String.format("Unable to find \"%s\".", input.getAbsolutePath()));
 			throw new RadonException();
@@ -305,9 +308,10 @@ public class Radon
 	/**
 	 * Finds {@link ClassWrapper} with given name.
 	 *
-	 * @return {@link ClassWrapper}.
+	 * @return                {@link ClassWrapper}.
 	 *
-	 * @throws RadonException if not found.
+	 * @throws RadonException
+	 *                        if not found.
 	 */
 	public ClassWrapper getClassWrapper(final String ref)
 	{
@@ -320,9 +324,10 @@ public class Radon
 	/**
 	 * Finds {@link ClassTree} with given name.
 	 *
-	 * @return {@link ClassTree}.
+	 * @return                {@link ClassTree}.
 	 *
-	 * @throws RadonException if there are missing classes needed to build the inheritance tree.
+	 * @throws RadonException
+	 *                        if there are missing classes needed to build the inheritance tree.
 	 */
 	public ClassTree getTree(final String ref)
 	{
@@ -368,10 +373,7 @@ public class Radon
 	}
 
 	/**
-	 * Equivalent to the following:
-	 * Class clazz1 = something;
-	 * Class class2 = somethingElse;
-	 * return class1.isAssignableFrom(class2);
+	 * Equivalent to the following: Class clazz1 = something; Class class2 = somethingElse; return class1.isAssignableFrom(class2);
 	 */
 	public boolean isAssignableFrom(final String type1, final String type2)
 	{

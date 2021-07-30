@@ -18,14 +18,15 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.numbers;
 
-import me.itzsomebody.radon.Main;
-import me.itzsomebody.radon.utils.ASMUtils;
-import me.itzsomebody.radon.utils.RandomUtils;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import me.itzsomebody.radon.Main;
+import me.itzsomebody.radon.utils.ASMUtils;
+import me.itzsomebody.radon.utils.RandomUtils;
 
 /**
  * Splits number constants into arithmetic operations.
@@ -39,56 +40,58 @@ public class ArithmeticObfuscator extends NumberObfuscation
 	{
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper ->
-				classWrapper.getMethods().stream().filter(methodWrapper -> !excluded(methodWrapper)).forEach(methodWrapper ->
+		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper -> classWrapper.getMethods().stream().filter(methodWrapper -> !excluded(methodWrapper)).forEach(methodWrapper ->
+		{
+			int leeway = methodWrapper.getLeewaySize();
+			final InsnList methodInstructions = methodWrapper.getInstructions();
+
+			for (final AbstractInsnNode insn : methodInstructions.toArray())
+			{
+				if (leeway < 10000)
+					break;
+
+				if (ASMUtils.isIntInsn(insn) && master.isIntegerTamperingEnabled())
 				{
-					int leeway = methodWrapper.getLeewaySize();
-					final InsnList methodInstructions = methodWrapper.getInstructions();
+					final InsnList insns = obfuscateNumber(ASMUtils.getIntegerFromInsn(insn));
 
-					for (final AbstractInsnNode insn : methodInstructions.toArray())
-					{
-						if (leeway < 10000)
-							break;
+					methodInstructions.insert(insn, insns);
+					methodInstructions.remove(insn);
 
-						if (ASMUtils.isIntInsn(insn) && master.isIntegerTamperingEnabled())
-						{
-							final InsnList insns = obfuscateNumber(ASMUtils.getIntegerFromInsn(insn));
+					counter.incrementAndGet();
+					leeway -= insns.size() * 2;
+				}
+				else if (ASMUtils.isLongInsn(insn) && master.isLongTamperingEnabled())
+				{
+					final InsnList insns = obfuscateNumber(ASMUtils.getLongFromInsn(insn));
 
-							methodInstructions.insert(insn, insns);
-							methodInstructions.remove(insn);
+					methodInstructions.insert(insn, insns);
+					methodInstructions.remove(insn);
 
-							counter.incrementAndGet();
-							leeway -= insns.size() * 2;
-						} else if (ASMUtils.isLongInsn(insn) && master.isLongTamperingEnabled())
-						{
-							final InsnList insns = obfuscateNumber(ASMUtils.getLongFromInsn(insn));
+					counter.incrementAndGet();
+					leeway -= insns.size() * 2;
+				}
+				else if (ASMUtils.isFloatInsn(insn) && master.isFloatTamperingEnabled())
+				{
+					final InsnList insns = obfuscateNumber(ASMUtils.getFloatFromInsn(insn));
 
-							methodInstructions.insert(insn, insns);
-							methodInstructions.remove(insn);
+					methodInstructions.insert(insn, insns);
+					methodInstructions.remove(insn);
 
-							counter.incrementAndGet();
-							leeway -= insns.size() * 2;
-						} else if (ASMUtils.isFloatInsn(insn) && master.isFloatTamperingEnabled())
-						{
-							final InsnList insns = obfuscateNumber(ASMUtils.getFloatFromInsn(insn));
+					counter.incrementAndGet();
+					leeway -= insns.size() * 2;
+				}
+				else if (ASMUtils.isDoubleInsn(insn) && master.isDoubleTamperingEnabled())
+				{
+					final InsnList insns = obfuscateNumber(ASMUtils.getDoubleFromInsn(insn));
 
-							methodInstructions.insert(insn, insns);
-							methodInstructions.remove(insn);
+					methodInstructions.insert(insn, insns);
+					methodInstructions.remove(insn);
 
-							counter.incrementAndGet();
-							leeway -= insns.size() * 2;
-						} else if (ASMUtils.isDoubleInsn(insn) && master.isDoubleTamperingEnabled())
-						{
-							final InsnList insns = obfuscateNumber(ASMUtils.getDoubleFromInsn(insn));
-
-							methodInstructions.insert(insn, insns);
-							methodInstructions.remove(insn);
-
-							counter.incrementAndGet();
-							leeway -= insns.size() * 2;
-						}
-					}
-				}));
+					counter.incrementAndGet();
+					leeway -= insns.size() * 2;
+				}
+			}
+		}));
 
 		Main.info("Split " + counter.get() + " number constants into arithmetic instructions");
 	}

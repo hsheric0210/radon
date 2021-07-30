@@ -18,6 +18,21 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.virtualizer;
 
+import java.io.File;
+import java.io.InputStream;
+import java.lang.reflect.Modifier;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.Handle;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.*;
+
 import me.itzsomebody.radon.Main;
 import me.itzsomebody.radon.asm.ClassWrapper;
 import me.itzsomebody.radon.config.Configuration;
@@ -31,24 +46,9 @@ import me.itzsomebody.vm.VMContext;
 import me.itzsomebody.vm.VMTryCatch;
 import me.itzsomebody.vm.datatypes.JObject;
 import me.itzsomebody.vm.datatypes.JWrapper;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.Handle;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.*;
-
-import java.io.File;
-import java.io.InputStream;
-import java.lang.reflect.Modifier;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 /**
- * Translates Java bytecode into a custom bytecode instruction set. Piece of trash and hackiest thing ever.
- * TODO: rewrite
+ * Translates Java bytecode into a custom bytecode instruction set. Piece of trash and hackiest thing ever. TODO: rewrite
  *
  * @author ItzSomebody
  */
@@ -60,24 +60,22 @@ public class Virtualizer extends Transformer implements VMOpcodes
 		final AtomicInteger counter = new AtomicInteger();
 		final StubCreator stubCreator = new StubCreator();
 
-		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper ->
-				classWrapper.getMethods().stream().filter(mw -> !"<init>".equals(mw.getOriginalName()) && !excluded(mw)
-						&& mw.hasInstructions()).forEach(methodWrapper ->
-				{
-					final MethodNode methodNode = methodWrapper.getMethodNode();
+		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper -> classWrapper.getMethods().stream().filter(mw -> !"<init>".equals(mw.getOriginalName()) && !excluded(mw) && mw.hasInstructions()).forEach(methodWrapper ->
+		{
+			final MethodNode methodNode = methodWrapper.getMethodNode();
 
-					final int leeway = methodWrapper.getLeewaySize();
-					if (leeway <= 30000 || !canProtect(methodNode.instructions)) // Virtualization of big method = mega bad
-						return;
+			final int leeway = methodWrapper.getLeewaySize();
+			if (leeway <= 30000 || !canProtect(methodNode.instructions)) // Virtualization of big method = mega bad
+				return;
 
-					final VirtualizerResult result = translate(methodNode, counter.get());
-					stubCreator.addInstructionList(result.getVMInstructions());
-					methodNode.instructions = result.getVMCall();
-					methodNode.localVariables = null;
-					methodNode.tryCatchBlocks = null;
+			final VirtualizerResult result = translate(methodNode, counter.get());
+			stubCreator.addInstructionList(result.getVMInstructions());
+			methodNode.instructions = result.getVMCall();
+			methodNode.localVariables = null;
+			methodNode.tryCatchBlocks = null;
 
-					counter.incrementAndGet();
-				}));
+			counter.incrementAndGet();
+		}));
 
 		try
 		{
@@ -95,11 +93,7 @@ public class Virtualizer extends Transformer implements VMOpcodes
 
 	private static boolean canProtect(final InsnList insnList)
 	{
-		return Stream.of(insnList.toArray()).noneMatch(insn -> insn.getOpcode() == INVOKEDYNAMIC
-				|| insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof Handle
-				|| insn instanceof MultiANewArrayInsnNode
-				|| insn instanceof LookupSwitchInsnNode
-				|| insn instanceof TableSwitchInsnNode);
+		return Stream.of(insnList.toArray()).noneMatch(insn -> insn.getOpcode() == INVOKEDYNAMIC || insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof Handle || insn instanceof MultiANewArrayInsnNode || insn instanceof LookupSwitchInsnNode || insn instanceof TableSwitchInsnNode);
 	}
 
 	private void shadeVMRuntime() throws Exception
@@ -145,45 +139,78 @@ public class Virtualizer extends Transformer implements VMOpcodes
 				case ICONST_3:
 				case ICONST_4:
 				case ICONST_5:
-					instructions.add(new Instruction(VM_INT_PUSH, new Object[] {insn.getOpcode() - 3}));
+					instructions.add(new Instruction(VM_INT_PUSH, new Object[]
+					{
+							insn.getOpcode() - 3
+					}));
 					break;
 				case LCONST_0:
 				case LCONST_1:
-					instructions.add(new Instruction(VM_LONG_PUSH, new Object[] {insn.getOpcode() - 9}));
+					instructions.add(new Instruction(VM_LONG_PUSH, new Object[]
+					{
+							insn.getOpcode() - 9
+					}));
 					break;
 				case FCONST_0:
 				case FCONST_1:
 				case FCONST_2:
-					instructions.add(new Instruction(VM_FLOAT_PUSH, new Object[] {insn.getOpcode() - 11}));
+					instructions.add(new Instruction(VM_FLOAT_PUSH, new Object[]
+					{
+							insn.getOpcode() - 11
+					}));
 					break;
 				case DCONST_0:
 				case DCONST_1:
-					instructions.add(new Instruction(VM_DOUBLE_PUSH, new Object[] {insn.getOpcode() - 14}));
+					instructions.add(new Instruction(VM_DOUBLE_PUSH, new Object[]
+					{
+							insn.getOpcode() - 14
+					}));
 					break;
 				case BIPUSH:
 				case SIPUSH:
-					instructions.add(new Instruction(VM_INT_PUSH, new Object[] {((IntInsnNode) insn).operand}));
+					instructions.add(new Instruction(VM_INT_PUSH, new Object[]
+					{
+							((IntInsnNode) insn).operand
+					}));
 					break;
 				case LDC:
 					final Object cst = ((LdcInsnNode) insn).cst;
 
 					if (cst instanceof Integer)
-						instructions.add(new Instruction(VM_INT_PUSH, new Object[] {cst}));
+						instructions.add(new Instruction(VM_INT_PUSH, new Object[]
+						{
+								cst
+						}));
 					else if (cst instanceof Long)
-						instructions.add(new Instruction(VM_LONG_PUSH, new Object[] {cst}));
+						instructions.add(new Instruction(VM_LONG_PUSH, new Object[]
+						{
+								cst
+						}));
 					else if (cst instanceof Float)
-						instructions.add(new Instruction(VM_FLOAT_PUSH, new Object[] {cst}));
+						instructions.add(new Instruction(VM_FLOAT_PUSH, new Object[]
+						{
+								cst
+						}));
 					else if (cst instanceof Double)
-						instructions.add(new Instruction(VM_DOUBLE_PUSH, new Object[] {cst}));
+						instructions.add(new Instruction(VM_DOUBLE_PUSH, new Object[]
+						{
+								cst
+						}));
 					else if (cst instanceof String || cst instanceof Type)
-						instructions.add(new Instruction(VM_OBJ_PUSH, new Object[] {cst}));
+						instructions.add(new Instruction(VM_OBJ_PUSH, new Object[]
+						{
+								cst
+						}));
 					break;
 				case ILOAD:
 				case LLOAD:
 				case FLOAD:
 				case DLOAD:
 				case ALOAD:
-					instructions.add(new Instruction(VM_LOAD, new Object[] {((VarInsnNode) insn).var}));
+					instructions.add(new Instruction(VM_LOAD, new Object[]
+					{
+							((VarInsnNode) insn).var
+					}));
 					break;
 				case IALOAD:
 				case LALOAD:
@@ -192,17 +219,26 @@ public class Virtualizer extends Transformer implements VMOpcodes
 				case BALOAD:
 				case CALOAD:
 				case SALOAD:
-					instructions.add(new Instruction(VM_ARR_LOAD, new Object[] {0}));
+					instructions.add(new Instruction(VM_ARR_LOAD, new Object[]
+					{
+							0
+					}));
 					break;
 				case AALOAD:
-					instructions.add(new Instruction(VM_ARR_LOAD, new Object[] {1}));
+					instructions.add(new Instruction(VM_ARR_LOAD, new Object[]
+					{
+							1
+					}));
 					break;
 				case ISTORE:
 				case LSTORE:
 				case FSTORE:
 				case DSTORE:
 				case ASTORE:
-					instructions.add(new Instruction(VM_STORE, new Object[] {((VarInsnNode) insn).var}));
+					instructions.add(new Instruction(VM_STORE, new Object[]
+					{
+							((VarInsnNode) insn).var
+					}));
 					break;
 				case IASTORE:
 				case LASTORE:
@@ -226,7 +262,10 @@ public class Virtualizer extends Transformer implements VMOpcodes
 				case DUP2:
 				case DUP2_X1:
 				case DUP2_X2:
-					instructions.add(new Instruction(VM_DUP, new Object[] {insn.getOpcode() - 89}));
+					instructions.add(new Instruction(VM_DUP, new Object[]
+					{
+							insn.getOpcode() - 89
+					}));
 					break;
 				case SWAP:
 					instructions.add(new Instruction(VM_SWAP, new Object[0]));
@@ -265,7 +304,10 @@ public class Virtualizer extends Transformer implements VMOpcodes
 				case LNEG:
 				case FNEG:
 				case DNEG:
-					instructions.add(new Instruction(VM_INT_PUSH, new Object[] {-1}));
+					instructions.add(new Instruction(VM_INT_PUSH, new Object[]
+					{
+							-1
+					}));
 					instructions.add(new Instruction(VM_NEG, new Object[0]));
 					break;
 				case ISHL:
@@ -294,7 +336,10 @@ public class Virtualizer extends Transformer implements VMOpcodes
 					break;
 				case IINC:
 					final IincInsnNode inc = (IincInsnNode) insn;
-					instructions.add(new Instruction(VM_INC, new Object[] {inc.var, inc.incr}));
+					instructions.add(new Instruction(VM_INC, new Object[]
+					{
+							inc.var, inc.incr
+					}));
 					break;
 				case I2L:
 				case I2F:
@@ -311,7 +356,10 @@ public class Virtualizer extends Transformer implements VMOpcodes
 				case I2B:
 				case I2C:
 				case I2S:
-					instructions.add(new Instruction(VM_PRIM_CAST, new Object[] {insn.getOpcode() - 133}));
+					instructions.add(new Instruction(VM_PRIM_CAST, new Object[]
+					{
+							insn.getOpcode() - 133
+					}));
 					break;
 				case LCMP:
 					instructions.add(new Instruction(VM_LCMP, new Object[0]));
@@ -329,76 +377,127 @@ public class Virtualizer extends Transformer implements VMOpcodes
 					instructions.add(new Instruction(VM_DCMPG, new Object[0]));
 					break;
 				case IFEQ:
-					instructions.add(new Instruction(VM_NOP, new Object[] {((JumpInsnNode) insn).label}));
+					instructions.add(new Instruction(VM_NOP, new Object[]
+					{
+							((JumpInsnNode) insn).label
+					}));
 					instructions.add(new Instruction(VM_JZ, new Object[0]));
 					break;
 				case IFNE:
-					instructions.add(new Instruction(VM_NOP, new Object[] {((JumpInsnNode) insn).label}));
+					instructions.add(new Instruction(VM_NOP, new Object[]
+					{
+							((JumpInsnNode) insn).label
+					}));
 					instructions.add(new Instruction(VM_JNZ, new Object[0]));
 					break;
 				case IFLT:
-					instructions.add(new Instruction(VM_NOP, new Object[] {((JumpInsnNode) insn).label}));
+					instructions.add(new Instruction(VM_NOP, new Object[]
+					{
+							((JumpInsnNode) insn).label
+					}));
 					instructions.add(new Instruction(VM_JLT, new Object[0]));
 					break;
 				case IFGE:
-					instructions.add(new Instruction(VM_NOP, new Object[] {((JumpInsnNode) insn).label}));
+					instructions.add(new Instruction(VM_NOP, new Object[]
+					{
+							((JumpInsnNode) insn).label
+					}));
 					instructions.add(new Instruction(VM_JGE, new Object[0]));
 					break;
 				case IFGT:
-					instructions.add(new Instruction(VM_NOP, new Object[] {((JumpInsnNode) insn).label}));
+					instructions.add(new Instruction(VM_NOP, new Object[]
+					{
+							((JumpInsnNode) insn).label
+					}));
 					instructions.add(new Instruction(VM_JGT, new Object[0]));
 					break;
 				case IFLE:
-					instructions.add(new Instruction(VM_NOP, new Object[] {((JumpInsnNode) insn).label}));
+					instructions.add(new Instruction(VM_NOP, new Object[]
+					{
+							((JumpInsnNode) insn).label
+					}));
 					instructions.add(new Instruction(VM_JLE, new Object[0]));
 					break;
 				case IF_ICMPEQ:
 					instructions.add(new Instruction(VM_SUB, new Object[0]));
-					instructions.add(new Instruction(VM_NOP, new Object[] {((JumpInsnNode) insn).label}));
+					instructions.add(new Instruction(VM_NOP, new Object[]
+					{
+							((JumpInsnNode) insn).label
+					}));
 					instructions.add(new Instruction(VM_JZ, new Object[0]));
 					break;
 				case IF_ICMPNE:
 					instructions.add(new Instruction(VM_SUB, new Object[0]));
-					instructions.add(new Instruction(VM_NOP, new Object[] {((JumpInsnNode) insn).label}));
+					instructions.add(new Instruction(VM_NOP, new Object[]
+					{
+							((JumpInsnNode) insn).label
+					}));
 					instructions.add(new Instruction(VM_JNZ, new Object[0]));
 					break;
 				case IF_ICMPLT:
 					instructions.add(new Instruction(VM_SUB, new Object[0]));
-					instructions.add(new Instruction(VM_JLT, new Object[] {((JumpInsnNode) insn).label}));
+					instructions.add(new Instruction(VM_JLT, new Object[]
+					{
+							((JumpInsnNode) insn).label
+					}));
 					break;
 				case IF_ICMPGE:
 					instructions.add(new Instruction(VM_SUB, new Object[0]));
-					instructions.add(new Instruction(VM_NOP, new Object[] {((JumpInsnNode) insn).label}));
+					instructions.add(new Instruction(VM_NOP, new Object[]
+					{
+							((JumpInsnNode) insn).label
+					}));
 					instructions.add(new Instruction(VM_JGE, new Object[0]));
 					break;
 				case IF_ICMPGT:
 					instructions.add(new Instruction(VM_SUB, new Object[0]));
-					instructions.add(new Instruction(VM_NOP, new Object[] {((JumpInsnNode) insn).label}));
+					instructions.add(new Instruction(VM_NOP, new Object[]
+					{
+							((JumpInsnNode) insn).label
+					}));
 					instructions.add(new Instruction(VM_JGT, new Object[0]));
 					break;
 				case IF_ICMPLE:
 					instructions.add(new Instruction(VM_SUB, new Object[0]));
-					instructions.add(new Instruction(VM_NOP, new Object[] {((JumpInsnNode) insn).label}));
+					instructions.add(new Instruction(VM_NOP, new Object[]
+					{
+							((JumpInsnNode) insn).label
+					}));
 					instructions.add(new Instruction(VM_JLE, new Object[0]));
 					break;
 				case IF_ACMPEQ:
-					instructions.add(new Instruction(VM_NOP, new Object[] {((JumpInsnNode) insn).label}));
+					instructions.add(new Instruction(VM_NOP, new Object[]
+					{
+							((JumpInsnNode) insn).label
+					}));
 					instructions.add(new Instruction(VM_JEQ, new Object[0]));
 					break;
 				case IF_ACMPNE:
-					instructions.add(new Instruction(VM_NOP, new Object[] {((JumpInsnNode) insn).label}));
+					instructions.add(new Instruction(VM_NOP, new Object[]
+					{
+							((JumpInsnNode) insn).label
+					}));
 					instructions.add(new Instruction(VM_JNE, new Object[0]));
 					break;
 				case GOTO:
-					instructions.add(new Instruction(VM_NOP, new Object[] {((JumpInsnNode) insn).label}));
+					instructions.add(new Instruction(VM_NOP, new Object[]
+					{
+							((JumpInsnNode) insn).label
+					}));
 					instructions.add(new Instruction(VM_JMP, new Object[0]));
 					break;
 				case JSR:
-					instructions.add(new Instruction(VM_NOP, new Object[] {((JumpInsnNode) insn).label}));
+					instructions.add(new Instruction(VM_NOP, new Object[]
+					{
+							((JumpInsnNode) insn).label
+					}));
 					instructions.add(new Instruction(VM_JSR, new Object[0]));
 					break;
 				case RET:
-					instructions.add(new Instruction(VM_RET, new Object[] {((VarInsnNode) insn).var}));
+					instructions.add(new Instruction(VM_RET, new Object[]
+					{
+							((VarInsnNode) insn).var
+					}));
 					break;
 				case TABLESWITCH:
 				case LOOKUPSWITCH:
@@ -440,11 +539,9 @@ public class Virtualizer extends Transformer implements VMOpcodes
 					final Type fieldType = Type.getType(fin.desc);
 
 					instructions.add(new Instruction(opcode, new Object[]
-							{
-									fin.owner.replace('/', '.'),
-									fin.name,
-									fieldType.getSort() == Type.ARRAY ? fieldType.getInternalName().replace('/', '.') : fieldType.getClassName()
-							}));
+					{
+							fin.owner.replace('/', '.'), fin.name, fieldType.getSort() == Type.ARRAY ? fieldType.getInternalName().replace('/', '.') : fieldType.getClassName()
+					}));
 					break;
 				case INVOKEVIRTUAL:
 				case INVOKESPECIAL:
@@ -467,17 +564,14 @@ public class Virtualizer extends Transformer implements VMOpcodes
 
 					if (mOpcode == VM_INSTANTIATE)
 						instructions.add(new Instruction(VM_INSTANTIATE, new Object[]
-								{
-										min.owner.replace('/', '.'),
-										getVMMethodDesc(min.desc)
-								}));
+						{
+								min.owner.replace('/', '.'), getVMMethodDesc(min.desc)
+						}));
 					else
 						instructions.add(new Instruction(mOpcode, new Object[]
-								{
-										min.owner.replace('/', '.'),
-										min.name,
-										getVMMethodDesc(min.desc)
-								}));
+						{
+								min.owner.replace('/', '.'), min.name, getVMMethodDesc(min.desc)
+						}));
 					break;
 				case INVOKEDYNAMIC:
 					throw new RadonException("Invokedynamic not supported");
@@ -513,10 +607,16 @@ public class Virtualizer extends Transformer implements VMOpcodes
 						default:
 							throw new RadonException("Bad NEWARRAY type: " + newArray.operand);
 					}
-					instructions.add(new Instruction(VM_NEW_ARR, new Object[] {arrayType}));
+					instructions.add(new Instruction(VM_NEW_ARR, new Object[]
+					{
+							arrayType
+					}));
 					break;
 				case ANEWARRAY:
-					instructions.add(new Instruction(VM_NEW_ARR, new Object[] {((TypeInsnNode) insn).desc.replace('/', '.')}));
+					instructions.add(new Instruction(VM_NEW_ARR, new Object[]
+					{
+							((TypeInsnNode) insn).desc.replace('/', '.')
+					}));
 					break;
 				case ARRAYLENGTH:
 					instructions.add(new Instruction(VM_ARR_LENGTH, new Object[0]));
@@ -525,25 +625,43 @@ public class Virtualizer extends Transformer implements VMOpcodes
 					instructions.add(new Instruction(VM_THROW, new Object[0]));
 					break;
 				case CHECKCAST:
-					instructions.add(new Instruction(VM_CHECKCAST, new Object[] {((TypeInsnNode) insn).desc.replace('/', '.')}));
+					instructions.add(new Instruction(VM_CHECKCAST, new Object[]
+					{
+							((TypeInsnNode) insn).desc.replace('/', '.')
+					}));
 					break;
 				case INSTANCEOF:
-					instructions.add(new Instruction(VM_INSTANCE_OF, new Object[] {((TypeInsnNode) insn).desc.replace('/', '.')}));
+					instructions.add(new Instruction(VM_INSTANCE_OF, new Object[]
+					{
+							((TypeInsnNode) insn).desc.replace('/', '.')
+					}));
 					break;
 				case MONITORENTER:
-					instructions.add(new Instruction(VM_MONITOR, new Object[] {0}));
+					instructions.add(new Instruction(VM_MONITOR, new Object[]
+					{
+							0
+					}));
 					break;
 				case MONITOREXIT:
-					instructions.add(new Instruction(VM_MONITOR, new Object[] {1}));
+					instructions.add(new Instruction(VM_MONITOR, new Object[]
+					{
+							1
+					}));
 					break;
 				case MULTIANEWARRAY:
 					throw new RadonException("MULTINEWARRAY not supported");
 				case IFNULL:
-					instructions.add(new Instruction(VM_NOP, new Object[] {((JumpInsnNode) insn).label}));
+					instructions.add(new Instruction(VM_NOP, new Object[]
+					{
+							((JumpInsnNode) insn).label
+					}));
 					instructions.add(new Instruction(VM_JN, new Object[0]));
 					break;
 				case IFNONNULL:
-					instructions.add(new Instruction(VM_NOP, new Object[] {((JumpInsnNode) insn).label}));
+					instructions.add(new Instruction(VM_NOP, new Object[]
+					{
+							((JumpInsnNode) insn).label
+					}));
 					instructions.add(new Instruction(VM_JNN, new Object[0]));
 					break;
 				default:
@@ -551,7 +669,10 @@ public class Virtualizer extends Transformer implements VMOpcodes
 
 					if (insn instanceof LabelNode)
 					{
-						nopInstruction.setOperands(new Object[] {instructions.size()});
+						nopInstruction.setOperands(new Object[]
+						{
+								instructions.size()
+						});
 						targetMap.put((LabelNode) insn, nopInstruction);
 					}
 
@@ -560,12 +681,14 @@ public class Virtualizer extends Transformer implements VMOpcodes
 		});
 
 		// fixme: hacky
-		instructions.stream().filter(instruction -> instruction.getOperands().length == 1
-				&& instruction.getOperands()[0] instanceof LabelNode).forEach(instruction ->
+		instructions.stream().filter(instruction -> instruction.getOperands().length == 1 && instruction.getOperands()[0] instanceof LabelNode).forEach(instruction ->
 		{
 			final LabelNode label = (LabelNode) instruction.getOperands()[0];
 			final Instruction nop = targetMap.get(label);
-			instructions.set(instructions.indexOf(instruction), new Instruction(VM_INT_PUSH, new Object[] {nop.getOperands()[0]}));
+			instructions.set(instructions.indexOf(instruction), new Instruction(VM_INT_PUSH, new Object[]
+			{
+					nop.getOperands()[0]
+			}));
 		});
 
 		final InsnList vmCall = new InsnList();
@@ -598,7 +721,8 @@ public class Virtualizer extends Transformer implements VMOpcodes
 				vmCall.add(new InsnNode(AASTORE));
 			});
 			vmCall.add(new MethodInsnNode(INVOKESPECIAL, Type.getType(VMContext.class).getInternalName(), "<init>", "(III[L" + Type.getType(VMTryCatch.class).getInternalName() + ";)V", false));
-		} else
+		}
+		else
 			vmCall.add(new MethodInsnNode(INVOKESPECIAL, Type.getType(VMContext.class).getInternalName(), "<init>", "(III)V", false));
 		final Type[] argTypes = Type.getArgumentTypes(methodNode.desc);
 		if (argTypes.length > 0)
@@ -753,18 +877,18 @@ public class Virtualizer extends Transformer implements VMOpcodes
 		private final ArrayList<Instruction> vmInstructions;
 		private final InsnList vmCall;
 
-		private VirtualizerResult(final ArrayList<Instruction> vmInstructions, final InsnList vmCall)
+		VirtualizerResult(final ArrayList<Instruction> vmInstructions, final InsnList vmCall)
 		{
 			this.vmInstructions = vmInstructions;
 			this.vmCall = vmCall;
 		}
 
-		private ArrayList<Instruction> getVMInstructions()
+		ArrayList<Instruction> getVMInstructions()
 		{
 			return vmInstructions;
 		}
 
-		private InsnList getVMCall()
+		InsnList getVMCall()
 		{
 			return vmCall;
 		}

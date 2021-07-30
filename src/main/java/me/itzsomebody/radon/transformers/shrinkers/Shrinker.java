@@ -18,15 +18,15 @@
 
 package me.itzsomebody.radon.transformers.shrinkers;
 
-import me.itzsomebody.radon.config.Configuration;
-import me.itzsomebody.radon.exclusions.ExclusionType;
-import me.itzsomebody.radon.transformers.Transformer;
+import static me.itzsomebody.radon.config.ConfigurationSetting.SHRINKER;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static me.itzsomebody.radon.config.ConfigurationSetting.SHRINKER;
+import me.itzsomebody.radon.config.Configuration;
+import me.itzsomebody.radon.exclusions.ExclusionType;
+import me.itzsomebody.radon.transformers.Transformer;
 
 /**
  * Abstract class for shrinking transformers.
@@ -67,9 +67,7 @@ public class Shrinker extends Transformer
 			final String path = SHRINKER + "." + setting.getName();
 
 			if (config.contains(path))
-			{
 				return config.get(path);
-			}
 
 			return false;
 		}).forEach(setting -> shrinkers.add(setting.getShrinker()));

@@ -18,18 +18,19 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.ejector.phases;
 
+import java.util.*;
+
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.*;
+import org.objectweb.asm.tree.analysis.Frame;
+
 import me.itzsomebody.radon.analysis.constant.values.AbstractValue;
 import me.itzsomebody.radon.asm.ClassWrapper;
 import me.itzsomebody.radon.asm.MethodWrapper;
 import me.itzsomebody.radon.transformers.obfuscators.ejector.EjectorContext;
 import me.itzsomebody.radon.utils.ASMUtils;
 import me.itzsomebody.radon.utils.RandomUtils;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.*;
-import org.objectweb.asm.tree.analysis.Frame;
-
-import java.util.*;
 
 public final class FieldSetEjector extends AbstractEjectPhase
 {
@@ -65,10 +66,9 @@ public final class FieldSetEjector extends AbstractEjectPhase
 				final ArrayList<FieldInsnNode> list = new ArrayList<>();
 				list.add(fieldInsnNode);
 				result.put(fieldSetInfo, list);
-			} else
-			{
-				result.get(fieldSetInfo).add(fieldInsnNode);
 			}
+			else
+				result.get(fieldSetInfo).add(fieldInsnNode);
 		}
 		return result;
 	}
@@ -81,8 +81,7 @@ public final class FieldSetEjector extends AbstractEjectPhase
 		arguments.add(Type.getType(fieldSetInfo.desc));
 		arguments.add(Type.INT_TYPE);
 
-		final MethodNode methodNode = new MethodNode(getRandomAccess(), name, Type.getMethodDescriptor(Type.VOID_TYPE, arguments.toArray(new Type[0])),
-				null, null);
+		final MethodNode methodNode = new MethodNode(getRandomAccess(), name, Type.getMethodDescriptor(Type.VOID_TYPE, arguments.toArray(new Type[0])), null, null);
 		methodNode.instructions = ASMUtils.singletonList(new InsnNode(Opcodes.RETURN));
 		return methodNode;
 	}
@@ -159,10 +158,7 @@ public final class FieldSetEjector extends AbstractEjectPhase
 			{
 				final int id = ejectorContext.getNextId();
 
-				patches.put(fieldInsnNode, ASMUtils.asList(
-						new LdcInsnNode(id),
-						new MethodInsnNode(Opcodes.INVOKESTATIC, classWrapper.getName(), proxyMethod.name, proxyMethod.desc, false)
-				));
+				patches.put(fieldInsnNode, ASMUtils.asList(new LdcInsnNode(id), new MethodInsnNode(Opcodes.INVOKESTATIC, classWrapper.getName(), proxyMethod.name, proxyMethod.desc, false)));
 
 				final InsnList proxyArgumentFix = processFieldSet(methodNode, frames, patches, fieldInsnNode);
 
@@ -170,9 +166,7 @@ public final class FieldSetEjector extends AbstractEjectPhase
 				ejectorContext.getCounter().incrementAndGet();
 
 				if (ejectorContext.isJunkArguments())
-				{
 					proxyFixes.putAll(createJunkArguments(value, isStatic));
-				}
 			}
 
 			final int idVariable = Type.getArgumentTypes(proxyMethod.desc)[offset + 1].getSize();
@@ -188,8 +182,8 @@ public final class FieldSetEjector extends AbstractEjectPhase
 
 	private static class FieldSetInfo
 	{
-		private final int opcode;
-		private final String desc;
+		final int opcode;
+		final String desc;
 
 		FieldSetInfo(final int opcode, final String desc)
 		{
@@ -200,11 +194,12 @@ public final class FieldSetEjector extends AbstractEjectPhase
 		@Override
 		public boolean equals(final Object o)
 		{
-			if (this == o) return true;
-			if (o == null || getClass() != o.getClass()) return false;
+			if (this == o)
+				return true;
+			if (o == null || getClass() != o.getClass())
+				return false;
 			final FieldSetInfo that = (FieldSetInfo) o;
-			return opcode == that.opcode &&
-					Objects.equals(desc, that.desc);
+			return opcode == that.opcode && Objects.equals(desc, that.desc);
 		}
 
 		@Override

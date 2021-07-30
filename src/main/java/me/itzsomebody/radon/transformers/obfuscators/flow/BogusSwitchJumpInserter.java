@@ -18,18 +18,21 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.flow;
 
+import java.util.ArrayList;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import org.objectweb.asm.tree.*;
+
 import me.itzsomebody.radon.Main;
 import me.itzsomebody.radon.asm.StackHeightZeroFinder;
 import me.itzsomebody.radon.exceptions.RadonException;
 import me.itzsomebody.radon.exceptions.StackEmulationException;
 import me.itzsomebody.radon.utils.ASMUtils;
 import me.itzsomebody.radon.utils.RandomUtils;
-import org.objectweb.asm.tree.*;
-
-import java.util.ArrayList;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class BogusSwitchJumpInserter extends FlowObfuscation
 {
@@ -61,8 +64,7 @@ public class BogusSwitchJumpInserter extends FlowObfuscation
 				catch (final StackEmulationException e)
 				{
 					e.printStackTrace();
-					throw new RadonException(String.format("Error happened while trying to emulate the stack of %s.%s%s",
-							classWrapper.getName(), mw.getName(), mw.getDescription()));
+					throw new RadonException(String.format("Error happened while trying to emulate the stack of %s.%s%s", classWrapper.getName(), mw.getName(), mw.getDescription()));
 				}
 
 				final Set<AbstractInsnNode> check = shzf.getEmptyAt();
@@ -73,9 +75,7 @@ public class BogusSwitchJumpInserter extends FlowObfuscation
 
 				final int nTargets = emptyAt.size() / 2;
 
-				final ArrayList<LabelNode> targets = new ArrayList<>();
-				for (int i = 0; i < nTargets; i++)
-					targets.add(new LabelNode());
+				final ArrayList<LabelNode> targets = IntStream.range(0, nTargets).mapToObj(i -> new LabelNode()).collect(Collectors.toCollection(ArrayList::new));
 
 				final LabelNode back = new LabelNode();
 				final LabelNode dflt = new LabelNode();

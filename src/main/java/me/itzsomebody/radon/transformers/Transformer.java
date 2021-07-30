@@ -18,6 +18,12 @@
 
 package me.itzsomebody.radon.transformers;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Map;
+
+import org.objectweb.asm.Opcodes;
+
 import me.itzsomebody.radon.Radon;
 import me.itzsomebody.radon.asm.ClassWrapper;
 import me.itzsomebody.radon.asm.FieldWrapper;
@@ -26,11 +32,6 @@ import me.itzsomebody.radon.config.Configuration;
 import me.itzsomebody.radon.dictionaries.Dictionary;
 import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.utils.RandomUtils;
-import org.objectweb.asm.Opcodes;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Map;
 
 /**
  * Abstract transformer for all the transformers. \o/
@@ -58,14 +59,12 @@ public abstract class Transformer implements Opcodes
 
 	protected final boolean excluded(final MethodWrapper methodWrapper)
 	{
-		return excluded(methodWrapper.getOwner().getOriginalName() + '.' + methodWrapper.getOriginalName()
-				+ methodWrapper.getOriginalDescription());
+		return excluded(methodWrapper.getOwner().getOriginalName() + '.' + methodWrapper.getOriginalName() + methodWrapper.getOriginalDescription());
 	}
 
 	protected final boolean excluded(final FieldWrapper fieldWrapper)
 	{
-		return excluded(fieldWrapper.getOwner().getOriginalName() + '.' + fieldWrapper.getOriginalName() + '.'
-				+ fieldWrapper.getOriginalDescription());
+		return excluded(fieldWrapper.getOwner().getOriginalName() + '.' + fieldWrapper.getOriginalName() + '.' + fieldWrapper.getOriginalDescription());
 	}
 
 	protected final long tookThisLong(final long from)

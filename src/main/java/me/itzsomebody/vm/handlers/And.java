@@ -28,7 +28,7 @@ import me.itzsomebody.vm.datatypes.JWrapper;
 public class And extends Handler
 {
 	@Override
-	public void handle(VM vm, Object[] operands)
+	public void handle(final VM vm, final Object[] operands)
 	{
 		JWrapper wrapper = vm.pop();
 		if (wrapper instanceof JTop)
@@ -36,8 +36,8 @@ public class And extends Handler
 
 		if (wrapper instanceof JInteger)
 		{
-			int first = vm.pop().asInt();
-			int second = wrapper.asInt();
+			final int first = vm.pop().asInt();
+			final int second = wrapper.asInt();
 
 			vm.push(new JInteger(first & second));
 			return;
@@ -45,8 +45,8 @@ public class And extends Handler
 		if (wrapper instanceof JLong)
 		{
 			vm.pop();
-			long first = vm.pop().asLong();
-			long second = wrapper.asLong();
+			final long first = vm.pop().asLong();
+			final long second = wrapper.asLong();
 
 			vm.push(new JLong(first & second));
 			vm.push(JTop.getTop());

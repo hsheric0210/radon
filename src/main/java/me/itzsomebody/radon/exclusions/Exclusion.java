@@ -48,15 +48,15 @@ public class Exclusion
 	{
 		final String exc;
 
-		if (exclusion.startsWith("!"))
+		if (!exclusion.isEmpty() && exclusion.charAt(0) == '!')
 		{
 			shouldInclude = true;
 			exc = exclusion.substring(1);
-		} else
+		}
+		else
 			exc = exclusion;
 
-		final Optional<ExclusionType> result =
-				Stream.of(ExclusionType.values()).filter(type -> exc.startsWith(type.getName())).findFirst();
+		final Optional<ExclusionType> result = Stream.of(ExclusionType.values()).filter(type -> exc.startsWith(type.getName())).findFirst();
 
 		if (result.isPresent())
 		{

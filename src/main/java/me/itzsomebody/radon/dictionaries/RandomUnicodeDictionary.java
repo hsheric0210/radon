@@ -18,10 +18,10 @@
 
 package me.itzsomebody.radon.dictionaries;
 
-import me.itzsomebody.radon.utils.RandomUtils;
-
 import java.util.HashSet;
 import java.util.Set;
+
+import me.itzsomebody.radon.utils.RandomUtils;
 
 /**
  * Generates random unicode strings.
@@ -39,7 +39,7 @@ public class RandomUnicodeDictionary implements Dictionary
 
 	static
 	{
-		for (int i = 0; i < CHARSET.length; i++)
+		for (int i = 0, j = CHARSET.length; i < j; i++)
 			CHARSET[i] = (char) RandomUtils.getRandomInt('\u2000', '\uFFFF');
 	}
 
@@ -73,7 +73,8 @@ public class RandomUnicodeDictionary implements Dictionary
 				length++;
 				count = 0;
 			}
-		} while (cache.contains(s));
+		}
+		while (cache.contains(s));
 
 		cache.add(s);
 		cachedLength = length;
@@ -91,9 +92,7 @@ public class RandomUnicodeDictionary implements Dictionary
 		int charPos = 32;
 
 		if (!negative)
-		{
 			i = -i;
-		}
 
 		while (i <= -charsetLength)
 		{

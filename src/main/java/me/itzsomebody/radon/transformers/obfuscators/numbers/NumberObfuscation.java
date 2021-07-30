@@ -18,16 +18,16 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.numbers;
 
-import me.itzsomebody.radon.config.Configuration;
-import me.itzsomebody.radon.exclusions.ExclusionType;
-import me.itzsomebody.radon.transformers.Transformer;
-import me.itzsomebody.radon.utils.RandomUtils;
+import static me.itzsomebody.radon.config.ConfigurationSetting.NUMBER_OBFUSCATION;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static me.itzsomebody.radon.config.ConfigurationSetting.NUMBER_OBFUSCATION;
+import me.itzsomebody.radon.config.Configuration;
+import me.itzsomebody.radon.exclusions.ExclusionType;
+import me.itzsomebody.radon.transformers.Transformer;
+import me.itzsomebody.radon.utils.RandomUtils;
 
 /**
  * Abstract class for number obfuscation transformers.
@@ -75,9 +75,7 @@ public class NumberObfuscation extends Transformer
 			final String path = NUMBER_OBFUSCATION + "." + setting.getName();
 
 			if (config.contains(path))
-			{
 				return config.get(path);
-			}
 
 			return false;
 		}).forEach(setting -> numberObfuscators.add(setting.getNumberObfuscation()));

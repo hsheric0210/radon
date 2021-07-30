@@ -24,7 +24,7 @@ import me.itzsomebody.vm.datatypes.JFloat;
 public class FloatPush extends Handler
 {
 	@Override
-	public void handle(VM vm, Object[] operands)
+	public void handle(final VM vm, final Object[] operands)
 	{
 		vm.push(new JFloat((Float) operands[0]));
 	}

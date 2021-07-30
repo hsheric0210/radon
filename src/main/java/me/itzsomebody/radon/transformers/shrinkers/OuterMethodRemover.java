@@ -18,9 +18,9 @@
 
 package me.itzsomebody.radon.transformers.shrinkers;
 
-import me.itzsomebody.radon.Main;
-
 import java.util.concurrent.atomic.AtomicInteger;
+
+import me.itzsomebody.radon.Main;
 
 /**
  * Removes outer methods.
@@ -34,8 +34,7 @@ public class OuterMethodRemover extends Shrinker
 	{
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)
-				&& classWrapper.getClassNode().outerClass != null).forEach(classWrapper ->
+		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper) && classWrapper.getClassNode().outerClass != null).forEach(classWrapper ->
 		{
 			classWrapper.getClassNode().outerClass = null;
 			classWrapper.getClassNode().outerMethod = null;

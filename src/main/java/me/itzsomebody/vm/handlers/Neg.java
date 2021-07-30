@@ -25,7 +25,7 @@ import me.itzsomebody.vm.datatypes.*;
 public class Neg extends Handler
 {
 	@Override
-	public void handle(VM vm, Object[] operands)
+	public void handle(final VM vm, final Object[] operands)
 	{
 		JWrapper wrapper = vm.pop();
 		if (wrapper instanceof JTop)

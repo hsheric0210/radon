@@ -18,19 +18,20 @@
 
 package me.itzsomebody.radon.transformers.miscellaneous;
 
-import me.itzsomebody.radon.Main;
-import me.itzsomebody.radon.config.Configuration;
-import me.itzsomebody.radon.exceptions.RadonException;
-import me.itzsomebody.radon.exclusions.ExclusionType;
-import me.itzsomebody.radon.transformers.Transformer;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.tree.*;
+import static me.itzsomebody.radon.config.ConfigurationSetting.EXPIRATION;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static me.itzsomebody.radon.config.ConfigurationSetting.EXPIRATION;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.tree.*;
+
+import me.itzsomebody.radon.Main;
+import me.itzsomebody.radon.config.Configuration;
+import me.itzsomebody.radon.exceptions.RadonException;
+import me.itzsomebody.radon.exclusions.ExclusionType;
+import me.itzsomebody.radon.transformers.Transformer;
 
 /**
  * Inserts an expiration block of instructions in each constructor method.
@@ -73,20 +74,19 @@ public class Expiration extends Transformer
 		insns.add(new MethodInsnNode(INVOKESPECIAL, "java/util/Date", "<init>", "()V", false));
 		insns.add(new TypeInsnNode(NEW, "java/util/Date"));
 		insns.add(new InsnNode(DUP));
-		insns.add(new LdcInsnNode(getExpires()));
+		insns.add(new LdcInsnNode(expires));
 		insns.add(new MethodInsnNode(INVOKESPECIAL, "java/util/Date", "<init>", "(J)V", false));
 		insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/util/Date", "after", "(Ljava/util/Date;)Z", false));
 		insns.add(new JumpInsnNode(IFEQ, injectedLabel));
 		insns.add(new TypeInsnNode(NEW, "java/lang/Throwable"));
 		insns.add(new InsnNode(DUP));
-		insns.add(new LdcInsnNode(getMessage()));
-		if (isInjectJOptionPaneEnabled())
+		insns.add(new LdcInsnNode(message));
+		if (injectJOptionPaneEnabled)
 		{
 			insns.add(new InsnNode(DUP));
 			insns.add(new InsnNode(ACONST_NULL));
 			insns.add(new InsnNode(SWAP));
-			insns.add(new MethodInsnNode(INVOKESTATIC, "javax/swing/JOptionPane", "showMessageDialog",
-					"(Ljava/awt/Component;Ljava/lang/Object;)V", false));
+			insns.add(new MethodInsnNode(INVOKESTATIC, "javax/swing/JOptionPane", "showMessageDialog", "(Ljava/awt/Component;Ljava/lang/Object;)V", false));
 		}
 		insns.add(new MethodInsnNode(INVOKESPECIAL, "java/lang/Throwable", "<init>", "(Ljava/lang/String;)V", false));
 		insns.add(new InsnNode(ATHROW));

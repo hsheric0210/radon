@@ -18,15 +18,15 @@
 
 package me.itzsomebody.radon.transformers.obfuscators;
 
-import me.itzsomebody.radon.Main;
-import me.itzsomebody.radon.config.Configuration;
-import me.itzsomebody.radon.exclusions.ExclusionType;
-import me.itzsomebody.radon.transformers.Transformer;
+import static me.itzsomebody.radon.config.ConfigurationSetting.MEMBER_SHUFFLER;
 
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static me.itzsomebody.radon.config.ConfigurationSetting.MEMBER_SHUFFLER;
+import me.itzsomebody.radon.Main;
+import me.itzsomebody.radon.config.Configuration;
+import me.itzsomebody.radon.exclusions.ExclusionType;
+import me.itzsomebody.radon.transformers.Transformer;
 
 /**
  * Randomizes the order of methods and fields in a class.
@@ -45,13 +45,13 @@ public class MemberShuffler extends Transformer
 
 		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper ->
 		{
-			if (isShuffleMethodsEnabled())
+			if (shuffleMethodsEnabled)
 			{
 				Collections.shuffle(classWrapper.getClassNode().methods);
 				counter.addAndGet(classWrapper.getClassNode().methods.size());
 			}
 
-			if (isShuffleFieldsEnabled() && classWrapper.getClassNode().fields != null)
+			if (shuffleFieldsEnabled && classWrapper.getClassNode().fields != null)
 			{
 				Collections.shuffle(classWrapper.getClassNode().fields);
 				counter.addAndGet(classWrapper.getClassNode().fields.size());

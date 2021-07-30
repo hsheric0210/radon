@@ -25,15 +25,15 @@ import me.itzsomebody.vm.datatypes.JWrapper;
 public class ArrStore extends Handler
 {
 	@Override
-	public void handle(VM vm, Object[] operands)
+	public void handle(final VM vm, final Object[] operands)
 	{
 		JWrapper value = vm.pop();
 
 		if (value instanceof JTop)
 			value = vm.pop();
 
-		int index = vm.pop().asInt();
-		JWrapper ref = vm.pop();
+		final int index = vm.pop().asInt();
+		final JWrapper ref = vm.pop();
 		ref.set(value.copy(), index);
 	}
 }

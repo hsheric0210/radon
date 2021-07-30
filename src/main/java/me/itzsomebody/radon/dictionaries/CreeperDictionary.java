@@ -1,16 +1,17 @@
 package me.itzsomebody.radon.dictionaries;
 
-import me.itzsomebody.radon.utils.RandomUtils;
-
 import java.util.HashSet;
 import java.util.Set;
+
+import me.itzsomebody.radon.utils.RandomUtils;
 
 /**
  * @author cookiedragon234 15/Nov/2019
  */
 public class CreeperDictionary implements Dictionary
 {
-	private static final String[] LYRICS = {
+	private static final String[] LYRICS =
+	{
 			"Creeper_aw_man",
 			"So_we_back_in_the_mine_got_our_pickaxe_swingin_from_side_to_side_side_side_to_side",
 			"This_task_a_grueling_one_hope_to_find_some_diamonds_tonight_night_night_diamonds_tonight",
@@ -69,14 +70,11 @@ public class CreeperDictionary implements Dictionary
 	{
 		StringBuilder out = new StringBuilder();
 		do
-		{
 			out.append(LYRICS[RandomUtils.getRandomInt(LYRICS.length)]);
-		} while (out.length() < length);
+		while (out.length() < length);
 
 		if (out.length() > length)
-		{
 			out = new StringBuilder(out.substring(0, length));
-		}
 
 		return out.toString();
 	}
@@ -86,9 +84,8 @@ public class CreeperDictionary implements Dictionary
 	{
 		String s;
 		do
-		{
 			s = randomString(length);
-		} while (cache.contains(s));
+		while (cache.contains(s));
 
 		cache.add(s);
 
@@ -99,9 +96,7 @@ public class CreeperDictionary implements Dictionary
 	public String nextUniqueString()
 	{
 		if (index >= LYRICS.length)
-		{
 			index = 0;
-		}
 
 		String loopStr = loop + "";
 

@@ -18,19 +18,19 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.flow;
 
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.objectweb.asm.tree.*;
+
 import me.itzsomebody.radon.Main;
 import me.itzsomebody.radon.asm.StackHeightZeroFinder;
 import me.itzsomebody.radon.exceptions.RadonException;
 import me.itzsomebody.radon.exceptions.StackEmulationException;
 import me.itzsomebody.radon.utils.RandomUtils;
-import org.objectweb.asm.tree.*;
-
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Replaces IFNONNULL and IFNULL with a semantically equivalent try-catch block. This relies on the fact that
- * {@link NullPointerException} is thrown when a method is invoked upon null.
+ * Replaces IFNONNULL and IFNULL with a semantically equivalent try-catch block. This relies on the fact that {@link NullPointerException} is thrown when a method is invoked upon null.
  *
  * @author ItzSomebody
  */
@@ -41,8 +41,7 @@ public class NullCheckMutilator extends FlowObfuscation
 	{
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(cw -> !excluded(cw)).forEach(cw -> cw.getMethods().stream().filter(mw ->
-				!excluded(mw) && mw.hasInstructions()).forEach(mw ->
+		getClassWrappers().stream().filter(cw -> !excluded(cw)).forEach(cw -> cw.getMethods().stream().filter(mw -> !excluded(mw) && mw.hasInstructions()).forEach(mw ->
 		{
 			final MethodNode methodNode = mw.getMethodNode();
 
@@ -54,8 +53,7 @@ public class NullCheckMutilator extends FlowObfuscation
 			catch (final StackEmulationException e)
 			{
 				e.printStackTrace();
-				throw new RadonException(String.format("Error happened while trying to emulate the stack of %s.%s%s",
-						cw.getName(), mw.getName(), mw.getDescription()));
+				throw new RadonException(String.format("Error happened while trying to emulate the stack of %s.%s%s", cw.getName(), mw.getName(), mw.getDescription()));
 			}
 			final Set<AbstractInsnNode> emptyAt = shzf.getEmptyAt();
 			final int leeway = mw.getLeewaySize();
@@ -109,7 +107,8 @@ public class NullCheckMutilator extends FlowObfuscation
 						insns.add(catchStart);
 						insns.add(new InsnNode(POP));
 						insns.add(catchEnd);
-					} else
+					}
+					else
 					{
 						insns.add(new JumpInsnNode(GOTO, catchEnd));
 						insns.add(catchStart);

@@ -24,10 +24,10 @@ import me.itzsomebody.vm.datatypes.JWrapper;
 public class Swap extends Handler
 {
 	@Override
-	public void handle(VM vm, Object[] operands)
+	public void handle(final VM vm, final Object[] operands)
 	{
-		JWrapper first = vm.pop();
-		JWrapper second = vm.pop();
+		final JWrapper first = vm.pop();
+		final JWrapper second = vm.pop();
 
 		vm.push(first);
 		vm.push(second);

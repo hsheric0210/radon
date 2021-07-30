@@ -18,13 +18,14 @@
 
 package me.itzsomebody.radon.asm;
 
-import me.itzsomebody.radon.exceptions.StackEmulationException;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 
-import java.util.HashSet;
-import java.util.Set;
+import me.itzsomebody.radon.exceptions.StackEmulationException;
 
 /**
  * Attempts to find all points where the stack height is zero (or in simple terms: empty) in a method.
@@ -51,8 +52,10 @@ public class StackHeightZeroFinder implements Opcodes
 	/**
 	 * Constructor to create a {@link StackHeightZeroFinder} object.
 	 *
-	 * @param methodNode the method node we want to check.
-	 * @param breakPoint the opcode we want to break on.
+	 * @param methodNode
+	 *                   the method node we want to check.
+	 * @param breakPoint
+	 *                   the opcode we want to break on.
 	 */
 	public StackHeightZeroFinder(final MethodNode methodNode, final AbstractInsnNode breakPoint)
 	{

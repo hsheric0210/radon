@@ -18,18 +18,6 @@
 
 package me.itzsomebody.radon.transformers.miscellaneous;
 
-import me.itzsomebody.radon.Main;
-import me.itzsomebody.radon.asm.ClassWrapper;
-import me.itzsomebody.radon.config.Configuration;
-import me.itzsomebody.radon.exceptions.RadonException;
-import me.itzsomebody.radon.exclusions.ExclusionType;
-import me.itzsomebody.radon.transformers.Transformer;
-import org.objectweb.asm.FieldVisitor;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.ClassNode;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -38,6 +26,19 @@ import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.jar.Manifest;
 import java.util.zip.GZIPOutputStream;
+
+import org.objectweb.asm.FieldVisitor;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.ClassNode;
+
+import me.itzsomebody.radon.Main;
+import me.itzsomebody.radon.asm.ClassWrapper;
+import me.itzsomebody.radon.config.Configuration;
+import me.itzsomebody.radon.exceptions.RadonException;
+import me.itzsomebody.radon.exclusions.ExclusionType;
+import me.itzsomebody.radon.transformers.Transformer;
 
 /**
  * Packs classes and resources into a stub file which is unpacked on runtime.
@@ -66,16 +67,9 @@ public class Packer extends Transformer
 			/*
 			 * Spec:
 			 *
-			 * struct Stub {
-			 *     u4 nEntries;
-			 *     entries[nEntries];
-			 * };
+			 * struct Stub { u4 nEntries; entries[nEntries]; };
 			 *
-			 * struct StubEntry {
-			 *     name;
-			 *     u4 nBytes;
-			 *     bytes[nBytes];
-			 * };
+			 * struct StubEntry { name; u4 nBytes; bytes[nBytes]; };
 			 */
 			getClasses().forEach((name, wrapper) ->
 			{
@@ -186,7 +180,10 @@ public class Packer extends Transformer
 		fv = cw.visitField(ACC_PRIVATE | ACC_FINAL | ACC_STATIC, memberNames.resourcesFieldName, "Ljava/util/Map;", "Ljava/util/Map<Ljava/lang/String;[B>;", null);
 		fv.visitEnd();
 		{
-			mv = cw.visitMethod(ACC_PRIVATE, "<init>", "()V", null, new String[] {"java/io/IOException"});
+			mv = cw.visitMethod(ACC_PRIVATE, "<init>", "()V", null, new String[]
+			{
+					"java/io/IOException"
+			});
 			mv.visitCode();
 			final Label l0 = new Label();
 			mv.visitLabel(l0);
@@ -274,7 +271,10 @@ public class Packer extends Transformer
 			mv.visitEnd();
 		}
 		{
-			mv = cw.visitMethod(ACC_PROTECTED, "findClass", "(Ljava/lang/String;)Ljava/lang/Class;", null, new String[] {"java/lang/ClassNotFoundException"});
+			mv = cw.visitMethod(ACC_PROTECTED, "findClass", "(Ljava/lang/String;)Ljava/lang/Class;", null, new String[]
+			{
+					"java/lang/ClassNotFoundException"
+			});
 			mv.visitCode();
 			final Label l0 = new Label();
 			mv.visitLabel(l0);
@@ -353,7 +353,10 @@ public class Packer extends Transformer
 			mv.visitEnd();
 		}
 		{
-			mv = cw.visitMethod(ACC_PUBLIC | ACC_STATIC | ACC_VARARGS, "main", "([Ljava/lang/String;)V", null, new String[] {"java/lang/Throwable"});
+			mv = cw.visitMethod(ACC_PUBLIC | ACC_STATIC | ACC_VARARGS, "main", "([Ljava/lang/String;)V", null, new String[]
+			{
+					"java/lang/Throwable"
+			});
 			mv.visitCode();
 			final Label l0 = new Label();
 			mv.visitLabel(l0);
@@ -422,8 +425,12 @@ public class Packer extends Transformer
 
 	private class MemberNames
 	{
-		private final String className = uniqueRandomString();
-		private final String resourcesFieldName = uniqueRandomString();
-		private final String stubName = '/' + uniqueRandomString();
+		final String className = uniqueRandomString();
+		final String resourcesFieldName = uniqueRandomString();
+		final String stubName = '/' + uniqueRandomString();
+
+		MemberNames()
+		{
+		}
 	}
 }

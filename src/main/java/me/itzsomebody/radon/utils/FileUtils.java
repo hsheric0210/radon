@@ -22,14 +22,15 @@ import java.io.File;
 import java.util.List;
 import java.util.stream.Stream;
 
-public class FileUtils
+public final class FileUtils
 {
 	/**
 	 * Renames an existing file to EXISTING-FILE.jar.BACKUP-X.
 	 *
-	 * @param existing existing file to rename.
+	 * @param  existing
+	 *                  existing file to rename.
 	 *
-	 * @return the new name of the existing name.
+	 * @return          the new name of the existing name.
 	 */
 	public static String renameExistingFile(final File existing)
 	{
@@ -52,31 +53,29 @@ public class FileUtils
 	/**
 	 * Searches sub directories for libraries
 	 *
-	 * @param file      should be directory
-	 * @param libraries all libraries collected.
+	 * @param  file
+	 *                   should be directory
+	 * @param  libraries
+	 *                   all libraries collected.
 	 *
-	 * @author Richard Xing
+	 * @author           Richard Xing
 	 */
 	public static void getSubDirectoryFiles(final File file, final List<File> libraries)
 	{
 		if (!file.isFile() && file.listFiles() != null)
-		{
 			Stream.of(file.listFiles()).forEach(f ->
 			{
 				// 输出元素名称
 
+				// System.out.println(fileLists[i].getConfigName());
 				if (f.isDirectory())
-				{
 					getSubDirectoryFiles(f, libraries);
-				} else
-				{
-					if (f.getName().toLowerCase().endsWith(".jar"))
-					{
-						//System.out.println(fileLists[i].getConfigName());
-						libraries.add(f);
-					}
-				}
+				else if (f.getName().toLowerCase().endsWith(".jar"))
+					libraries.add(f);
 			});
-		}
+	}
+
+	private FileUtils()
+	{
 	}
 }

@@ -18,19 +18,19 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.flow;
 
-import me.itzsomebody.radon.Main;
-import org.objectweb.asm.tree.*;
-
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.objectweb.asm.tree.*;
+
+import me.itzsomebody.radon.Main;
 
 /**
  * This splits a method's block of code into two blocks: P1 and P2 and then inserting P2 behind P1.
  * <p>
  * P1->P2 becomes GOTO_P1->P2->P1->GOTO_P2
  * </p>
- * This is similar in functionality to http://www.sable.mcgill.ca/JBCO/examples.html#GIA but is done
- * recursively on the method to ensure maximum effectiveness.
+ * This is similar in functionality to http://www.sable.mcgill.ca/JBCO/examples.html#GIA but is done recursively on the method to ensure maximum effectiveness.
  *
  * @author ItzSomebody
  */
@@ -44,11 +44,10 @@ public class BlockSplitter extends FlowObfuscation
 	{
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(cw -> !excluded(cw)).forEach(cw ->
-				cw.getMethods().stream().filter(mw -> !excluded(mw)).forEach(mw ->
-				{
-					doSplit(mw.getMethodNode(), counter, 0);
-				}));
+		getClassWrappers().stream().filter(cw -> !excluded(cw)).forEach(cw -> cw.getMethods().stream().filter(mw -> !excluded(mw)).forEach(mw ->
+		{
+			doSplit(mw.getMethodNode(), counter, 0);
+		}));
 
 		Main.info("Split " + counter.get() + " blocks");
 	}
@@ -68,9 +67,7 @@ public class BlockSplitter extends FlowObfuscation
 			final AbstractInsnNode p1Start = insns.getFirst();
 
 			// We can't have trap ranges mutilated by block splitting
-			if (methodNode.tryCatchBlocks.stream().anyMatch(tcbn ->
-					insns.indexOf(tcbn.end) >= insns.indexOf(p2Start)
-							&& insns.indexOf(tcbn.start) <= insns.indexOf(p2Start)))
+			if (methodNode.tryCatchBlocks.stream().anyMatch(tcbn -> insns.indexOf(tcbn.end) >= insns.indexOf(p2Start) && insns.indexOf(tcbn.start) <= insns.indexOf(p2Start)))
 				return;
 
 			final ArrayList<AbstractInsnNode> insnNodes = new ArrayList<>();
@@ -102,9 +99,7 @@ public class BlockSplitter extends FlowObfuscation
 
 			// We might have messed up variable ranges when rearranging the block order.
 			if (methodNode.localVariables != null)
-				new ArrayList<>(methodNode.localVariables).stream().filter(lvn ->
-						insns.indexOf(lvn.end) < insns.indexOf(lvn.start)
-				).forEach(methodNode.localVariables::remove);
+				new ArrayList<>(methodNode.localVariables).stream().filter(lvn -> insns.indexOf(lvn.end) < insns.indexOf(lvn.start)).forEach(methodNode.localVariables::remove);
 
 			doSplit(methodNode, counter, callStackSize + 1);
 		}

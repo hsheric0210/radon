@@ -18,20 +18,21 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.numbers;
 
-import me.itzsomebody.radon.Main;
-import me.itzsomebody.radon.asm.ClassWrapper;
-import me.itzsomebody.radon.utils.ASMUtils;
-import me.itzsomebody.radon.utils.RandomUtils;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
+
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.tree.*;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import me.itzsomebody.radon.Main;
+import me.itzsomebody.radon.asm.ClassWrapper;
+import me.itzsomebody.radon.utils.ASMUtils;
+import me.itzsomebody.radon.utils.RandomUtils;
 
 /**
- * XORs number constants using stacktrace variables as keys. Be super careful with this because it WILL
- * SLOW STUFF DOWN BY A LOT.
+ * XORs number constants using stacktrace variables as keys. Be super careful with this because it WILL SLOW STUFF DOWN BY A LOT.
  *
  * @author ItzSomebody
  */
@@ -43,90 +44,91 @@ public class ContextCheckObfuscator extends NumberObfuscation
 		final MemberNames memberNames = new MemberNames();
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper ->
-				classWrapper.getMethods().stream().filter(methodWrapper -> !excluded(methodWrapper)
-						&& methodWrapper.hasInstructions()).forEach(methodWrapper ->
+		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper -> classWrapper.getMethods().stream().filter(methodWrapper -> !excluded(methodWrapper) && methodWrapper.hasInstructions()).forEach(methodWrapper ->
+		{
+			int leeway = methodWrapper.getLeewaySize();
+			final InsnList methodInstructions = methodWrapper.getInstructions();
+
+			for (final AbstractInsnNode insn : methodInstructions.toArray())
+			{
+				if (leeway < 10000)
+					break;
+
+				if (ASMUtils.isIntInsn(insn) && master.isIntegerTamperingEnabled())
 				{
-					int leeway = methodWrapper.getLeewaySize();
-					final InsnList methodInstructions = methodWrapper.getInstructions();
+					final int originalNum = ASMUtils.getIntegerFromInsn(insn);
+					final int encodedInt = encodeInt(originalNum, methodWrapper.getName().hashCode());
 
-					for (final AbstractInsnNode insn : methodInstructions.toArray())
-					{
-						if (leeway < 10000)
-							break;
+					final InsnList insnList = new InsnList();
+					insnList.add(ASMUtils.getNumberInsn(encodedInt));
+					insnList.add(new MethodInsnNode(INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false));
+					insnList.add(new InsnNode(ICONST_0));
+					insnList.add(new MethodInsnNode(INVOKESTATIC, memberNames.className, memberNames.decodeConstantMethodName, "(Ljava/lang/Object;I)Ljava/lang/Object;", false));
+					insnList.add(new TypeInsnNode(CHECKCAST, "java/lang/Integer"));
+					insnList.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Integer", "intValue", "()I", false));
 
-						if (ASMUtils.isIntInsn(insn) && master.isIntegerTamperingEnabled())
-						{
-							final int originalNum = ASMUtils.getIntegerFromInsn(insn);
-							final int encodedInt = encodeInt(originalNum, methodWrapper.getName().hashCode());
+					methodInstructions.insertBefore(insn, insnList);
+					methodInstructions.remove(insn);
+					leeway -= 20;
+					counter.incrementAndGet();
+				}
+				else if (ASMUtils.isLongInsn(insn) && master.isLongTamperingEnabled())
+				{
+					final long originalNum = ASMUtils.getLongFromInsn(insn);
+					final long encodedLong = encodeLong(originalNum, methodWrapper.getName().hashCode());
 
-							final InsnList insnList = new InsnList();
-							insnList.add(ASMUtils.getNumberInsn(encodedInt));
-							insnList.add(new MethodInsnNode(INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false));
-							insnList.add(new InsnNode(ICONST_0));
-							insnList.add(new MethodInsnNode(INVOKESTATIC, memberNames.className, memberNames.decodeConstantMethodName, "(Ljava/lang/Object;I)Ljava/lang/Object;", false));
-							insnList.add(new TypeInsnNode(CHECKCAST, "java/lang/Integer"));
-							insnList.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Integer", "intValue", "()I", false));
+					final InsnList insnList = new InsnList();
+					insnList.add(ASMUtils.getNumberInsn(encodedLong));
+					insnList.add(new MethodInsnNode(INVOKESTATIC, "java/lang/Long", "valueOf", "(J)Ljava/lang/Long;", false));
+					insnList.add(new InsnNode(ICONST_0));
+					insnList.add(new MethodInsnNode(INVOKESTATIC, memberNames.className, memberNames.decodeConstantMethodName, "(Ljava/lang/Object;I)Ljava/lang/Object;", false));
+					insnList.add(new TypeInsnNode(CHECKCAST, "java/lang/Long"));
+					insnList.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Long", "longValue", "()J", false));
 
-							methodInstructions.insertBefore(insn, insnList);
-							methodInstructions.remove(insn);
-							leeway -= 20;
-							counter.incrementAndGet();
-						} else if (ASMUtils.isLongInsn(insn) && master.isLongTamperingEnabled())
-						{
-							final long originalNum = ASMUtils.getLongFromInsn(insn);
-							final long encodedLong = encodeLong(originalNum, methodWrapper.getName().hashCode());
+					methodInstructions.insertBefore(insn, insnList);
+					methodInstructions.remove(insn);
+					leeway -= 25;
+					counter.incrementAndGet();
+				}
+				else if (ASMUtils.isFloatInsn(insn) && master.isFloatTamperingEnabled())
+				{
+					final float originalNum = ASMUtils.getFloatFromInsn(insn);
+					final int encodedFloat = encodeFloat(originalNum, methodWrapper.getName().hashCode());
 
-							final InsnList insnList = new InsnList();
-							insnList.add(ASMUtils.getNumberInsn(encodedLong));
-							insnList.add(new MethodInsnNode(INVOKESTATIC, "java/lang/Long", "valueOf", "(J)Ljava/lang/Long;", false));
-							insnList.add(new InsnNode(ICONST_0));
-							insnList.add(new MethodInsnNode(INVOKESTATIC, memberNames.className, memberNames.decodeConstantMethodName, "(Ljava/lang/Object;I)Ljava/lang/Object;", false));
-							insnList.add(new TypeInsnNode(CHECKCAST, "java/lang/Long"));
-							insnList.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Long", "longValue", "()J", false));
+					final InsnList insnList = new InsnList();
+					insnList.add(ASMUtils.getNumberInsn(encodedFloat));
+					insnList.add(new MethodInsnNode(INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false));
+					insnList.add(ASMUtils.getNumberInsn(RandomUtils.getRandomInt()));
+					insnList.add(new MethodInsnNode(INVOKESTATIC, memberNames.className, memberNames.decodeConstantMethodName, "(Ljava/lang/Object;I)Ljava/lang/Object;", false));
+					insnList.add(new TypeInsnNode(CHECKCAST, "java/lang/Float"));
+					insnList.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Float", "floatValue", "()F", false));
 
-							methodInstructions.insertBefore(insn, insnList);
-							methodInstructions.remove(insn);
-							leeway -= 25;
-							counter.incrementAndGet();
-						} else if (ASMUtils.isFloatInsn(insn) && master.isFloatTamperingEnabled())
-						{
-							final float originalNum = ASMUtils.getFloatFromInsn(insn);
-							final int encodedFloat = encodeFloat(originalNum, methodWrapper.getName().hashCode());
+					methodInstructions.insertBefore(insn, insnList);
+					methodInstructions.remove(insn);
 
-							final InsnList insnList = new InsnList();
-							insnList.add(ASMUtils.getNumberInsn(encodedFloat));
-							insnList.add(new MethodInsnNode(INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false));
-							insnList.add(ASMUtils.getNumberInsn(RandomUtils.getRandomInt()));
-							insnList.add(new MethodInsnNode(INVOKESTATIC, memberNames.className, memberNames.decodeConstantMethodName, "(Ljava/lang/Object;I)Ljava/lang/Object;", false));
-							insnList.add(new TypeInsnNode(CHECKCAST, "java/lang/Float"));
-							insnList.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Float", "floatValue", "()F", false));
+					leeway -= 20;
+					counter.incrementAndGet();
+				}
+				else if (ASMUtils.isDoubleInsn(insn) && master.isDoubleTamperingEnabled())
+				{
+					final double originalNum = ASMUtils.getDoubleFromInsn(insn);
+					final long encodedLong = encodeDouble(originalNum, methodWrapper.getName().hashCode());
 
-							methodInstructions.insertBefore(insn, insnList);
-							methodInstructions.remove(insn);
+					final InsnList insnList = new InsnList();
+					insnList.add(ASMUtils.getNumberInsn(encodedLong));
+					insnList.add(new MethodInsnNode(INVOKESTATIC, "java/lang/Long", "valueOf", "(J)Ljava/lang/Long;", false));
+					insnList.add(ASMUtils.getNumberInsn(RandomUtils.getRandomInt()));
+					insnList.add(new MethodInsnNode(INVOKESTATIC, memberNames.className, memberNames.decodeConstantMethodName, "(Ljava/lang/Object;I)Ljava/lang/Object;", false));
+					insnList.add(new TypeInsnNode(CHECKCAST, "java/lang/Double"));
+					insnList.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Double", "doubleValue", "()D", false));
 
-							leeway -= 20;
-							counter.incrementAndGet();
-						} else if (ASMUtils.isDoubleInsn(insn) && master.isDoubleTamperingEnabled())
-						{
-							final double originalNum = ASMUtils.getDoubleFromInsn(insn);
-							final long encodedLong = encodeDouble(originalNum, methodWrapper.getName().hashCode());
-
-							final InsnList insnList = new InsnList();
-							insnList.add(ASMUtils.getNumberInsn(encodedLong));
-							insnList.add(new MethodInsnNode(INVOKESTATIC, "java/lang/Long", "valueOf", "(J)Ljava/lang/Long;", false));
-							insnList.add(ASMUtils.getNumberInsn(RandomUtils.getRandomInt()));
-							insnList.add(new MethodInsnNode(INVOKESTATIC, memberNames.className, memberNames.decodeConstantMethodName, "(Ljava/lang/Object;I)Ljava/lang/Object;", false));
-							insnList.add(new TypeInsnNode(CHECKCAST, "java/lang/Double"));
-							insnList.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Double", "doubleValue", "()D", false));
-
-							methodInstructions.insertBefore(insn, insnList);
-							methodInstructions.remove(insn);
-							leeway -= 25;
-							counter.incrementAndGet();
-						}
-					}
-				}));
+					methodInstructions.insertBefore(insn, insnList);
+					methodInstructions.remove(insn);
+					leeway -= 25;
+					counter.incrementAndGet();
+				}
+			}
+		}));
 
 		final ClassNode decoder = createConstantDecoder(memberNames);
 		getClasses().put(decoder.name, new ClassWrapper(decoder, false));
@@ -137,17 +139,8 @@ public class ContextCheckObfuscator extends NumberObfuscation
 	private static int encodeInt(final int n, final int hashCode)
 	{
 		final int xorVal = n ^ hashCode;
-		final int[] arr = new int[4];
-		for (int i = 0; i < 4; i++)
-		{
-			arr[i] = xorVal >>> i * 8 & 0xFF;
-		}
-		int value = 0;
-		for (int i = 0; i < arr.length; i++)
-		{
-			value |= arr[i] << i * 8;
-		}
-		return value;
+		final int[] arr = IntStream.range(0, 4).map(i -> xorVal >>> i * 8 & 0xFF).toArray();
+		return IntStream.range(0, arr.length).map(i -> arr[i] << i * 8).reduce(0, (a, b) -> a | b);
 	}
 
 	private static int encodeFloat(final float f, final int hashCode)
@@ -158,18 +151,8 @@ public class ContextCheckObfuscator extends NumberObfuscation
 	private static long encodeLong(final long n, final int hashCode)
 	{
 		final long xorVal = n ^ hashCode;
-		final long[] arr = new long[8];
-		for (int i = 0; i < 8; i++)
-		{
-			arr[i] = xorVal >>> i * 8 & 0xFF;
-		}
-		long value = 0;
-		for (int i = 0; i < arr.length; i++)
-		{
-			value |= arr[i] << i * 8;
-		}
-
-		return value;
+		final long[] arr = IntStream.range(0, 8).mapToLong(i -> xorVal >>> i * 8 & 0xFF).toArray();
+		return IntStream.range(0, arr.length).mapToLong(i -> arr[i] << i * 8).reduce(0, (a, b) -> a | b);
 	}
 
 	private static long encodeDouble(final double d, final int hashCode)
@@ -587,17 +570,17 @@ public class ContextCheckObfuscator extends NumberObfuscation
 
 	private class MemberNames
 	{
-		private final String className;
-		private final String constantFieldName;
-		private final String indicatorFieldName;
-		private final String elementFieldName;
-		private final String indexFieldName;
-		private final String threadStarterMethodName;
-		private final String decodeWordMethodName;
-		private final String decodeDwordMethodName;
-		private final String decodeConstantMethodName;
+		final String className;
+		final String constantFieldName;
+		final String indicatorFieldName;
+		final String elementFieldName;
+		final String indexFieldName;
+		final String threadStarterMethodName;
+		final String decodeWordMethodName;
+		final String decodeDwordMethodName;
+		final String decodeConstantMethodName;
 
-		private MemberNames()
+		MemberNames()
 		{
 			className = randomClassName();
 			constantFieldName = uniqueRandomString();

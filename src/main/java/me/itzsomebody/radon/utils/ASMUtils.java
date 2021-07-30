@@ -18,17 +18,18 @@
 
 package me.itzsomebody.radon.utils;
 
-import me.itzsomebody.radon.exceptions.RadonException;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
+
+import me.itzsomebody.radon.exceptions.RadonException;
 
 /**
  * Bytecode utilities for bytecode instructions.
  *
  * @author ItzSomebody.
  */
-public class ASMUtils
+public final class ASMUtils
 {
 	public static boolean isInstruction(final AbstractInsnNode insn)
 	{
@@ -42,96 +43,75 @@ public class ASMUtils
 
 	public static boolean hasAnnotations(final ClassNode classNode)
 	{
-		return classNode.visibleAnnotations != null && !classNode.visibleAnnotations.isEmpty()
-				|| classNode.invisibleAnnotations != null && !classNode.invisibleAnnotations.isEmpty();
+		return classNode.visibleAnnotations != null && !classNode.visibleAnnotations.isEmpty() || classNode.invisibleAnnotations != null && !classNode.invisibleAnnotations.isEmpty();
 	}
 
 	public static boolean hasAnnotations(final MethodNode methodNode)
 	{
-		return methodNode.visibleAnnotations != null && !methodNode.visibleAnnotations.isEmpty()
-				|| methodNode.invisibleAnnotations != null && !methodNode.invisibleAnnotations.isEmpty();
+		return methodNode.visibleAnnotations != null && !methodNode.visibleAnnotations.isEmpty() || methodNode.invisibleAnnotations != null && !methodNode.invisibleAnnotations.isEmpty();
 	}
 
 	public static boolean hasAnnotations(final FieldNode fieldNode)
 	{
-		return fieldNode.visibleAnnotations != null && !fieldNode.visibleAnnotations.isEmpty()
-				|| fieldNode.invisibleAnnotations != null && !fieldNode.invisibleAnnotations.isEmpty();
+		return fieldNode.visibleAnnotations != null && !fieldNode.visibleAnnotations.isEmpty() || fieldNode.invisibleAnnotations != null && !fieldNode.invisibleAnnotations.isEmpty();
 	}
 
 	public static boolean isIntInsn(final AbstractInsnNode insn)
 	{
 		if (insn == null)
-		{
 			return false;
-		}
 		final int opcode = insn.getOpcode();
-		return opcode >= Opcodes.ICONST_M1 && opcode <= Opcodes.ICONST_5
-				|| opcode == Opcodes.BIPUSH
-				|| opcode == Opcodes.SIPUSH
-				|| insn instanceof LdcInsnNode
-				&& ((LdcInsnNode) insn).cst instanceof Integer;
+		return opcode >= Opcodes.ICONST_M1 && opcode <= Opcodes.ICONST_5 || opcode == Opcodes.BIPUSH || opcode == Opcodes.SIPUSH || insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof Integer;
 	}
 
 	public static boolean isLongInsn(final AbstractInsnNode insn)
 	{
 		final int opcode = insn.getOpcode();
-		return opcode == Opcodes.LCONST_0
-				|| opcode == Opcodes.LCONST_1
-				|| insn instanceof LdcInsnNode
-				&& ((LdcInsnNode) insn).cst instanceof Long;
+		return opcode == Opcodes.LCONST_0 || opcode == Opcodes.LCONST_1 || insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof Long;
 	}
 
 	public static boolean isFloatInsn(final AbstractInsnNode insn)
 	{
 		final int opcode = insn.getOpcode();
-		return opcode >= Opcodes.FCONST_0 && opcode <= Opcodes.FCONST_2
-				|| insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof Float;
+		return opcode >= Opcodes.FCONST_0 && opcode <= Opcodes.FCONST_2 || insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof Float;
 	}
 
 	public static boolean isDoubleInsn(final AbstractInsnNode insn)
 	{
 		final int opcode = insn.getOpcode();
-		return opcode >= Opcodes.DCONST_0 && opcode <= Opcodes.DCONST_1
-				|| insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof Double;
+		return opcode >= Opcodes.DCONST_0 && opcode <= Opcodes.DCONST_1 || insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof Double;
 	}
 
 	public static AbstractInsnNode getNumberInsn(final int number)
 	{
 		if (number >= -1 && number <= 5)
 			return new InsnNode(number + 3);
-		else if (number >= -128 && number <= 127)
+		if (number >= -128 && number <= 127)
 			return new IntInsnNode(Opcodes.BIPUSH, number);
-		else if (number >= -32768 && number <= 32767)
+		if (number >= -32768 && number <= 32767)
 			return new IntInsnNode(Opcodes.SIPUSH, number);
-		else
-			return new LdcInsnNode(number);
+		return new LdcInsnNode(number);
 	}
 
 	public static AbstractInsnNode getNumberInsn(final long number)
 	{
 		if (number >= 0 && number <= 1)
 			return new InsnNode((int) (number + 9));
-		else
-			return new LdcInsnNode(number);
+		return new LdcInsnNode(number);
 	}
 
 	public static AbstractInsnNode getNumberInsn(final float number)
 	{
-		if (number >= 0 && number <= 2)
-		{
+		if (number == 0 || number == 1 || number == 2)
 			return new InsnNode((int) (number + 11));
-		} else
-		{
-			return new LdcInsnNode(number);
-		}
+		return new LdcInsnNode(number);
 	}
 
 	public static AbstractInsnNode getNumberInsn(final double number)
 	{
-		if (number >= 0 && number <= 1)
+		if (number == 0 || number == 1)
 			return new InsnNode((int) (number + 14));
-		else
-			return new LdcInsnNode(number);
+		return new LdcInsnNode(number);
 	}
 
 	public static int getIntegerFromInsn(final AbstractInsnNode insn)
@@ -139,17 +119,11 @@ public class ASMUtils
 		final int opcode = insn.getOpcode();
 
 		if (opcode >= Opcodes.ICONST_M1 && opcode <= Opcodes.ICONST_5)
-		{
 			return opcode - 3;
-		} else if (insn instanceof IntInsnNode
-				&& insn.getOpcode() != Opcodes.NEWARRAY)
-		{
+		if (insn instanceof IntInsnNode && insn.getOpcode() != Opcodes.NEWARRAY)
 			return ((IntInsnNode) insn).operand;
-		} else if (insn instanceof LdcInsnNode
-				&& ((LdcInsnNode) insn).cst instanceof Integer)
-		{
+		if (insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof Integer)
 			return (Integer) ((LdcInsnNode) insn).cst;
-		}
 
 		throw new RadonException("Unexpected instruction");
 	}
@@ -159,13 +133,9 @@ public class ASMUtils
 		final int opcode = insn.getOpcode();
 
 		if (opcode >= Opcodes.LCONST_0 && opcode <= Opcodes.LCONST_1)
-		{
 			return opcode - 9;
-		} else if (insn instanceof LdcInsnNode
-				&& ((LdcInsnNode) insn).cst instanceof Long)
-		{
+		if (insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof Long)
 			return (Long) ((LdcInsnNode) insn).cst;
-		}
 
 		throw new RadonException("Unexpected instruction");
 	}
@@ -175,13 +145,9 @@ public class ASMUtils
 		final int opcode = insn.getOpcode();
 
 		if (opcode >= Opcodes.FCONST_0 && opcode <= Opcodes.FCONST_2)
-		{
 			return opcode - 11;
-		} else if (insn instanceof LdcInsnNode
-				&& ((LdcInsnNode) insn).cst instanceof Float)
-		{
+		if (insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof Float)
 			return (Float) ((LdcInsnNode) insn).cst;
-		}
 
 		throw new RadonException("Unexpected instruction");
 	}
@@ -191,13 +157,9 @@ public class ASMUtils
 		final int opcode = insn.getOpcode();
 
 		if (opcode >= Opcodes.DCONST_0 && opcode <= Opcodes.DCONST_1)
-		{
 			return opcode - 14;
-		} else if (insn instanceof LdcInsnNode
-				&& ((LdcInsnNode) insn).cst instanceof Double)
-		{
+		if (insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof Double)
 			return (Double) ((LdcInsnNode) insn).cst;
-		}
 
 		throw new RadonException("Unexpected instruction");
 	}
@@ -206,7 +168,7 @@ public class ASMUtils
 	{
 		final Type returnType = Type.getReturnType(desc);
 		final Type[] args = Type.getArgumentTypes(desc);
-		for (int i = 0; i < args.length; i++)
+		for (int i = 0, j = args.length; i < j; i++)
 		{
 			final Type arg = args[i];
 
@@ -296,11 +258,11 @@ public class ASMUtils
 			case Type.INT:
 				return getNumberInsn(0);
 			case Type.FLOAT:
-				return getNumberInsn(0f);
+				return getNumberInsn(0.00f);
 			case Type.LONG:
 				return getNumberInsn(0L);
 			case Type.DOUBLE:
-				return getNumberInsn(0d);
+				return getNumberInsn(0.00d);
 			case Type.OBJECT:
 				return new InsnNode(Opcodes.ACONST_NULL);
 			default:
@@ -334,5 +296,9 @@ public class ASMUtils
 			default:
 				throw new AssertionError();
 		}
+	}
+
+	private ASMUtils()
+	{
 	}
 }

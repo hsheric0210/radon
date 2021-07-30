@@ -18,18 +18,18 @@
 
 package me.itzsomebody.vm.datatypes;
 
-import me.itzsomebody.vm.VMException;
-
 import java.lang.reflect.Array;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import me.itzsomebody.vm.VMException;
+
 public class JObject extends JWrapper
 {
-	private Lock lock = new ReentrantLock();
+	private final Lock lock = new ReentrantLock();
 	private Object value;
 
-	public JObject(Object value)
+	public JObject(final Object value)
 	{
 		this.value = value;
 	}
@@ -53,14 +53,15 @@ public class JObject extends JWrapper
 	}
 
 	@Override
-	public void init(Object value)
+	public void init(final Object value)
 	{
 		this.value = value;
 	}
 
-	public JWrapper get(int index, boolean primitive)
+	@Override
+	public JWrapper get(final int index, final boolean primitive)
 	{
-		Object val = Array.get(value, index);
+		final Object val = Array.get(value, index);
 
 		if (primitive)
 			if (val.getClass() == Integer.class)
@@ -81,11 +82,11 @@ public class JObject extends JWrapper
 				return new JInteger((Boolean) val);
 			else
 				throw new VMException();
-		else
-			return new JObject(val);
+		return new JObject(val);
 	}
 
-	public void set(JWrapper wrapper, int index)
+	@Override
+	public void set(final JWrapper wrapper, final int index)
 	{
 		Array.set(value, index, wrapper.asObj());
 	}

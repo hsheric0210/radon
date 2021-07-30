@@ -18,15 +18,15 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.references;
 
-import me.itzsomebody.radon.config.Configuration;
-import me.itzsomebody.radon.exclusions.ExclusionType;
-import me.itzsomebody.radon.transformers.Transformer;
+import static me.itzsomebody.radon.config.ConfigurationSetting.REFERENCE_OBFUSCATION;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static me.itzsomebody.radon.config.ConfigurationSetting.REFERENCE_OBFUSCATION;
+import me.itzsomebody.radon.config.Configuration;
+import me.itzsomebody.radon.exclusions.ExclusionType;
+import me.itzsomebody.radon.transformers.Transformer;
 
 /**
  * Abstract class for reference obfuscation transformers.
@@ -67,9 +67,7 @@ public class ReferenceObfuscation extends Transformer
 			final String path = REFERENCE_OBFUSCATION + "." + setting.getName();
 
 			if (config.contains(path))
-			{
 				return config.get(path);
-			}
 
 			return false;
 		}).forEach(setting -> referenceObfuscators.add(setting.getReferenceObfuscation()));

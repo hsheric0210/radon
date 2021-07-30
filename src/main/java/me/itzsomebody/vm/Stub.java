@@ -27,27 +27,27 @@ public class Stub
 
 	public Stub() throws Exception
 	{
-		GZIPInputStream gzip = new GZIPInputStream(Stub.class.getResourceAsStream("/radon.vm"));
-		DataInputStream din = new DataInputStream(gzip);
+		final GZIPInputStream gzip = new GZIPInputStream(Stub.class.getResourceAsStream("/radon.vm"));
+		final DataInputStream din = new DataInputStream(gzip);
 
-		int nFunctions = din.readShort();
+		final int nFunctions = din.readShort();
 		instructions = new Instruction[nFunctions][];
 
 		for (int i = 0; i < nFunctions; i++)
 		{
-			int nInstructions = din.readInt();
-			Instruction[] funcInstructions = new Instruction[nInstructions];
+			final int nInstructions = din.readInt();
+			final Instruction[] funcInstructions = new Instruction[nInstructions];
 
 			for (int j = 0; j < nInstructions; j++)
 			{
-				int opcode = din.readByte();
-				int nOperands = din.readByte();
+				final int opcode = din.readByte();
+				final int nOperands = din.readByte();
 
-				Object[] operands = new Object[nOperands];
+				final Object[] operands = new Object[nOperands];
 
 				for (int k = 0; k < nOperands; k++)
 				{
-					int operandType = din.readByte();
+					final int operandType = din.readByte();
 
 					switch (operandType)
 					{

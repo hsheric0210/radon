@@ -24,21 +24,21 @@ import me.itzsomebody.vm.datatypes.*;
 public class PrimCast extends Handler
 {
 	@Override
-	public void handle(VM vm, Object[] operands)
+	public void handle(final VM vm, final Object[] operands)
 	{
-		int indicator = (Integer) operands[0];
+		final int indicator = (Integer) operands[0];
 
 		switch (indicator)
 		{
 			case 0: // I2L
-				vm.push(new JLong((long) vm.pop().asInt()));
+				vm.push(new JLong(vm.pop().asInt()));
 				vm.push(JTop.getTop());
 				break;
 			case 1: // I2F
 				vm.push(new JFloat((float) vm.pop().asInt()));
 				break;
 			case 2:  // I2D
-				vm.push(new JDouble((double) vm.pop().asInt()));
+				vm.push(new JDouble(vm.pop().asInt()));
 				vm.push(JTop.getTop());
 				break;
 			case 3: // L2I
@@ -61,7 +61,7 @@ public class PrimCast extends Handler
 				vm.push(new JLong((long) vm.pop().asFloat()));
 				break;
 			case 8: // F2D
-				vm.push(new JDouble((double) vm.pop().asFloat()));
+				vm.push(new JDouble(vm.pop().asFloat()));
 				vm.push(JTop.getTop());
 				break;
 			case 9: // D2I

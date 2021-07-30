@@ -18,13 +18,13 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.strings;
 
-import me.itzsomebody.radon.Main;
-import me.itzsomebody.radon.asm.ClassWrapper;
-import me.itzsomebody.radon.config.Configuration;
-import me.itzsomebody.radon.exclusions.ExclusionType;
-import me.itzsomebody.radon.transformers.Transformer;
-import me.itzsomebody.radon.utils.ASMUtils;
-import me.itzsomebody.radon.utils.RandomUtils;
+import static me.itzsomebody.radon.config.ConfigurationSetting.STRING_ENCRYPTION;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
+
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
@@ -32,12 +32,13 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
-
-import static me.itzsomebody.radon.config.ConfigurationSetting.STRING_ENCRYPTION;
+import me.itzsomebody.radon.Main;
+import me.itzsomebody.radon.asm.ClassWrapper;
+import me.itzsomebody.radon.config.Configuration;
+import me.itzsomebody.radon.exclusions.ExclusionType;
+import me.itzsomebody.radon.transformers.Transformer;
+import me.itzsomebody.radon.utils.ASMUtils;
+import me.itzsomebody.radon.utils.RandomUtils;
 
 /**
  * Abstract class for string encryption transformers.
@@ -53,7 +54,7 @@ public class StringEncryption extends Transformer
 	@Override
 	public void transform()
 	{
-		if (isStringPoolingEnabled())
+		if (stringPoolingEnabled)
 		{
 			final StringPooler pooler = new StringPooler(this);
 			pooler.init(radon);
@@ -63,43 +64,35 @@ public class StringEncryption extends Transformer
 		final MemberNames memberNames = new MemberNames();
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper ->
-				classWrapper.getMethods().stream().filter(methodWrapper -> !excluded(methodWrapper)).forEach(methodWrapper ->
-				{
-					// TODO: leeway safeguard
+		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper -> classWrapper.getMethods().stream().filter(methodWrapper -> !excluded(methodWrapper)).forEach(methodWrapper ->
+		{
+			// TODO: leeway safeguard
 
-					Stream.of(methodWrapper.getMethodNode().instructions.toArray()).filter(insn -> insn instanceof LdcInsnNode
-							&& ((LdcInsnNode) insn).cst instanceof String).forEach(insn ->
-					{
-						if (excludedString((String) ((LdcInsnNode) insn).cst))
-							return;
+			Stream.of(methodWrapper.getMethodNode().instructions.toArray()).filter(insn -> insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof String).forEach(insn ->
+			{
+				if (excludedString((String) ((LdcInsnNode) insn).cst))
+					return;
 
-						final int callerClassHC = classWrapper.getName().replace("/", ".").hashCode();
-						final int callerMethodHC = methodWrapper.getMethodNode().name.replace("/", ".").hashCode();
-						final int decryptorClassHC = memberNames.className.replace("/", ".").hashCode();
-						final int decryptorMethodHC = memberNames.decryptMethodName.replace("/", ".").hashCode();
+				final int callerClassHC = classWrapper.getName().replace("/", ".").hashCode();
+				final int callerMethodHC = methodWrapper.getMethodNode().name.replace("/", ".").hashCode();
+				final int decryptorClassHC = memberNames.className.replace("/", ".").hashCode();
+				final int decryptorMethodHC = memberNames.decryptMethodName.replace("/", ".").hashCode();
 
-						final int randomKey = RandomUtils.getRandomInt();
-						final int key1 = (isContextCheckingEnabled() ? callerClassHC + decryptorClassHC + callerMethodHC : 0) ^ randomKey;
-						final int key2 = (isContextCheckingEnabled() ? callerMethodHC + decryptorMethodHC + callerClassHC : 0) ^ randomKey;
-						final int key3 = (isContextCheckingEnabled() ? decryptorClassHC + callerClassHC + callerMethodHC : 0) ^ randomKey;
-						final int key4 = (isContextCheckingEnabled() ? decryptorMethodHC + callerClassHC + decryptorClassHC : 0) ^ randomKey;
+				final int randomKey = RandomUtils.getRandomInt();
+				final int key1 = (contextCheckingEnabled ? callerClassHC + decryptorClassHC + callerMethodHC : 0) ^ randomKey;
+				final int key2 = (contextCheckingEnabled ? callerMethodHC + decryptorMethodHC + callerClassHC : 0) ^ randomKey;
+				final int key3 = (contextCheckingEnabled ? decryptorClassHC + callerClassHC + callerMethodHC : 0) ^ randomKey;
+				final int key4 = (contextCheckingEnabled ? decryptorMethodHC + callerClassHC + decryptorClassHC : 0) ^ randomKey;
 
-						final LdcInsnNode ldc = (LdcInsnNode) insn;
-						ldc.cst = encrypt((String) ldc.cst, key1, key2, key3, key4);
+				final LdcInsnNode ldc = (LdcInsnNode) insn;
+				ldc.cst = encrypt((String) ldc.cst, key1, key2, key3, key4);
 
-						methodWrapper.getInstructions().insert(ldc, new MethodInsnNode(
-								INVOKESTATIC,
-								memberNames.className,
-								memberNames.decryptMethodName,
-								"(Ljava/lang/Object;I)Ljava/lang/String;",
-								false
-						));
-						methodWrapper.getInstructions().insert(ldc, ASMUtils.getNumberInsn(randomKey));
+				methodWrapper.getInstructions().insert(ldc, new MethodInsnNode(INVOKESTATIC, memberNames.className, memberNames.decryptMethodName, "(Ljava/lang/Object;I)Ljava/lang/String;", false));
+				methodWrapper.getInstructions().insert(ldc, ASMUtils.getNumberInsn(randomKey));
 
-						counter.incrementAndGet();
-					});
-				}));
+				counter.incrementAndGet();
+			});
+		}));
 
 		final ClassNode decryptor = createDecryptor(memberNames);
 		getClasses().put(decryptor.name, new ClassWrapper(decryptor, false));
@@ -129,7 +122,7 @@ public class StringEncryption extends Transformer
 
 	protected boolean excludedString(final String str)
 	{
-		return getExemptedStrings().stream().anyMatch(str::contains);
+		return exemptedStrings.stream().anyMatch(str::contains);
 	}
 
 	private List<String> getExemptedStrings()
@@ -167,8 +160,7 @@ public class StringEncryption extends Transformer
 		final StringBuilder sb = new StringBuilder();
 		final char[] chars = s.toCharArray();
 
-		for (int i = 0; i < chars.length; i++)
-		{
+		for (int i = 0, j = chars.length; i < j; i++)
 			switch (i % 4)
 			{
 				case 0:
@@ -184,7 +176,6 @@ public class StringEncryption extends Transformer
 					sb.append((char) (chars[i] ^ key4));
 					break;
 			}
-		}
 
 		return sb.toString();
 	}
@@ -647,7 +638,7 @@ public class StringEncryption extends Transformer
 			mv.visitVarInsn(ASTORE, 15);
 			mv.visitLabel(l6);
 
-			if (isContextCheckingEnabled())
+			if (contextCheckingEnabled)
 			{
 				mv.visitMethodInsn(INVOKESTATIC, "java/lang/Thread", "currentThread", "()Ljava/lang/Thread;", false);
 				mv.visitVarInsn(ASTORE, 16);
@@ -675,14 +666,15 @@ public class StringEncryption extends Transformer
 				mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StackTraceElement", "getMethodName", "()Ljava/lang/String;", false);
 				mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "hashCode", "()I", false);
 				mv.visitInsn(IADD);
-			} else
+			}
+			else
 				mv.visitInsn(ICONST_0);
 
 			mv.visitVarInsn(ILOAD, 1);
 			mv.visitInsn(IXOR);
 			mv.visitVarInsn(ISTORE, 18);
 
-			if (isContextCheckingEnabled())
+			if (contextCheckingEnabled)
 			{
 				final Label l61 = new Label();
 				mv.visitLabel(l61);
@@ -703,7 +695,8 @@ public class StringEncryption extends Transformer
 				mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StackTraceElement", "getClassName", "()Ljava/lang/String;", false);
 				mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "hashCode", "()I", false);
 				mv.visitInsn(IADD);
-			} else
+			}
+			else
 				mv.visitInsn(ICONST_0);
 
 			mv.visitVarInsn(ILOAD, 1);
@@ -712,7 +705,7 @@ public class StringEncryption extends Transformer
 			final Label l62 = new Label();
 			mv.visitLabel(l62);
 
-			if (isContextCheckingEnabled())
+			if (contextCheckingEnabled)
 			{
 				mv.visitVarInsn(ALOAD, 17);
 				mv.visitInsn(ICONST_1);
@@ -731,7 +724,8 @@ public class StringEncryption extends Transformer
 				mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StackTraceElement", "getMethodName", "()Ljava/lang/String;", false);
 				mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "hashCode", "()I", false);
 				mv.visitInsn(IADD);
-			} else
+			}
+			else
 				mv.visitInsn(ICONST_0);
 
 			mv.visitVarInsn(ILOAD, 1);
@@ -740,7 +734,7 @@ public class StringEncryption extends Transformer
 			final Label l63 = new Label();
 			mv.visitLabel(l63);
 
-			if (isContextCheckingEnabled())
+			if (contextCheckingEnabled)
 			{
 				mv.visitVarInsn(ALOAD, 17);
 				mv.visitInsn(ICONST_1);
@@ -759,7 +753,8 @@ public class StringEncryption extends Transformer
 				mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StackTraceElement", "getClassName", "()Ljava/lang/String;", false);
 				mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "hashCode", "()I", false);
 				mv.visitInsn(IADD);
-			} else
+			}
+			else
 				mv.visitInsn(ICONST_0);
 
 			mv.visitVarInsn(ILOAD, 1);
@@ -920,7 +915,7 @@ public class StringEncryption extends Transformer
 			mv.visitJumpInsn(IF_ICMPGE, l80);
 			final Label l81 = new Label();
 			mv.visitLabel(l81);
-			//mv.visitVarInsn(ALOAD, 16);
+			// mv.visitVarInsn(ALOAD, 16);
 			mv.visitInsn(ACONST_NULL);
 			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Thread", "getId", "()J", false);
 			mv.visitInsn(L2I);
@@ -1165,9 +1160,13 @@ public class StringEncryption extends Transformer
 
 	private class MemberNames
 	{
-		private final String className = randomClassName();
-		private final String cacheFieldName = uniqueRandomString();
-		private final String bigBoizFieldName = uniqueRandomString();
-		private final String decryptMethodName = uniqueRandomString();
+		final String className = randomClassName();
+		final String cacheFieldName = uniqueRandomString();
+		final String bigBoizFieldName = uniqueRandomString();
+		final String decryptMethodName = uniqueRandomString();
+
+		MemberNames()
+		{
+		}
 	}
 }

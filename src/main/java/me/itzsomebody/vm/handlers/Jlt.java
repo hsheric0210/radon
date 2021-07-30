@@ -23,9 +23,9 @@ import me.itzsomebody.vm.VM;
 public class Jlt extends Handler
 {
 	@Override
-	public void handle(VM vm, Object[] operands)
+	public void handle(final VM vm, final Object[] operands)
 	{
-		int jumpTo = vm.pop().asInt();
+		final int jumpTo = vm.pop().asInt();
 
 		if (vm.pop().asInt() < 0)
 			vm.setPc(jumpTo);

@@ -18,26 +18,27 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.flow;
 
-import me.itzsomebody.radon.Main;
-import me.itzsomebody.radon.asm.ClassWrapper;
-import me.itzsomebody.radon.utils.ASMUtils;
-import me.itzsomebody.radon.utils.RandomUtils;
-import org.objectweb.asm.tree.*;
-
 import java.io.IOError;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.objectweb.asm.tree.*;
+
+import me.itzsomebody.radon.Main;
+import me.itzsomebody.radon.asm.ClassWrapper;
+import me.itzsomebody.radon.utils.ASMUtils;
+import me.itzsomebody.radon.utils.RandomUtils;
+
 /**
- * Traps random instructions using a fake handler. Essentially the same thing as Zelix's exception obfuscation
- * or Dasho's fake try catches.
+ * Traps random instructions using a fake handler. Essentially the same thing as Zelix's exception obfuscation or Dasho's fake try catches.
  *
  * @author ItzSomebody
  */
 public class FakeCatchBlocks extends FlowObfuscation
 {
-	private static final String[] HANDLER_NAMES = {
+	private static final String[] HANDLER_NAMES =
+	{
 			RuntimeException.class.getName().replace('.', '/'),
 			LinkageError.class.getName().replace('.', '/'),
 			Error.class.getName().replace('.', '/'),
@@ -64,46 +65,44 @@ public class FakeCatchBlocks extends FlowObfuscation
 
 		final String methodName = uniqueRandomString();
 
-		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper ->
-				classWrapper.getMethods().stream().filter(mw -> !excluded(mw) && mw.hasInstructions()
-						&& !"<init>".equals(mw.getOriginalName())).forEach(methodWrapper ->
+		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper -> classWrapper.getMethods().stream().filter(mw -> !excluded(mw) && mw.hasInstructions() && !"<init>".equals(mw.getOriginalName())).forEach(methodWrapper ->
+		{
+			int leeway = methodWrapper.getLeewaySize();
+			final InsnList insns = methodWrapper.getInstructions();
+
+			for (final AbstractInsnNode insn : insns.toArray())
+			{
+				if (leeway < 10000)
+					return;
+				if (!ASMUtils.isInstruction(insn))
+					continue;
+
+				if (RandomUtils.getRandomInt(10) > 6)
 				{
-					int leeway = methodWrapper.getLeewaySize();
-					final InsnList insns = methodWrapper.getInstructions();
+					final LabelNode trapStart = new LabelNode();
+					final LabelNode trapEnd = new LabelNode();
+					final LabelNode catchStart = new LabelNode();
+					final LabelNode catchEnd = new LabelNode();
 
-					for (final AbstractInsnNode insn : insns.toArray())
-					{
-						if (leeway < 10000)
-							return;
-						if (!ASMUtils.isInstruction(insn))
-							continue;
+					final InsnList catchBlock = new InsnList();
+					catchBlock.add(catchStart);
+					catchBlock.add(new InsnNode(DUP));
+					catchBlock.add(new MethodInsnNode(INVOKEVIRTUAL, fakeHandler.name, methodName, "()V", false));
+					catchBlock.add(new InsnNode(ATHROW));
+					catchBlock.add(catchEnd);
 
-						if (RandomUtils.getRandomInt(10) > 6)
-						{
-							final LabelNode trapStart = new LabelNode();
-							final LabelNode trapEnd = new LabelNode();
-							final LabelNode catchStart = new LabelNode();
-							final LabelNode catchEnd = new LabelNode();
+					insns.insertBefore(insn, trapStart);
+					insns.insert(insn, catchBlock);
+					insns.insert(insn, new JumpInsnNode(GOTO, catchEnd));
+					insns.insert(insn, trapEnd);
 
-							final InsnList catchBlock = new InsnList();
-							catchBlock.add(catchStart);
-							catchBlock.add(new InsnNode(DUP));
-							catchBlock.add(new MethodInsnNode(INVOKEVIRTUAL, fakeHandler.name, methodName, "()V", false));
-							catchBlock.add(new InsnNode(ATHROW));
-							catchBlock.add(catchEnd);
+					methodWrapper.getTryCatchBlocks().add(new TryCatchBlockNode(trapStart, trapEnd, catchStart, fakeHandler.name));
 
-							insns.insertBefore(insn, trapStart);
-							insns.insert(insn, catchBlock);
-							insns.insert(insn, new JumpInsnNode(GOTO, catchEnd));
-							insns.insert(insn, trapEnd);
-
-							methodWrapper.getTryCatchBlocks().add(new TryCatchBlockNode(trapStart, trapEnd, catchStart, fakeHandler.name));
-
-							leeway -= 15;
-							counter.incrementAndGet();
-						}
-					}
-				}));
+					leeway -= 15;
+					counter.incrementAndGet();
+				}
+			}
+		}));
 		final ClassWrapper newWrapper = new ClassWrapper(fakeHandler, false);
 		getClasses().put(fakeHandler.name, newWrapper);
 		getClassPath().put(fakeHandler.name, newWrapper);

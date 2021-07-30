@@ -22,7 +22,7 @@ public class JLong extends JWrapper
 {
 	private final long value;
 
-	public JLong(long value)
+	public JLong(final long value)
 	{
 		this.value = value;
 	}

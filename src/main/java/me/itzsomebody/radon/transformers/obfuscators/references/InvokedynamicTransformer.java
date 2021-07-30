@@ -18,14 +18,15 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.references;
 
-import me.itzsomebody.radon.Main;
-import me.itzsomebody.radon.asm.ClassWrapper;
-import me.itzsomebody.radon.utils.ASMUtils;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
+
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
 
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
+import me.itzsomebody.radon.Main;
+import me.itzsomebody.radon.asm.ClassWrapper;
+import me.itzsomebody.radon.utils.ASMUtils;
 
 /**
  * Hides method invocations and field accesses by swapping them out with an invokedynamic instruction.
@@ -40,89 +41,75 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 		final MemberNames memberNames = new MemberNames();
 		final AtomicInteger counter = new AtomicInteger();
 
-		final Handle bootstrapHandle = new Handle(H_INVOKESTATIC, memberNames.className, memberNames.bootstrapMethodName,
-				"(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", false);
+		final Handle bootstrapHandle = new Handle(H_INVOKESTATIC, memberNames.className, memberNames.bootstrapMethodName, "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", false);
 
-		getClassWrappers().stream().filter(cw -> !excluded(cw) && !"java/lang/Enum".equals(cw.getSuperName())
-				&& cw.allowsIndy()).forEach(classWrapper ->
-				classWrapper.getMethods().stream().filter(mw -> !excluded(mw) && mw.hasInstructions()).forEach(mw ->
+		getClassWrappers().stream().filter(cw -> !excluded(cw) && !"java/lang/Enum".equals(cw.getSuperName()) && cw.allowsIndy()).forEach(classWrapper -> classWrapper.getMethods().stream().filter(mw -> !excluded(mw) && mw.hasInstructions()).forEach(mw ->
+		{
+			final InsnList insns = mw.getInstructions();
+
+			Stream.of(insns.toArray()).forEach(insn ->
+			{
+				if (insn instanceof MethodInsnNode)
 				{
-					final InsnList insns = mw.getInstructions();
+					final MethodInsnNode m = (MethodInsnNode) insn;
 
-					Stream.of(insns.toArray()).forEach(insn ->
+					if (!m.name.isEmpty() && m.name.charAt(0) == '<')
+						return;
+
+					String newDesc = m.desc.replace(")", "Ljava/lang/String;J)");
+					if (m.getOpcode() != INVOKESTATIC)
+						newDesc = newDesc.replace("(", "(Ljava/lang/Object;");
+
+					newDesc = ASMUtils.getGenericMethodDesc(newDesc);
+					final String name = insn.getOpcode() == INVOKESTATIC ? "a" : "b";
+
+					final InvokeDynamicInsnNode indy = new InvokeDynamicInsnNode(name, newDesc, bootstrapHandle);
+
+					insns.insertBefore(m, new LdcInsnNode(m.owner.replace("/", ".")));
+					insns.insertBefore(m, ASMUtils.getNumberInsn((long) hash(m.desc) & 0xffffffffL | (long) m.name.hashCode() << 32));
+					insns.set(m, indy);
+
+					counter.incrementAndGet();
+				}
+				else if (insn instanceof FieldInsnNode && !"<init>".equals(mw.getName()))
+				{
+					final FieldInsnNode f = (FieldInsnNode) insn;
+
+					final boolean isStatic = f.getOpcode() == GETSTATIC || f.getOpcode() == PUTSTATIC;
+					final boolean isSetter = f.getOpcode() == PUTFIELD || f.getOpcode() == PUTSTATIC;
+
+					String newDesc = isSetter ? "(" + f.desc + "Ljava/lang/String;J)V" : "(Ljava/lang/String;J)" + f.desc;
+					if (!isStatic)
+						newDesc = newDesc.replace("(", "(Ljava/lang/Object;");
+
+					final String name;
+
+					switch (insn.getOpcode())
 					{
-						if (insn instanceof MethodInsnNode)
-						{
-							final MethodInsnNode m = (MethodInsnNode) insn;
+						case GETSTATIC:
+							name = "d";
+							break;
+						case GETFIELD:
+							name = "e";
+							break;
+						case PUTSTATIC:
+							name = "f";
+							break;
+						default:
+							name = "g";
+							break;
+					}
 
-							if (m.name.startsWith("<"))
-								return;
+					final InvokeDynamicInsnNode indy = new InvokeDynamicInsnNode(name, newDesc, bootstrapHandle);
 
-							String newDesc = m.desc.replace(")", "Ljava/lang/String;J)");
-							if (m.getOpcode() != INVOKESTATIC)
-								newDesc = newDesc.replace("(", "(Ljava/lang/Object;");
+					insns.insertBefore(f, new LdcInsnNode(f.owner.replace("/", ".")));
+					insns.insertBefore(f, ASMUtils.getNumberInsn((long) hashType(f.desc) & 0xffffffffL | (long) f.name.hashCode() << 32));
+					insns.set(f, indy);
 
-							newDesc = ASMUtils.getGenericMethodDesc(newDesc);
-							final String name = insn.getOpcode() == INVOKESTATIC ? "a" : "b";
-
-							final InvokeDynamicInsnNode indy = new InvokeDynamicInsnNode(
-									name,
-									newDesc,
-									bootstrapHandle
-							);
-
-							insns.insertBefore(m, new LdcInsnNode(m.owner.replace("/", ".")));
-							insns.insertBefore(m, ASMUtils.getNumberInsn(
-									(long) hash(m.desc) & 0xffffffffL | (long) m.name.hashCode() << 32
-							));
-							insns.set(m, indy);
-
-							counter.incrementAndGet();
-						} else if (insn instanceof FieldInsnNode && !"<init>".equals(mw.getName()))
-						{
-							final FieldInsnNode f = (FieldInsnNode) insn;
-
-							final boolean isStatic = f.getOpcode() == GETSTATIC || f.getOpcode() == PUTSTATIC;
-							final boolean isSetter = f.getOpcode() == PUTFIELD || f.getOpcode() == PUTSTATIC;
-
-							String newDesc = isSetter ? "(" + f.desc + "Ljava/lang/String;J)V" : "(Ljava/lang/String;J)" + f.desc;
-							if (!isStatic)
-								newDesc = newDesc.replace("(", "(Ljava/lang/Object;");
-
-							final String name;
-
-							switch (insn.getOpcode())
-							{
-								case GETSTATIC:
-									name = "d";
-									break;
-								case GETFIELD:
-									name = "e";
-									break;
-								case PUTSTATIC:
-									name = "f";
-									break;
-								default:
-									name = "g";
-									break;
-							}
-
-							final InvokeDynamicInsnNode indy = new InvokeDynamicInsnNode(
-									name,
-									newDesc,
-									bootstrapHandle
-							);
-
-							insns.insertBefore(f, new LdcInsnNode(f.owner.replace("/", ".")));
-							insns.insertBefore(f, ASMUtils.getNumberInsn(
-									(long) hashType(f.desc) & 0xffffffffL | (long) f.name.hashCode() << 32
-							));
-							insns.set(f, indy);
-
-							counter.incrementAndGet();
-						}
-					});
-				}));
+					counter.incrementAndGet();
+				}
+			});
+		}));
 
 		final ClassNode decryptor = createBootstrapClass(memberNames);
 		getClasses().put(decryptor.name, new ClassWrapper(decryptor, false));
@@ -136,8 +123,7 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 
 		if (type.getSort() == Type.ARRAY)
 			return type.getInternalName().replace('/', '.').hashCode();
-		else
-			return type.getClassName().hashCode();
+		return type.getClassName().hashCode();
 	}
 
 	private int hash(final String methodDescriptor)
@@ -147,12 +133,10 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 		final Type[] types = Type.getArgumentTypes(methodDescriptor);
 
 		for (final Type type : types)
-		{
 			if (type.getSort() == Type.ARRAY)
 				hash ^= type.getInternalName().replace('/', '.').hashCode();
 			else
 				hash ^= type.getClassName().hashCode();
-		}
 
 		final Type returnType = Type.getReturnType(methodDescriptor);
 		if (returnType.getSort() == Type.ARRAY)
@@ -520,7 +504,10 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 			mv.visitEnd();
 		}
 		{
-			mv = cw.visitMethod(ACC_PRIVATE + ACC_STATIC, memberNames.resolveMethodHandleMethodName, "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MutableCallSite;[Ljava/lang/Object;)Ljava/lang/Object;", null, new String[] {"java/lang/Throwable"});
+			mv = cw.visitMethod(ACC_PRIVATE + ACC_STATIC, memberNames.resolveMethodHandleMethodName, "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MutableCallSite;[Ljava/lang/Object;)Ljava/lang/Object;", null, new String[]
+			{
+					"java/lang/Throwable"
+			});
 			mv.visitCode();
 			final Label l0 = new Label();
 			mv.visitLabel(l0);
@@ -915,13 +902,17 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 
 	private class MemberNames
 	{
-		private final String className = randomClassName();
-		private final String methodCacheFieldName = uniqueRandomString();
-		private final String fieldCacheFieldName = uniqueRandomString();
-		private final String hashMethodName = uniqueRandomString();
-		private final String findMethodMethodName = uniqueRandomString();
-		private final String findFieldMethodName = uniqueRandomString();
-		private final String resolveMethodHandleMethodName = uniqueRandomString();
-		private final String bootstrapMethodName = uniqueRandomString();
+		final String className = randomClassName();
+		final String methodCacheFieldName = uniqueRandomString();
+		final String fieldCacheFieldName = uniqueRandomString();
+		final String hashMethodName = uniqueRandomString();
+		final String findMethodMethodName = uniqueRandomString();
+		final String findFieldMethodName = uniqueRandomString();
+		final String resolveMethodHandleMethodName = uniqueRandomString();
+		final String bootstrapMethodName = uniqueRandomString();
+
+		MemberNames()
+		{
+		}
 	}
 }

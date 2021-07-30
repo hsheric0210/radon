@@ -18,9 +18,9 @@
 
 package me.itzsomebody.radon.transformers.shrinkers;
 
-import me.itzsomebody.radon.Main;
-
 import java.util.concurrent.atomic.AtomicInteger;
+
+import me.itzsomebody.radon.Main;
 
 /**
  * Removes the sourcefile attribute.
@@ -34,8 +34,7 @@ public class SourceFileRemover extends Shrinker
 	{
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)
-				&& classWrapper.getClassNode().sourceFile != null).forEach(classWrapper ->
+		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper) && classWrapper.getClassNode().sourceFile != null).forEach(classWrapper ->
 		{
 			classWrapper.getClassNode().sourceFile = null;
 			counter.incrementAndGet();

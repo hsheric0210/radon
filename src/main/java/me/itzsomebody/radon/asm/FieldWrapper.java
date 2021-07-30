@@ -18,9 +18,10 @@
 
 package me.itzsomebody.radon.asm;
 
+import org.objectweb.asm.tree.FieldNode;
+
 import me.itzsomebody.radon.asm.accesses.Access;
 import me.itzsomebody.radon.asm.accesses.FieldAccess;
-import org.objectweb.asm.tree.FieldNode;
 
 /**
  * Wrapper for FieldNodes.
@@ -39,8 +40,10 @@ public class FieldWrapper
 	/**
 	 * Creates a FieldWrapper object.
 	 *
-	 * @param fieldNode the {@link FieldNode} attached to this FieldWrapper.
-	 * @param owner     the owner of this represented field.
+	 * @param fieldNode
+	 *                  the {@link FieldNode} attached to this FieldWrapper.
+	 * @param owner
+	 *                  the owner of this represented field.
 	 */
 	public FieldWrapper(final FieldNode fieldNode, final ClassWrapper owner)
 	{
@@ -121,7 +124,8 @@ public class FieldWrapper
 	}
 
 	/**
-	 * @param access access flags to set.
+	 * @param access
+	 *               access flags to set.
 	 */
 	public void setAccessFlags(final int access)
 	{

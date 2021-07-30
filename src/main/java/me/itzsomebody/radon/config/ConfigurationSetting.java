@@ -18,6 +18,9 @@
 
 package me.itzsomebody.radon.config;
 
+import java.util.List;
+import java.util.Map;
+
 import me.itzsomebody.radon.transformers.Transformer;
 import me.itzsomebody.radon.transformers.miscellaneous.Expiration;
 import me.itzsomebody.radon.transformers.miscellaneous.Packer;
@@ -31,9 +34,6 @@ import me.itzsomebody.radon.transformers.obfuscators.strings.StringEncryption;
 import me.itzsomebody.radon.transformers.obfuscators.virtualizer.Virtualizer;
 import me.itzsomebody.radon.transformers.optimizers.Optimizer;
 import me.itzsomebody.radon.transformers.shrinkers.Shrinker;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * An {@link Enum} containing all the allowed standalone configuration keys allowed.

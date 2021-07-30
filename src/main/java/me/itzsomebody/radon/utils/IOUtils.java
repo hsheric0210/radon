@@ -18,25 +18,26 @@
 
 package me.itzsomebody.radon.utils;
 
-import me.itzsomebody.radon.exceptions.RadonException;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+
+import me.itzsomebody.radon.exceptions.RadonException;
 
 /**
  * IO utilities.
  *
  * @author ItzSomebody
  */
-public class IOUtils
+public final class IOUtils
 {
 	/**
 	 * Creates a byte array from a given {@link InputStream}.
 	 *
-	 * @param in {@link InputStream} to convert to a byte array.
+	 * @param  in
+	 *            {@link InputStream} to convert to a byte array.
 	 *
-	 * @return a byte array from the inputted
+	 * @return    a byte array from the inputted
 	 */
 	public static byte[] toByteArray(final InputStream in)
 	{
@@ -59,5 +60,9 @@ public class IOUtils
 			ioe.printStackTrace();
 			throw new RadonException(ioe);
 		}
+	}
+
+	private IOUtils()
+	{
 	}
 }

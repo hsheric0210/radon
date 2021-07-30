@@ -18,12 +18,12 @@
 
 package me.itzsomebody.radon.cli;
 
-import me.itzsomebody.radon.exceptions.RadonException;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
+import me.itzsomebody.radon.exceptions.RadonException;
 
 /**
  * A lame (but 200x better than the old one) commandline argument parser.
@@ -45,22 +45,23 @@ public class CommandArgumentsParser
 	/**
 	 * Creates a new {@link CommandArgumentsParser} object which parses the provided commandline arguments.
 	 *
-	 * @param args provided commandline arguments.
+	 * @param args
+	 *             provided commandline arguments.
 	 */
 	public CommandArgumentsParser(final String[] args)
 	{
 		argMap = new HashMap<>();
 
-		for (int i = 0; i < args.length; i++)
+		for (int i = 0, j = args.length; i < j; i++)
 		{
 			String arg = args[i];
 
 			// Is it a switch?
 			if (arg.startsWith("--"))
 				arg = arg.substring("--".length());
-			else if (arg.startsWith("-"))
+			else if (!arg.isEmpty() && arg.charAt(0) == '-')
 				arg = arg.substring("-".length());
-			else if (arg.startsWith("/"))
+			else if (!arg.isEmpty() && arg.charAt(0) == '/')
 				arg = arg.substring("/".length());
 			else
 				throw new RadonException("Unexpected command argument: " + arg);
@@ -71,16 +72,14 @@ public class CommandArgumentsParser
 				{
 					final String[] argsArr = new String[cmdSwitch.getnArgs()];
 
-					for (int j = 0; j < cmdSwitch.getnArgs(); j++)
+					for (int k = 0, l = cmdSwitch.getnArgs(); k < l; k++)
 						try
 						{
-							argsArr[j] = args[++i];
+							argsArr[k] = args[++i];
 						}
 						catch (final ArrayIndexOutOfBoundsException e)
 						{
-							throw new RadonException(String.format("Command switch \"%s\" expected %d %s, got %d instead.",
-									arg, cmdSwitch.getnArgs(), cmdSwitch.getnArgs() == 1 ? "argument" : "arguments",
-									j));
+							throw new RadonException(String.format("Command switch \"%s\" expected %d %s, got %d instead.", arg, cmdSwitch.getnArgs(), cmdSwitch.getnArgs() == 1 ? "argument" : "arguments", k));
 						}
 
 					argMap.put(arg, argsArr);
@@ -96,9 +95,10 @@ public class CommandArgumentsParser
 	/**
 	 * Checks if the provided switch name is present in the commandline arguments.
 	 *
-	 * @param name switch name to check for.
+	 * @param  name
+	 *              switch name to check for.
 	 *
-	 * @return true if the provided switch name is present in the commandline arguments.
+	 * @return      true if the provided switch name is present in the commandline arguments.
 	 */
 	public boolean containsSwitch(final String name)
 	{
@@ -108,9 +108,10 @@ public class CommandArgumentsParser
 	/**
 	 * Returns the arguments to a switch as a String array.
 	 *
-	 * @param name switch name to perform the lookup.
+	 * @param  name
+	 *              switch name to perform the lookup.
 	 *
-	 * @return the arguments to a switch as a String array.
+	 * @return      the arguments to a switch as a String array.
 	 */
 	public String[] getSwitchArgs(final String name)
 	{
@@ -120,8 +121,10 @@ public class CommandArgumentsParser
 	/**
 	 * Registers a new switch the {@link CommandArgumentsParser} will accept.
 	 *
-	 * @param name  switch name.
-	 * @param nArgs number of args this switch will take.
+	 * @param name
+	 *              switch name.
+	 * @param nArgs
+	 *              number of args this switch will take.
 	 */
 	public static void registerCommandSwitch(final String name, final int nArgs)
 	{

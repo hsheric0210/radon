@@ -18,6 +18,18 @@
 
 package me.itzsomebody.radon.transformers.obfuscators;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
+
+import org.objectweb.asm.Label;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.LdcInsnNode;
+import org.objectweb.asm.tree.MethodInsnNode;
+
 import me.itzsomebody.radon.Main;
 import me.itzsomebody.radon.asm.ClassWrapper;
 import me.itzsomebody.radon.asm.MethodWrapper;
@@ -26,22 +38,9 @@ import me.itzsomebody.radon.exceptions.RadonException;
 import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.transformers.Transformer;
 import me.itzsomebody.radon.utils.RandomUtils;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.LdcInsnNode;
-import org.objectweb.asm.tree.MethodInsnNode;
-
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
 
 /**
- * This applies passive integrity checking to the application with a special
- * type of string encryption.
- * todo: scrap and remake
+ * This applies passive integrity checking to the application with a special type of string encryption. todo: scrap and remake
  *
  * @author ItzSomebody
  */
@@ -57,22 +56,14 @@ public class AntiTamper extends Transformer
 		{
 			final Set<MethodWrapper> toProcess = new HashSet<>();
 
-			cw.getMethods().stream().filter(mw -> !excluded(mw)).forEach(mw ->
-					Stream.of(mw.getInstructions().toArray()).filter(insn -> insn instanceof LdcInsnNode
-							&& ((LdcInsnNode) insn).cst instanceof String).forEach(insn ->
-					{
-						toProcess.add(mw);
+			cw.getMethods().stream().filter(mw -> !excluded(mw)).forEach(mw -> Stream.of(mw.getInstructions().toArray()).filter(insn -> insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof String).forEach(insn ->
+			{
+				toProcess.add(mw);
 
-						mw.getInstructions().insert(insn, new MethodInsnNode(
-								INVOKESTATIC,
-								memberNames.className,
-								memberNames.decryptMethodName,
-								"(Ljava/lang/String;)Ljava/lang/String;",
-								false
-						));
+				mw.getInstructions().insert(insn, new MethodInsnNode(INVOKESTATIC, memberNames.className, memberNames.decryptMethodName, "(Ljava/lang/String;)Ljava/lang/String;", false));
 
-						counter.incrementAndGet();
-					}));
+				counter.incrementAndGet();
+			}));
 
 			if (counter.get() > 0)
 			{
@@ -81,8 +72,7 @@ public class AntiTamper extends Transformer
 
 				final int cpSize = cw.computeConstantPoolSize(radon);
 
-				toProcess.forEach(mw -> Stream.of(mw.getInstructions().toArray()).filter(insn -> insn instanceof LdcInsnNode
-						&& ((LdcInsnNode) insn).cst instanceof String).forEach(insn ->
+				toProcess.forEach(mw -> Stream.of(mw.getInstructions().toArray()).filter(insn -> insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof String).forEach(insn ->
 				{
 					final LdcInsnNode ldc = (LdcInsnNode) insn;
 					final String s = (String) ldc.cst;
@@ -130,8 +120,7 @@ public class AntiTamper extends Transformer
 		final int keyThree = className.hashCode() - methodName.hashCode() ^ memberNames.className.replace('/', '.').hashCode() ^ memberNames.decryptMethodName.hashCode() ^ cpSize;
 		final int keyFour = className.hashCode() & methodName.hashCode() ^ memberNames.className.replace('/', '.').hashCode() ^ memberNames.decryptMethodName.hashCode() ^ cpSize;
 
-		for (int i = 0; i < chars.length; i++)
-		{
+		for (int i = 0, j = chars.length; i < j; i++)
 			switch (i % 4)
 			{
 				case 0:
@@ -147,7 +136,6 @@ public class AntiTamper extends Transformer
 					encrypted[i] = (char) (chars[i] ^ keyFour);
 					break;
 			}
-		}
 
 		return new String(encrypted);
 	}
@@ -464,7 +452,11 @@ public class AntiTamper extends Transformer
 
 	private class MemberNames
 	{
-		private final String className = randomClassName();
-		private final String decryptMethodName = uniqueRandomString();
+		final String className = randomClassName();
+		final String decryptMethodName = uniqueRandomString();
+
+		MemberNames()
+		{
+		}
 	}
 }

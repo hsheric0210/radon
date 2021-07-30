@@ -35,7 +35,8 @@ public class ClassTree
 	/**
 	 * Creates a ClassTree object.
 	 *
-	 * @param classWrapper the ClassWraper attached to this ClassTree.
+	 * @param classWrapper
+	 *                     the ClassWraper attached to this ClassTree.
 	 */
 	public ClassTree(final ClassWrapper classWrapper)
 	{

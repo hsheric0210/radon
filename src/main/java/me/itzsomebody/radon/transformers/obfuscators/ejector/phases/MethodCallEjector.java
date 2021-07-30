@@ -18,18 +18,20 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.ejector.phases;
 
+import java.util.*;
+import java.util.stream.IntStream;
+
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.*;
+import org.objectweb.asm.tree.analysis.Frame;
+
 import me.itzsomebody.radon.analysis.constant.values.AbstractValue;
 import me.itzsomebody.radon.asm.ClassWrapper;
 import me.itzsomebody.radon.asm.MethodWrapper;
 import me.itzsomebody.radon.transformers.obfuscators.ejector.EjectorContext;
 import me.itzsomebody.radon.utils.ASMUtils;
 import me.itzsomebody.radon.utils.RandomUtils;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.*;
-import org.objectweb.asm.tree.analysis.Frame;
-
-import java.util.*;
 
 public final class MethodCallEjector extends AbstractEjectPhase
 {
@@ -58,14 +60,8 @@ public final class MethodCallEjector extends AbstractEjectPhase
 			if (argumentTypes.length == 0)
 				continue;
 
-			int constantArguments = 0;
 			final Frame<AbstractValue> frame = frames[insnList.indexOf(methodInsnNode)];
-			for (int i = 0; i < argumentTypes.length; i++)
-			{
-				final AbstractValue value = frame.getStack(frame.getStackSize() - argumentTypes.length + i);
-				if (value.isConstant() && value.getUsages().size() == 1)
-					constantArguments++;
-			}
+			final int constantArguments = (int) IntStream.range(0, argumentTypes.length).mapToObj(i -> frame.getStack(frame.getStackSize() - argumentTypes.length + i)).filter(value -> value.isConstant() && value.getUsages().size() == 1).count();
 
 			if (constantArguments == 0)
 				continue;
@@ -77,10 +73,9 @@ public final class MethodCallEjector extends AbstractEjectPhase
 				final ArrayList<MethodInsnNode> list = new ArrayList<>();
 				list.add(methodInsnNode);
 				result.put(methodCallInfo, list);
-			} else
-			{
-				result.get(methodCallInfo).add(methodInsnNode);
 			}
+			else
+				result.get(methodCallInfo).add(methodInsnNode);
 		}
 		return result;
 	}
@@ -95,8 +90,7 @@ public final class MethodCallEjector extends AbstractEjectPhase
 
 		final Type returnType = Type.getReturnType(methodCallInfo.desc);
 
-		final MethodNode methodNode = new MethodNode(getRandomAccess(), name, Type.getMethodDescriptor(returnType, arguments.toArray(new Type[0])),
-				null, null);
+		final MethodNode methodNode = new MethodNode(getRandomAccess(), name, Type.getMethodDescriptor(returnType, arguments.toArray(new Type[0])), null, null);
 		final InsnList insnList = new InsnList();
 
 		int variable = 0;
@@ -118,12 +112,7 @@ public final class MethodCallEjector extends AbstractEjectPhase
 	private static int getLastArgumentVar(final MethodNode methodNode)
 	{
 		final Type[] argumentTypes = Type.getArgumentTypes(methodNode.desc);
-		int var = 0;
-		for (int i = 0; i < argumentTypes.length - 1; i++)
-		{
-			var += argumentTypes[i].getSize();
-		}
-		return var;
+		return IntStream.range(0, argumentTypes.length - 1).map(i -> argumentTypes[i].getSize()).sum();
 	}
 
 	private Map<Integer, InsnList> createJunkArguments(final Type[] argumentTypes, final int offset)
@@ -173,10 +162,7 @@ public final class MethodCallEjector extends AbstractEjectPhase
 			{
 				final int id = ejectorContext.getNextId();
 
-				patches.put(methodInsnNode, ASMUtils.asList(
-						new LdcInsnNode(id),
-						new MethodInsnNode(Opcodes.INVOKESTATIC, classWrapper.getName(), proxyMethod.name, proxyMethod.desc, false)
-				));
+				patches.put(methodInsnNode, ASMUtils.asList(new LdcInsnNode(id), new MethodInsnNode(Opcodes.INVOKESTATIC, classWrapper.getName(), proxyMethod.name, proxyMethod.desc, false)));
 
 				final InsnList proxyArgumentFix = new InsnList();
 				final Frame<AbstractValue> frame = frames[methodNode.instructions.indexOf(methodInsnNode)];
@@ -184,7 +170,7 @@ public final class MethodCallEjector extends AbstractEjectPhase
 				final Type[] argumentTypes = Type.getArgumentTypes(methodInsnNode.desc);
 
 				int variable = 0;
-				for (int i = 0; i < argumentTypes.length; i++)
+				for (int i = 0, j = argumentTypes.length; i < j; i++)
 				{
 					final Type argumentType = argumentTypes[i];
 					final AbstractValue argumentValue = frame.getStack(frame.getStackSize() - argumentTypes.length + i);
@@ -202,9 +188,7 @@ public final class MethodCallEjector extends AbstractEjectPhase
 				ejectorContext.getCounter().incrementAndGet();
 
 				if (ejectorContext.isJunkArguments())
-				{
 					proxyFixes.putAll(createJunkArguments(argumentTypes, offset));
-				}
 			}
 
 			final int idVariable = getLastArgumentVar(proxyMethod);
@@ -220,11 +204,11 @@ public final class MethodCallEjector extends AbstractEjectPhase
 
 	private static class MethodCallInfo
 	{
-		private final String owner;
-		private final boolean isInterface;
-		private final int opcode;
-		private final String name;
-		private final String desc;
+		final String owner;
+		final boolean isInterface;
+		final int opcode;
+		final String name;
+		final String desc;
 
 		MethodCallInfo(final String owner, final boolean isInterface, final int opcode, final String name, final String desc)
 		{
@@ -238,14 +222,12 @@ public final class MethodCallEjector extends AbstractEjectPhase
 		@Override
 		public boolean equals(final Object o)
 		{
-			if (this == o) return true;
-			if (o == null || getClass() != o.getClass()) return false;
+			if (this == o)
+				return true;
+			if (o == null || getClass() != o.getClass())
+				return false;
 			final MethodCallInfo that = (MethodCallInfo) o;
-			return isInterface == that.isInterface &&
-					opcode == that.opcode &&
-					Objects.equals(owner, that.owner) &&
-					Objects.equals(name, that.name) &&
-					Objects.equals(desc, that.desc);
+			return isInterface == that.isInterface && opcode == that.opcode && Objects.equals(owner, that.owner) && Objects.equals(name, that.name) && Objects.equals(desc, that.desc);
 		}
 
 		@Override

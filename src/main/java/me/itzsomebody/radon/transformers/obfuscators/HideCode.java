@@ -18,19 +18,18 @@
 
 package me.itzsomebody.radon.transformers.obfuscators;
 
+import static me.itzsomebody.radon.config.ConfigurationSetting.HIDE_CODE;
+
+import java.util.concurrent.atomic.AtomicInteger;
+
 import me.itzsomebody.radon.Main;
 import me.itzsomebody.radon.config.Configuration;
 import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.transformers.Transformer;
 import me.itzsomebody.radon.utils.ASMUtils;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static me.itzsomebody.radon.config.ConfigurationSetting.HIDE_CODE;
-
 /**
- * Adds a synthetic modifier and bridge modifier if possible to attempt to hide code against some lower-quality
- * decompilers.
+ * Adds a synthetic modifier and bridge modifier if possible to attempt to hide code against some lower-quality decompilers.
  *
  * @author ItzSomebody
  */
@@ -47,16 +46,13 @@ public class HideCode extends Transformer
 
 		getClassWrappers().stream().filter(cw -> !excluded(cw)).forEach(cw ->
 		{
-			if (isHideClassesEnabled())
-			{
+			if (hideClassesEnabled)
 				if (!cw.getAccess().isSynthetic() && !ASMUtils.hasAnnotations(cw.getClassNode()))
 				{
 					cw.setAccessFlags(cw.getAccessFlags() | ACC_SYNTHETIC);
 					counter.incrementAndGet();
 				}
-			}
-			if (isHideMethodsEnabled())
-			{
+			if (hideMethodsEnabled)
 				cw.getMethods().stream().filter(mw -> !excluded(mw) && !ASMUtils.hasAnnotations(mw.getMethodNode())).forEach(mw ->
 				{
 					boolean atLeastOnce = false;
@@ -66,7 +62,7 @@ public class HideCode extends Transformer
 						mw.setAccessFlags(mw.getAccessFlags() | ACC_SYNTHETIC);
 						atLeastOnce = true;
 					}
-					if (!mw.getName().startsWith("<") && !mw.getAccess().isBridge())
+					if (!(!mw.getName().isEmpty() && mw.getName().charAt(0) == '<') && !mw.getAccess().isBridge())
 					{
 						mw.setAccessFlags(mw.getAccessFlags() | ACC_BRIDGE);
 						atLeastOnce = true;
@@ -75,9 +71,7 @@ public class HideCode extends Transformer
 					if (atLeastOnce)
 						counter.incrementAndGet();
 				});
-			}
-			if (isHideFieldsEnabled())
-			{
+			if (hideFieldsEnabled)
 				cw.getFields().stream().filter(fw -> !excluded(fw) && !ASMUtils.hasAnnotations(fw.getFieldNode())).forEach(fw ->
 				{
 					if (!fw.getAccess().isSynthetic())
@@ -86,7 +80,6 @@ public class HideCode extends Transformer
 						counter.incrementAndGet();
 					}
 				});
-			}
 		});
 
 		Main.info(String.format("Hid %d members.", counter.get()));

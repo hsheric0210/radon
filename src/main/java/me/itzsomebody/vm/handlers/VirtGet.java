@@ -18,29 +18,29 @@
 
 package me.itzsomebody.vm.handlers;
 
+import java.lang.reflect.Field;
+
 import me.itzsomebody.vm.VM;
 import me.itzsomebody.vm.VMException;
 import me.itzsomebody.vm.datatypes.*;
 
-import java.lang.reflect.Field;
-
 public class VirtGet extends Handler
 {
 	@Override
-	public void handle(VM vm, Object[] operands) throws Exception
+	public void handle(final VM vm, final Object[] operands) throws Exception
 	{
-		String ownerName = (String) operands[0];
-		String name = (String) operands[1];
-		String typeName = (String) operands[2];
+		final String ownerName = (String) operands[0];
+		final String name = (String) operands[1];
+		final String typeName = (String) operands[2];
 
-		Class clazz = VM.getClazz(ownerName);
-		Class type = VM.getClazz(typeName);
-		Field field = VM.getField(clazz, name, type);
+		final Class clazz = VM.getClazz(ownerName);
+		final Class type = VM.getClazz(typeName);
+		final Field field = VM.getField(clazz, name, type);
 
 		if (field == null)
 			throw new VMException();
 
-		Object ref = vm.pop().asObj();
+		final Object ref = vm.pop().asObj();
 
 		if ("int".equals(type.getName()))
 			vm.push(new JInteger(field.getInt(ref)));
@@ -48,13 +48,15 @@ public class VirtGet extends Handler
 		{
 			vm.push(new JLong(field.getLong(ref)));
 			vm.push(JTop.getTop());
-		} else if ("float".equals(type.getName()))
+		}
+		else if ("float".equals(type.getName()))
 			vm.push(new JFloat(field.getFloat(ref)));
 		else if ("double".equals(type.getName()))
 		{
 			vm.push(new JDouble(field.getDouble(ref)));
 			vm.push(JTop.getTop());
-		} else if ("byte".equals(type.getName()))
+		}
+		else if ("byte".equals(type.getName()))
 			vm.push(new JInteger(field.getByte(ref)));
 		else if ("short".equals(type.getName()))
 			vm.push(new JInteger(field.getShort(ref)));

@@ -25,7 +25,7 @@ public class VMTryCatch
 	private final int handlerPc;
 	private final String type;
 
-	public VMTryCatch(int startPc, int endPc, int handlerPc, String type)
+	public VMTryCatch(final int startPc, final int endPc, final int handlerPc, final String type)
 	{
 		this.startPc = startPc;
 		this.endPc = endPc;

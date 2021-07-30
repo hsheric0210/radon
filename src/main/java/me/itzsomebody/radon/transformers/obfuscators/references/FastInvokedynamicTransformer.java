@@ -18,9 +18,9 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.references;
 
-import me.itzsomebody.radon.Main;
-import me.itzsomebody.radon.asm.ClassWrapper;
-import me.itzsomebody.radon.utils.ASMUtils;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
+
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
@@ -30,8 +30,9 @@ import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InvokeDynamicInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
+import me.itzsomebody.radon.Main;
+import me.itzsomebody.radon.asm.ClassWrapper;
+import me.itzsomebody.radon.utils.ASMUtils;
 
 /**
  * Hides method invocations with invokedynamic instructions.
@@ -46,45 +47,37 @@ public class FastInvokedynamicTransformer extends ReferenceObfuscation
 		final MemberNames memberNames = new MemberNames();
 		final AtomicInteger counter = new AtomicInteger();
 
-		final Handle bootstrapHandle = new Handle(H_INVOKESTATIC, memberNames.className, memberNames.bootstrapMethodName,
-				"(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;", false);
+		final Handle bootstrapHandle = new Handle(H_INVOKESTATIC, memberNames.className, memberNames.bootstrapMethodName, "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;", false);
 
-		getClassWrappers().stream().filter(cw -> !excluded(cw) && !"java/lang/Enum".equals(cw.getSuperName())
-				&& cw.allowsIndy()).forEach(classWrapper ->
-				classWrapper.getMethods().stream().filter(mw -> !excluded(mw) && mw.hasInstructions()).forEach(mw ->
+		getClassWrappers().stream().filter(cw -> !excluded(cw) && !"java/lang/Enum".equals(cw.getSuperName()) && cw.allowsIndy()).forEach(classWrapper -> classWrapper.getMethods().stream().filter(mw -> !excluded(mw) && mw.hasInstructions()).forEach(mw ->
+		{
+			final InsnList insns = mw.getInstructions();
+
+			Stream.of(insns.toArray()).forEach(insn ->
+			{
+				if (insn instanceof MethodInsnNode)
 				{
-					final InsnList insns = mw.getInstructions();
+					final MethodInsnNode m = (MethodInsnNode) insn;
 
-					Stream.of(insns.toArray()).forEach(insn ->
-					{
-						if (insn instanceof MethodInsnNode)
-						{
-							final MethodInsnNode m = (MethodInsnNode) insn;
+					if (!m.name.isEmpty() && m.name.charAt(0) == '<')
+						return;
 
-							if (m.name.startsWith("<"))
-								return;
+					String newDesc = m.desc;
+					if (m.getOpcode() != INVOKESTATIC)
+						newDesc = newDesc.replace("(", "(Ljava/lang/Object;");
 
-							String newDesc = m.desc;
-							if (m.getOpcode() != INVOKESTATIC)
-								newDesc = newDesc.replace("(", "(Ljava/lang/Object;");
+					newDesc = ASMUtils.getGenericMethodDesc(newDesc);
+					// fixme: j11 doesn't like null bytes
+					final String name = m.owner.replace('/', '.') + "\u0000\u0000" + m.name + "\u0000\u0000" + m.desc + "\u0000\u0000" + (insn.getOpcode() == INVOKESTATIC ? "a" : "b");
 
-							newDesc = ASMUtils.getGenericMethodDesc(newDesc);
-							// fixme: j11 doesn't like null bytes
-							final String name = m.owner.replace('/', '.') + "\u0000\u0000" + m.name + "\u0000\u0000"
-									+ m.desc + "\u0000\u0000" + (insn.getOpcode() == INVOKESTATIC ? "a" : "b");
+					final InvokeDynamicInsnNode indy = new InvokeDynamicInsnNode(encrypt(name, memberNames), newDesc, bootstrapHandle);
 
-							final InvokeDynamicInsnNode indy = new InvokeDynamicInsnNode(
-									encrypt(name, memberNames),
-									newDesc,
-									bootstrapHandle
-							);
+					insns.set(m, indy);
 
-							insns.set(m, indy);
-
-							counter.incrementAndGet();
-						}
-					});
-				}));
+					counter.incrementAndGet();
+				}
+			});
+		}));
 
 		final ClassNode decryptor = createBootstrap(memberNames);
 		getClasses().put(decryptor.name, new ClassWrapper(decryptor, false));
@@ -97,8 +90,7 @@ public class FastInvokedynamicTransformer extends ReferenceObfuscation
 		final char[] encryptedChars = encrypted.toCharArray();
 		final char[] decryptedChars = new char[encryptedChars.length];
 
-		for (int i = 0; i < encryptedChars.length; i++)
-		{
+		for (int i = 0, j = encryptedChars.length; i < j; i++)
 			switch (i % 3)
 			{
 				case 0:
@@ -111,7 +103,6 @@ public class FastInvokedynamicTransformer extends ReferenceObfuscation
 					decryptedChars[i] = (char) (encryptedChars[i] ^ memberNames.decryptMethodName.hashCode());
 					break;
 			}
-		}
 
 		return new String(decryptedChars);
 	}
@@ -227,7 +218,10 @@ public class FastInvokedynamicTransformer extends ReferenceObfuscation
 			mv.visitEnd();
 		}
 		{
-			mv = cw.visitMethod(ACC_PRIVATE + ACC_STATIC, memberNames.getMethodHandleMethodName, "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;C)Ljava/lang/invoke/MethodHandle;", null, new String[] {"java/lang/Exception"});
+			mv = cw.visitMethod(ACC_PRIVATE + ACC_STATIC, memberNames.getMethodHandleMethodName, "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;C)Ljava/lang/invoke/MethodHandle;", null, new String[]
+			{
+					"java/lang/Exception"
+			});
 			mv.visitCode();
 			final Label l0 = new Label();
 			mv.visitLabel(l0);
@@ -341,9 +335,13 @@ public class FastInvokedynamicTransformer extends ReferenceObfuscation
 
 	private class MemberNames
 	{
-		private final String className = randomClassName();
-		private final String decryptMethodName = uniqueRandomString();
-		private final String getMethodHandleMethodName = uniqueRandomString();
-		private final String bootstrapMethodName = uniqueRandomString();
+		final String className = randomClassName();
+		final String decryptMethodName = uniqueRandomString();
+		final String getMethodHandleMethodName = uniqueRandomString();
+		final String bootstrapMethodName = uniqueRandomString();
+
+		MemberNames()
+		{
+		}
 	}
 }

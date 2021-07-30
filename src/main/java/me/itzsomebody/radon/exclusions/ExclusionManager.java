@@ -42,8 +42,6 @@ public class ExclusionManager
 
 	public boolean isExcluded(final String pattern, final ExclusionType type)
 	{
-		return exclusions.stream().anyMatch(exclusion ->
-				(exclusion.getExclusionType() == type || exclusion.getExclusionType() == ExclusionType.GLOBAL)
-						&& exclusion.matches(pattern));
+		return exclusions.stream().anyMatch(exclusion -> (exclusion.getExclusionType() == type || exclusion.getExclusionType() == ExclusionType.GLOBAL) && exclusion.matches(pattern));
 	}
 }

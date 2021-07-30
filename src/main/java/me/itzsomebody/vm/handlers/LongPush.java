@@ -25,7 +25,7 @@ import me.itzsomebody.vm.datatypes.JTop;
 public class LongPush extends Handler
 {
 	@Override
-	public void handle(VM vm, Object[] operands)
+	public void handle(final VM vm, final Object[] operands)
 	{
 		vm.push(new JLong((Long) operands[0]));
 		vm.push(JTop.getTop());

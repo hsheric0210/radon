@@ -18,10 +18,10 @@
 
 package me.itzsomebody.radon.analysis.constant.values;
 
+import java.util.Objects;
+
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
-
-import java.util.Objects;
 
 public final class ConstantValue extends AbstractValue
 {
@@ -97,9 +97,12 @@ public final class ConstantValue extends AbstractValue
 	@Override
 	public boolean equals(final Object o)
 	{
-		if (this == o) return true;
-		if (!(o instanceof ConstantValue)) return false;
-		if (!super.equals(o)) return false;
+		if (this == o)
+			return true;
+		if (!(o instanceof ConstantValue))
+			return false;
+		if (!super.equals(o))
+			return false;
 		final ConstantValue that = (ConstantValue) o;
 		return Objects.equals(value, that.value);
 	}

@@ -18,10 +18,7 @@
 
 package me.itzsomebody.vm;
 
-import me.itzsomebody.vm.datatypes.JObject;
-import me.itzsomebody.vm.datatypes.JTop;
-import me.itzsomebody.vm.datatypes.JWrapper;
-import me.itzsomebody.vm.handlers.*;
+import static me.itzsomebody.radon.transformers.obfuscators.virtualizer.VMOpcodes.*;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -29,8 +26,12 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
-import static me.itzsomebody.radon.transformers.obfuscators.virtualizer.VMOpcodes.*;
+import me.itzsomebody.vm.datatypes.JObject;
+import me.itzsomebody.vm.datatypes.JTop;
+import me.itzsomebody.vm.datatypes.JWrapper;
+import me.itzsomebody.vm.handlers.*;
 
 public class VM
 {
@@ -55,7 +56,7 @@ public class VM
 		{
 			STUB = new Stub();
 		}
-		catch (Exception e)
+		catch (final Exception e)
 		{
 			throw new VMException();
 		}
@@ -124,17 +125,17 @@ public class VM
 		HANDLERS[VM_JNE] = new Jne();
 	}
 
-	public VM(VMContext context)
+	public VM(final VMContext context)
 	{
-		this.stack = context.getStack();
-		this.registers = context.getRegisters();
-		this.instructions = STUB.instructions[context.getOffset()];
-		this.catches = context.getCatches();
-		this.pc = 0;
-		this.executing = true;
+		stack = context.getStack();
+		registers = context.getRegisters();
+		instructions = STUB.instructions[context.getOffset()];
+		catches = context.getCatches();
+		pc = 0;
+		executing = true;
 	}
 
-	public void push(JWrapper wrapper)
+	public void push(final JWrapper wrapper)
 	{
 		stack.push(wrapper);
 	}
@@ -144,12 +145,12 @@ public class VM
 		return stack.pop();
 	}
 
-	public JWrapper loadRegister(int index)
+	public JWrapper loadRegister(final int index)
 	{
 		return registers[index];
 	}
 
-	public void storeRegister(JWrapper wrapper, int index)
+	public void storeRegister(final JWrapper wrapper, final int index)
 	{
 		registers[index] = wrapper;
 	}
@@ -159,12 +160,12 @@ public class VM
 		return pc;
 	}
 
-	public void setPc(int pc)
+	public void setPc(final int pc)
 	{
 		this.pc = pc;
 	}
 
-	public void setExecuting(boolean executing)
+	public void setExecuting(final boolean executing)
 	{
 		this.executing = executing;
 	}
@@ -172,27 +173,22 @@ public class VM
 	public JWrapper execute() throws Throwable
 	{
 		while (executing)
-		{
 			try
 			{
-				Instruction instruction = instructions[pc];
+				final Instruction instruction = instructions[pc];
 
-				Handler handler = HANDLERS[instruction.getOpcode()];
+				final Handler handler = HANDLERS[instruction.getOpcode()];
 				handler.handle(this, instruction.getOperands());
 
 				pc++;
 			}
-			catch (Throwable t)
+			catch (final Throwable t)
 			{
 				boolean unhandled = true;
 
 				if (catches != null)
-					for (int i = 0; i < catches.length; i++)
-					{
-						VMTryCatch vmCatch = catches[i];
-
-						if ((vmCatch.getType() == null || Class.forName(vmCatch.getType()).isInstance(t))
-								&& (pc >= vmCatch.getStartPc() && pc < vmCatch.getEndPc()))
+					for (final VMTryCatch vmCatch : catches)
+						if ((vmCatch.getType() == null || Class.forName(vmCatch.getType()).isInstance(t)) && pc >= vmCatch.getStartPc() && pc < vmCatch.getEndPc())
 						{
 							stack.clear();
 							push(new JObject(t));
@@ -201,12 +197,10 @@ public class VM
 							unhandled = false;
 							break;
 						}
-					}
 
 				if (unhandled)
 					throw t;
 			}
-		}
 
 		JWrapper result = pop();
 		if (result instanceof JTop)
@@ -215,17 +209,12 @@ public class VM
 		return result;
 	}
 
-	private static String parametersToString(Class[] params)
+	private static String parametersToString(final Class[] params)
 	{
-		StringBuilder sb = new StringBuilder();
-
-		for (int i = 0; i < params.length; i++)
-			sb.append(params[i].getName()).append(' ');
-
-		return sb.toString().trim();
+		return Arrays.stream(params).map(param -> param.getName() + ' ').collect(Collectors.joining()).trim();
 	}
 
-	public static Class getClazz(String name) throws ClassNotFoundException
+	public static Class getClazz(final String name) throws ClassNotFoundException
 	{
 		if ("int".equals(name))
 			return int.class;
@@ -249,29 +238,25 @@ public class VM
 		return Class.forName(name);
 	}
 
-	public static Method getMethod(Class clazz, String name, Class[] params)
+	public static Method getMethod(final Class clazz, final String name, final Class[] params)
 	{
 		if (METHOD_CACHE.containsKey(clazz.getName() + '.' + name + '(' + parametersToString(params) + ')'))
 			return METHOD_CACHE.get(clazz.getName() + '.' + name + '(' + parametersToString(params) + ')');
 
-		Method[] methods = clazz.getDeclaredMethods();
-		for (int i = 0; i < methods.length; i++)
-		{
-			Method method = methods[i];
-
+		final Method[] methods = clazz.getDeclaredMethods();
+		for (final Method method : methods)
 			if (method.getName().equals(name) && Arrays.equals(method.getParameterTypes(), params))
 			{
 				method.setAccessible(true);
 				METHOD_CACHE.put(clazz.getName() + '.' + name + '(' + parametersToString(params) + ')', method);
 				return method;
 			}
-		}
 
 		if (clazz.getSuperclass() != null)
 		{
-			Class superClass = clazz.getSuperclass();
+			final Class superClass = clazz.getSuperclass();
 
-			Method method = getMethod(superClass, name, params);
+			final Method method = getMethod(superClass, name, params);
 
 			if (method != null)
 			{
@@ -283,11 +268,11 @@ public class VM
 
 		if (clazz.getInterfaces() != null)
 		{
-			Class[] interfaces = clazz.getInterfaces();
+			final Class[] interfaces = clazz.getInterfaces();
 
-			for (int i = 0; i < interfaces.length; i++)
+			for (final Class anInterface : interfaces)
 			{
-				Method method = getMethod(interfaces[i], name, params);
+				final Method method = getMethod(anInterface, name, params);
 
 				if (method != null)
 				{
@@ -301,29 +286,25 @@ public class VM
 		return null;
 	}
 
-	public static Constructor getConstructor(Class clazz, Class[] params)
+	public static Constructor getConstructor(final Class clazz, final Class[] params)
 	{
 		if (CONSTRUCTOR_CACHE.containsKey(clazz.getName() + '(' + parametersToString(params) + ')'))
 			return CONSTRUCTOR_CACHE.get(clazz.getName() + '(' + parametersToString(params) + ')');
 
-		Constructor[] constructors = clazz.getDeclaredConstructors();
-		for (int i = 0; i < constructors.length; i++)
-		{
-			Constructor constructor = constructors[i];
-
+		final Constructor[] constructors = clazz.getDeclaredConstructors();
+		for (final Constructor constructor : constructors)
 			if (Arrays.equals(constructor.getParameterTypes(), params))
 			{
 				constructor.setAccessible(true);
 				CONSTRUCTOR_CACHE.put(clazz.getName() + '(' + parametersToString(params) + ')', constructor);
 				return constructor;
 			}
-		}
 
 		if (clazz.getSuperclass() != null)
 		{
-			Class superClass = clazz.getSuperclass();
+			final Class superClass = clazz.getSuperclass();
 
-			Constructor constructor = getConstructor(superClass, params);
+			final Constructor constructor = getConstructor(superClass, params);
 
 			if (constructor != null)
 			{
@@ -335,11 +316,11 @@ public class VM
 
 		if (clazz.getInterfaces() != null)
 		{
-			Class[] interfaces = clazz.getInterfaces();
+			final Class[] interfaces = clazz.getInterfaces();
 
-			for (int i = 0; i < interfaces.length; i++)
+			for (final Class anInterface : interfaces)
 			{
-				Constructor constructor = getConstructor(interfaces[i], params);
+				final Constructor constructor = getConstructor(anInterface, params);
 
 				if (constructor != null)
 				{
@@ -353,29 +334,25 @@ public class VM
 		return null;
 	}
 
-	public static Field getField(Class clazz, String name, Class type)
+	public static Field getField(final Class clazz, final String name, final Class type)
 	{
 		if (FIELD_CACHE.containsKey(clazz.getName() + '.' + name + '(' + type.getName() + ')'))
 			return FIELD_CACHE.get(clazz.getName() + '.' + name + '(' + type.getName() + ')');
 
-		Field[] fields = clazz.getDeclaredFields();
-		for (int i = 0; i < fields.length; i++)
-		{
-			Field field = fields[i];
-
+		final Field[] fields = clazz.getDeclaredFields();
+		for (final Field field : fields)
 			if (field.getName().equals(name) && field.getType() == type)
 			{
 				field.setAccessible(true);
 				FIELD_CACHE.put(clazz.getName() + '.' + name + '(' + type.getName() + ')', field);
 				return field;
 			}
-		}
 
 		if (clazz.getSuperclass() != null)
 		{
-			Class superClass = clazz.getSuperclass();
+			final Class superClass = clazz.getSuperclass();
 
-			Field field = getField(superClass, name, type);
+			final Field field = getField(superClass, name, type);
 
 			if (field != null)
 			{
@@ -386,11 +363,11 @@ public class VM
 
 		if (clazz.getInterfaces() != null)
 		{
-			Class[] interfaces = clazz.getInterfaces();
+			final Class[] interfaces = clazz.getInterfaces();
 
-			for (int i = 0; i < interfaces.length; i++)
+			for (final Class anInterface : interfaces)
 			{
-				Field field = getField(interfaces[i], name, type);
+				final Field field = getField(anInterface, name, type);
 
 				if (field != null)
 				{

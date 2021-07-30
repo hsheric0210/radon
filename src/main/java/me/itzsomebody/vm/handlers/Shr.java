@@ -28,10 +28,10 @@ import me.itzsomebody.vm.datatypes.JWrapper;
 public class Shr extends Handler
 {
 	@Override
-	public void handle(VM vm, Object[] operands)
+	public void handle(final VM vm, final Object[] operands)
 	{
-		JWrapper second = vm.pop();
-		JWrapper first = vm.pop();
+		final JWrapper second = vm.pop();
+		final JWrapper first = vm.pop();
 
 		if (first instanceof JInteger)
 		{

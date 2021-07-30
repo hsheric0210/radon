@@ -22,7 +22,7 @@ public class JFloat extends JWrapper
 {
 	private final float value;
 
-	public JFloat(float value)
+	public JFloat(final float value)
 	{
 		this.value = value;
 	}

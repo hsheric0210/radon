@@ -18,15 +18,15 @@
 
 package me.itzsomebody.vm.handlers;
 
+import java.lang.reflect.Array;
+
 import me.itzsomebody.vm.VM;
 import me.itzsomebody.vm.datatypes.JInteger;
-
-import java.lang.reflect.Array;
 
 public class ArrLength extends Handler
 {
 	@Override
-	public void handle(VM vm, Object[] operands)
+	public void handle(final VM vm, final Object[] operands)
 	{
 		vm.push(new JInteger(Array.getLength(vm.pop().asObj())));
 	}

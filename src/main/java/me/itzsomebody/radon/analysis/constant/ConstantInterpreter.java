@@ -18,17 +18,18 @@
 
 package me.itzsomebody.radon.analysis.constant;
 
-import me.itzsomebody.radon.analysis.constant.values.AbstractValue;
-import me.itzsomebody.radon.analysis.constant.values.ConstantValue;
-import me.itzsomebody.radon.analysis.constant.values.NullValue;
-import me.itzsomebody.radon.analysis.constant.values.UnknownValue;
+import java.util.List;
+
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 import org.objectweb.asm.tree.analysis.AnalyzerException;
 import org.objectweb.asm.tree.analysis.Interpreter;
 
-import java.util.List;
+import me.itzsomebody.radon.analysis.constant.values.AbstractValue;
+import me.itzsomebody.radon.analysis.constant.values.ConstantValue;
+import me.itzsomebody.radon.analysis.constant.values.NullValue;
+import me.itzsomebody.radon.analysis.constant.values.UnknownValue;
 
 public class ConstantInterpreter extends Interpreter<AbstractValue> implements Opcodes
 {
@@ -134,38 +135,26 @@ public class ConstantInterpreter extends Interpreter<AbstractValue> implements O
 			{
 				final Object cst = ((LdcInsnNode) insnNode).cst;
 				if (cst instanceof Integer)
-				{
 					return ConstantValue.fromInteger(insnNode, (Integer) cst);
-				} else if (cst instanceof Float)
-				{
+				if (cst instanceof Float)
 					return ConstantValue.fromFloat(insnNode, (Float) cst);
-				} else if (cst instanceof Long)
-				{
+				if (cst instanceof Long)
 					return ConstantValue.fromLong(insnNode, (Long) cst);
-				} else if (cst instanceof Double)
-				{
+				if (cst instanceof Double)
 					return ConstantValue.fromDouble(insnNode, (Double) cst);
-				} else if (cst instanceof String)
-				{
+				if (cst instanceof String)
 					return ConstantValue.fromString(insnNode, (String) cst);
-				} else if (cst instanceof Type)
+				if (cst instanceof Type)
 				{
 					final int sort = ((Type) cst).getSort();
 					if (sort == Type.OBJECT || sort == Type.ARRAY || sort == Type.METHOD)
-					{
 						return new UnknownValue(insnNode, (Type) cst);
-					} else
-					{
-						throw new IllegalArgumentException("Illegal LDC constant " + cst);
-					}
-				} else
-				{
 					throw new IllegalArgumentException("Illegal LDC constant " + cst);
 				}
+				throw new IllegalArgumentException("Illegal LDC constant " + cst);
 			}
 			case JSR:
-				throw new UnsupportedOperationException(
-						"Do not support instruction types JSR - Deprecated in Java 6");
+				throw new UnsupportedOperationException("Do not support instruction types JSR - Deprecated in Java 6");
 			case GETSTATIC:
 			{
 				final FieldInsnNode f = (FieldInsnNode) insnNode;
@@ -384,9 +373,7 @@ public class ConstantInterpreter extends Interpreter<AbstractValue> implements O
 	public AbstractValue naryOperation(final AbstractInsnNode insnNode, final List<? extends AbstractValue> list)
 	{
 		for (final AbstractValue abstractValue : list)
-		{
 			abstractValue.addUsage(insnNode);
-		}
 		switch (insnNode.getOpcode())
 		{
 			case INVOKEVIRTUAL:
@@ -422,9 +409,7 @@ public class ConstantInterpreter extends Interpreter<AbstractValue> implements O
 	public AbstractValue merge(final AbstractValue symbolicValue1, final AbstractValue symbolicValue2)
 	{
 		if (!symbolicValue1.equals(symbolicValue2))
-		{
 			return UnknownValue.UNINITIALIZED_VALUE;
-		}
 		return symbolicValue1;
 	}
 }

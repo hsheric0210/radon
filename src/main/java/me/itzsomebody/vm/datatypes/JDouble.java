@@ -22,7 +22,7 @@ public class JDouble extends JWrapper
 {
 	private final double value;
 
-	public JDouble(double value)
+	public JDouble(final double value)
 	{
 		this.value = value;
 	}

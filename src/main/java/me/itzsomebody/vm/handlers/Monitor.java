@@ -24,10 +24,10 @@ import me.itzsomebody.vm.datatypes.JWrapper;
 public class Monitor extends Handler
 {
 	@Override
-	public void handle(VM vm, Object[] operands)
+	public void handle(final VM vm, final Object[] operands)
 	{
-		boolean lock = (Integer) operands[0] == 0;
-		JWrapper wrapper = vm.pop();
+		final boolean lock = (Integer) operands[0] == 0;
+		final JWrapper wrapper = vm.pop();
 
 		if (lock)
 			wrapper.lock();

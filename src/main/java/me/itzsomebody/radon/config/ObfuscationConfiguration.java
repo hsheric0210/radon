@@ -18,13 +18,7 @@
 
 package me.itzsomebody.radon.config;
 
-import me.itzsomebody.radon.dictionaries.Dictionary;
-import me.itzsomebody.radon.dictionaries.DictionaryFactory;
-import me.itzsomebody.radon.exceptions.RadonException;
-import me.itzsomebody.radon.exclusions.Exclusion;
-import me.itzsomebody.radon.exclusions.ExclusionManager;
-import me.itzsomebody.radon.transformers.Transformer;
-import me.itzsomebody.radon.utils.FileUtils;
+import static me.itzsomebody.radon.config.ConfigurationSetting.*;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -34,7 +28,13 @@ import java.util.Map;
 import java.util.stream.Stream;
 import java.util.zip.Deflater;
 
-import static me.itzsomebody.radon.config.ConfigurationSetting.*;
+import me.itzsomebody.radon.dictionaries.Dictionary;
+import me.itzsomebody.radon.dictionaries.DictionaryFactory;
+import me.itzsomebody.radon.exceptions.RadonException;
+import me.itzsomebody.radon.exclusions.Exclusion;
+import me.itzsomebody.radon.exclusions.ExclusionManager;
+import me.itzsomebody.radon.transformers.Transformer;
+import me.itzsomebody.radon.utils.FileUtils;
 
 public final class ObfuscationConfiguration
 {
@@ -45,13 +45,9 @@ public final class ObfuscationConfiguration
 		// INPUT / OUTPUT
 
 		if (!config.contains(INPUT))
-		{
 			throw new RadonException("No input file was specified in the config");
-		}
 		if (!config.contains(OUTPUT))
-		{
 			throw new RadonException("No output file was specified in the config");
-		}
 
 		obfConfig.setInput(new File((String) config.get(INPUT)));
 		obfConfig.setOutput(new File((String) config.get(OUTPUT)));
@@ -65,12 +61,9 @@ public final class ObfuscationConfiguration
 			final File f = new File(s);
 
 			if (f.isDirectory())
-			{
 				FileUtils.getSubDirectoryFiles(f, libraries);
-			} else
-			{
+			else
 				libraries.add(f);
-			}
 		});
 		obfConfig.setLibraries(libraries);
 
@@ -116,10 +109,9 @@ public final class ObfuscationConfiguration
 				{
 					transformer.setConfiguration(config);
 					transformers.add(transformer);
-				} else if (config.get(setting) instanceof Boolean && (boolean) config.get(setting))
-				{
-					transformers.add(transformer);
 				}
+				else if (config.get(setting) instanceof Boolean && (boolean) config.get(setting))
+					transformers.add(transformer);
 			}
 		});
 

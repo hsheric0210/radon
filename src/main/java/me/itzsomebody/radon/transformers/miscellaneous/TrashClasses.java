@@ -18,23 +18,23 @@
 
 package me.itzsomebody.radon.transformers.miscellaneous;
 
-import me.itzsomebody.radon.Main;
-import me.itzsomebody.radon.config.Configuration;
-import me.itzsomebody.radon.exclusions.ExclusionType;
-import me.itzsomebody.radon.transformers.Transformer;
-import me.itzsomebody.radon.utils.ASMUtils;
-import me.itzsomebody.radon.utils.RandomUtils;
+import java.util.ArrayList;
+
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 
-import java.util.ArrayList;
+import me.itzsomebody.radon.Main;
+import me.itzsomebody.radon.config.Configuration;
+import me.itzsomebody.radon.exclusions.ExclusionType;
+import me.itzsomebody.radon.transformers.Transformer;
+import me.itzsomebody.radon.utils.ASMUtils;
+import me.itzsomebody.radon.utils.RandomUtils;
 
 /**
- * Not really a transformer. This "transformer" generates unused classes full
- * of random bytecode.
+ * Not really a transformer. This "transformer" generates unused classes full of random bytecode.
  *
  * @author ItzSomebody
  */

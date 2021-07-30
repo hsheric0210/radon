@@ -26,28 +26,28 @@ public class VMStack
 	private final int maxSize;
 	private int pointer;
 
-	public VMStack(int maxSize)
+	public VMStack(final int maxSize)
 	{
-		this.stack = new JWrapper[maxSize];
+		stack = new JWrapper[maxSize];
 		this.maxSize = maxSize;
-		this.pointer = 0;
+		pointer = 0;
 	}
 
-	public void push(JWrapper wrapper)
+	public void push(final JWrapper wrapper)
 	{
 		stack[pointer++] = wrapper;
 	}
 
 	public JWrapper pop()
 	{
-		JWrapper wrapper = stack[--pointer];
+		final JWrapper wrapper = stack[--pointer];
 		stack[pointer] = null;
 		return wrapper;
 	}
 
 	public void clear()
 	{
-		this.stack = new JWrapper[maxSize];
-		this.pointer = 0;
+		stack = new JWrapper[maxSize];
+		pointer = 0;
 	}
 }

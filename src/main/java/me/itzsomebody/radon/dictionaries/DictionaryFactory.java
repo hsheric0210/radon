@@ -20,25 +20,18 @@ package me.itzsomebody.radon.dictionaries;
 
 import java.util.List;
 
-public class DictionaryFactory
+public final class DictionaryFactory
 {
 	public static Dictionary get(final String s)
 	{
-		final Dictionary[] dictionaries = {
-				new AlphaNumDictionary(),
-				new RandomUnicodeDictionary(),
-				new SpacesDictionary(),
-				new UnrecognizedDictionary(),
-				new CreeperDictionary()
+		final Dictionary[] dictionaries =
+		{
+				new AlphaNumDictionary(), new RandomUnicodeDictionary(), new SpacesDictionary(), new UnrecognizedDictionary(), new CreeperDictionary()
 		};
 
 		for (final Dictionary dictionary : dictionaries)
-		{
 			if (dictionary.getDictionaryName().equals(s))
-			{
 				return dictionary;
-			}
-		}
 
 		return new CustomDictionary(s);
 	}
@@ -46,5 +39,9 @@ public class DictionaryFactory
 	public static Dictionary getCustom(final List<String> charset)
 	{
 		return new CustomDictionary(charset);
+	}
+
+	private DictionaryFactory()
+	{
 	}
 }

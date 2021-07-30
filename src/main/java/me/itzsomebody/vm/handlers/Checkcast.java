@@ -24,11 +24,11 @@ import me.itzsomebody.vm.datatypes.JWrapper;
 public class Checkcast extends Handler
 {
 	@Override
-	public void handle(VM vm, Object[] operands) throws Throwable
+	public void handle(final VM vm, final Object[] operands) throws Throwable
 	{
-		Class clazz = VM.getClazz((String) operands[0]);
-		JWrapper wrapper = vm.pop();
-		Object ref = wrapper.asObj();
+		final Class clazz = VM.getClazz((String) operands[0]);
+		final JWrapper wrapper = vm.pop();
+		final Object ref = wrapper.asObj();
 		stuff:
 		{
 			if (ref == null) // Null can be casted to anything

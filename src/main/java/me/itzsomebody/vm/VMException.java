@@ -22,10 +22,9 @@ public class VMException extends RuntimeException
 {
 	public VMException()
 	{
-		super();
 	}
 
-	public VMException(String msg)
+	public VMException(final String msg)
 	{
 		super(msg);
 	}

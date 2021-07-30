@@ -27,14 +27,14 @@ public class VMContext
 	private final int offset;
 	private VMTryCatch[] catches;
 
-	public VMContext(int maxStack, int nRegisters, int offset)
+	public VMContext(final int maxStack, final int nRegisters, final int offset)
 	{
-		this.stack = new VMStack(maxStack);
-		this.registers = new JWrapper[nRegisters];
+		stack = new VMStack(maxStack);
+		registers = new JWrapper[nRegisters];
 		this.offset = offset;
 	}
 
-	public VMContext(int maxStack, int nRegisters, int offset, VMTryCatch[] catches)
+	public VMContext(final int maxStack, final int nRegisters, final int offset, final VMTryCatch[] catches)
 	{
 		this(maxStack, nRegisters, offset);
 		this.catches = catches;
@@ -50,7 +50,7 @@ public class VMContext
 		return registers;
 	}
 
-	public void initRegister(JWrapper wrapper, int index)
+	public void initRegister(final JWrapper wrapper, final int index)
 	{
 		registers[index] = wrapper;
 	}

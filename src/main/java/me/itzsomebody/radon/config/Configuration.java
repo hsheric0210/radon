@@ -18,10 +18,10 @@
 
 package me.itzsomebody.radon.config;
 
-import org.yaml.snakeyaml.Yaml;
-
 import java.io.InputStream;
 import java.util.Map;
+
+import org.yaml.snakeyaml.Yaml;
 
 /**
  * Wrapper around the {@link Map} from {@link Yaml#load(InputStream)}.
@@ -40,9 +40,10 @@ public final class Configuration
 	/**
 	 * Checks if the specified path exists in the config.
 	 *
-	 * @param path Path to check.
+	 * @param  path
+	 *              Path to check.
 	 *
-	 * @return True if the specified path exists in the config.
+	 * @return      True if the specified path exists in the config.
 	 */
 	public boolean contains(final String path)
 	{
@@ -51,14 +52,12 @@ public final class Configuration
 
 		// walk down the document levels by treating them as maps until last element
 		// since last element is treated as the object we want
-		for (int i = 0; i < parts.length - 1; i++)
+		for (int i = 0, j = parts.length - 1; i < j; i++)
 		{
 			final String part = parts[i];
 			final Object result = current.get(part);
 			if (!(result instanceof Map))
-			{
 				return false;
-			}
 
 			current = (Map) result;
 		}
@@ -77,10 +76,12 @@ public final class Configuration
 	/**
 	 * Get object as desired type from specified path.
 	 *
-	 * @param path Path of the object to get.
-	 * @param <T>  Desired type of object.
+	 * @param  path
+	 *              Path of the object to get.
+	 * @param  <T>
+	 *              Desired type of object.
 	 *
-	 * @return Object as desired type from specified path.
+	 * @return      Object as desired type from specified path.
 	 */
 	@SuppressWarnings("unchecked") // Screw type verification reeee
 	public <T> T get(final String path)
@@ -90,7 +91,7 @@ public final class Configuration
 
 		// walk down the document levels by treating them as maps until last element
 		// since last element is treated as the object we want
-		for (int i = 0; i < parts.length - 1; i++)
+		for (int i = 0, j = parts.length - 1; i < j; i++)
 		{
 			final String part = parts[i];
 			current = (Map) current.get(part);
@@ -112,9 +113,7 @@ public final class Configuration
 		final T result = get(path);
 
 		if (result == null)
-		{
 			return dflt;
-		}
 
 		return result;
 	}
@@ -124,9 +123,7 @@ public final class Configuration
 		final T result = get(setting);
 
 		if (result == null)
-		{
 			return dflt;
-		}
 
 		return result;
 	}

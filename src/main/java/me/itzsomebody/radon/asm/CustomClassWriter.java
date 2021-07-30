@@ -18,8 +18,9 @@
 
 package me.itzsomebody.radon.asm;
 
-import me.itzsomebody.radon.Radon;
 import org.objectweb.asm.ClassWriter;
+
+import me.itzsomebody.radon.Radon;
 
 /**
  * Custom-implemented version of {@link ClassWriter} which doesn't use the internal classpath.
@@ -59,20 +60,20 @@ public class CustomClassWriter extends ClassWriter
 		final ClassWrapper second = radon.getClassWrapper(type2);
 		if (radon.isAssignableFrom(type1, type2))
 			return type1;
-		else if (radon.isAssignableFrom(type2, type1))
-			return type2;
-		else if (first.getAccess().isInterface() || second.getAccess().isInterface())
-			return "java/lang/Object";
-		else
-		{
-			String temp;
 
-			do
-			{
-				temp = first.getSuperName();
-				first = radon.getClassWrapper(temp);
-			} while (!radon.isAssignableFrom(temp, type2));
-			return temp;
+		if (radon.isAssignableFrom(type2, type1))
+			return type2;
+
+		if (first.getAccess().isInterface() || second.getAccess().isInterface())
+			return "java/lang/Object";
+
+		String temp;
+		do
+		{
+			temp = first.getSuperName();
+			first = radon.getClassWrapper(temp);
 		}
+		while (!radon.isAssignableFrom(temp, type2));
+		return temp;
 	}
 }

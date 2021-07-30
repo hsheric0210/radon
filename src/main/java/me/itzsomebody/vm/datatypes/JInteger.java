@@ -22,12 +22,12 @@ public class JInteger extends JWrapper
 {
 	private final int value;
 
-	public JInteger(boolean value)
+	public JInteger(final boolean value)
 	{
-		this.value = (value) ? 1 : 0;
+		this.value = value ? 1 : 0;
 	}
 
-	public JInteger(int value)
+	public JInteger(final int value)
 	{
 		this.value = value;
 	}

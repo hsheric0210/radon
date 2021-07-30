@@ -24,10 +24,10 @@ import me.itzsomebody.vm.datatypes.JInteger;
 public class Jsr extends Handler
 {
 	@Override
-	public void handle(VM vm, Object[] operands)
+	public void handle(final VM vm, final Object[] operands)
 	{
-		int jumpTo = vm.pop().asInt();
-		int currentPc = vm.getPc();
+		final int jumpTo = vm.pop().asInt();
+		final int currentPc = vm.getPc();
 
 		vm.push(new JInteger(currentPc));
 		vm.setPc(jumpTo);

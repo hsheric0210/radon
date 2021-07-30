@@ -18,15 +18,15 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.flow;
 
-import me.itzsomebody.radon.config.Configuration;
-import me.itzsomebody.radon.exclusions.ExclusionType;
-import me.itzsomebody.radon.transformers.Transformer;
+import static me.itzsomebody.radon.config.ConfigurationSetting.FLOW_OBFUSCATION;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static me.itzsomebody.radon.config.ConfigurationSetting.FLOW_OBFUSCATION;
+import me.itzsomebody.radon.config.Configuration;
+import me.itzsomebody.radon.exclusions.ExclusionType;
+import me.itzsomebody.radon.transformers.Transformer;
 
 /**
  * Abstract class for flow obfuscation transformers.
@@ -67,9 +67,7 @@ public class FlowObfuscation extends Transformer
 			final String path = FLOW_OBFUSCATION + "." + setting.getName();
 
 			if (config.contains(path))
-			{
 				return config.get(path);
-			}
 
 			return false;
 		}).forEach(setting -> flowObfuscators.add(setting.getFlowObfuscation()));

@@ -18,10 +18,11 @@
 
 package me.itzsomebody.radon.transformers.shrinkers;
 
-import me.itzsomebody.radon.Main;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.objectweb.asm.tree.ClassNode;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import me.itzsomebody.radon.Main;
 
 /**
  * Strips out invisible type annotations.
@@ -45,15 +46,13 @@ public class InvisibleTypeAnnotationsRemover extends Shrinker
 				classNode.invisibleTypeAnnotations = null;
 			}
 
-			classWrapper.getFields().stream().filter(fieldWrapper -> !excluded(fieldWrapper)
-					&& fieldWrapper.getFieldNode().invisibleTypeAnnotations != null).forEach(fieldWrapper ->
+			classWrapper.getFields().stream().filter(fieldWrapper -> !excluded(fieldWrapper) && fieldWrapper.getFieldNode().invisibleTypeAnnotations != null).forEach(fieldWrapper ->
 			{
 				counter.addAndGet(fieldWrapper.getFieldNode().invisibleTypeAnnotations.size());
 				fieldWrapper.getFieldNode().invisibleTypeAnnotations = null;
 			});
 
-			classWrapper.getMethods().stream().filter(methodWrapper -> !excluded(methodWrapper)
-					&& methodWrapper.getMethodNode().invisibleTypeAnnotations != null).forEach(methodWrapper ->
+			classWrapper.getMethods().stream().filter(methodWrapper -> !excluded(methodWrapper) && methodWrapper.getMethodNode().invisibleTypeAnnotations != null).forEach(methodWrapper ->
 			{
 				counter.addAndGet(methodWrapper.getMethodNode().invisibleTypeAnnotations.size());
 				methodWrapper.getMethodNode().invisibleTypeAnnotations = null;

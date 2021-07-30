@@ -18,25 +18,27 @@
 
 package me.itzsomebody.radon.utils;
 
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
-
 /**
  * used to extract a watermark embedded by Radon. Prepare your eyes for cancer code.
  *
  * @author ItzSomebody
  */
-public class WatermarkUtils
+public final class WatermarkUtils
 {
 	public static String extractIds(final ZipFile zipFile, final String key) throws Throwable
 	{
@@ -48,7 +50,6 @@ public class WatermarkUtils
 			{
 				final ZipEntry entry = entries.nextElement();
 				if (!entry.isDirectory() && entry.getName().endsWith(".class"))
-				{
 					try
 					{
 						final ClassReader cr = new ClassReader(zipFile.getInputStream(entry));
@@ -60,7 +61,6 @@ public class WatermarkUtils
 					{
 						// Ignored
 					}
-				}
 			}
 		}
 		finally
@@ -70,32 +70,14 @@ public class WatermarkUtils
 
 		final Map<Integer, Character> embedMap = new LinkedHashMap<>();
 		for (final ClassNode classNode : classes.values())
-		{
 			for (final MethodNode methodNode : classNode.methods)
-			{
 				for (final AbstractInsnNode insn : methodNode.instructions.toArray())
-				{
-					if (ASMUtils.isIntInsn(insn) && ASMUtils.isIntInsn(insn.getNext())
-							&& ASMUtils.isIntInsn(insn.getNext().getNext())
-							&& ASMUtils.isIntInsn(insn.getNext().getNext().getNext())
-							&& insn.getNext().getNext().getNext().getNext() != null
-							&& insn.getNext().getNext().getNext().getNext().getOpcode() == Opcodes.ISTORE
-							&& insn.getNext().getNext().getNext().getNext().getNext() != null
-							&& insn.getNext().getNext().getNext().getNext().getNext().getOpcode() == Opcodes.ISTORE
-							&& insn.getNext().getNext().getNext().getNext().getNext().getNext() != null
-							&& insn.getNext().getNext().getNext().getNext().getNext().getNext().getOpcode() == Opcodes.ISTORE
-							&& insn.getNext().getNext().getNext().getNext().getNext().getNext().getNext() != null
-							&& insn.getNext().getNext().getNext().getNext().getNext().getNext().getNext().getOpcode() == Opcodes.ISTORE)
+					if (ASMUtils.isIntInsn(insn) && ASMUtils.isIntInsn(insn.getNext()) && ASMUtils.isIntInsn(insn.getNext().getNext()) && ASMUtils.isIntInsn(insn.getNext().getNext().getNext()) && insn.getNext().getNext().getNext().getNext() != null && insn.getNext().getNext().getNext().getNext().getOpcode() == Opcodes.ISTORE && insn.getNext().getNext().getNext().getNext().getNext() != null && insn.getNext().getNext().getNext().getNext().getNext().getOpcode() == Opcodes.ISTORE && insn.getNext().getNext().getNext().getNext().getNext().getNext() != null && insn.getNext().getNext().getNext().getNext().getNext().getNext().getOpcode() == Opcodes.ISTORE && insn.getNext().getNext().getNext().getNext().getNext().getNext().getNext() != null && insn.getNext().getNext().getNext().getNext().getNext().getNext().getNext().getOpcode() == Opcodes.ISTORE)
 					{
-						final char character = (char) (ASMUtils.getIntegerFromInsn(insn)
-								^ ASMUtils.getIntegerFromInsn(insn.getNext()));
-						final int index = ASMUtils.getIntegerFromInsn(insn.getNext().getNext())
-								^ ASMUtils.getIntegerFromInsn(insn.getNext().getNext().getNext());
+						final char character = (char) (ASMUtils.getIntegerFromInsn(insn) ^ ASMUtils.getIntegerFromInsn(insn.getNext()));
+						final int index = ASMUtils.getIntegerFromInsn(insn.getNext().getNext()) ^ ASMUtils.getIntegerFromInsn(insn.getNext().getNext().getNext());
 						embedMap.put(index, character);
 					}
-				}
-			}
-		}
 		if (enoughInfo(embedMap))
 			return decrypt(constructString(embedMap), key);
 
@@ -107,32 +89,23 @@ public class WatermarkUtils
 		if (embedMap.size() < 1)
 			return false;
 
-		for (int i = 0; i < embedMap.size(); i++)
-			if (!embedMap.containsKey(i))
-				return false;
-
-		return true;
+		return IntStream.range(0, embedMap.size()).allMatch(embedMap::containsKey);
 	}
 
 	private static String constructString(final Map<Integer, Character> embedMap)
 	{
-		final StringBuilder sb = new StringBuilder();
-
-		for (int i = 0; i < embedMap.size(); i++)
-			sb.append((char) embedMap.get(i));
-
-		return sb.toString();
+		return IntStream.range(0, embedMap.size()).mapToObj(i -> String.valueOf((char) embedMap.get(i))).collect(Collectors.joining());
 	}
 
 	private static String decrypt(final String enc, final String key)
 	{
 		final char[] messageChars = enc.toCharArray();
 		final char[] keyChars = key.toCharArray();
-		final StringBuilder sb = new StringBuilder();
 
-		for (int i = 0; i < messageChars.length; i++)
-			sb.append((char) (messageChars[i] ^ keyChars[i % keyChars.length]));
+		return IntStream.range(0, messageChars.length).mapToObj(i -> String.valueOf((char) (messageChars[i] ^ keyChars[i % keyChars.length]))).collect(Collectors.joining());
+	}
 
-		return sb.toString();
+	private WatermarkUtils()
+	{
 	}
 }

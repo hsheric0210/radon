@@ -77,17 +77,17 @@ public class JWrapper
 		throw new VMException(getClass().getName());
 	}
 
-	public void init(Object value)
+	public void init(final Object value)
 	{
 		throw new VMException(getClass().getName());
 	}
 
-	public JWrapper get(int index, boolean primitive)
+	public JWrapper get(final int index, final boolean primitive)
 	{
 		throw new VMException(getClass().getName());
 	}
 
-	public void set(JWrapper value, int index)
+	public void set(final JWrapper value, final int index)
 	{
 		throw new VMException(getClass().getName());
 	}
@@ -97,7 +97,7 @@ public class JWrapper
 		throw new VMException(getClass().getName());
 	}
 
-	public JWrapper fromPrimitive(Object o)
+	public JWrapper fromPrimitive(final Object o)
 	{
 		if (o instanceof Integer)
 			return new JInteger((Integer) o);

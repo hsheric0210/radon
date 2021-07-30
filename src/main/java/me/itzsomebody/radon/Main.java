@@ -18,13 +18,6 @@
 
 package me.itzsomebody.radon;
 
-import me.itzsomebody.radon.cli.CommandArgumentsParser;
-import me.itzsomebody.radon.config.Configuration;
-import me.itzsomebody.radon.config.ObfuscationConfiguration;
-import me.itzsomebody.radon.utils.CustomOutputStream;
-import me.itzsomebody.radon.utils.IOUtils;
-import me.itzsomebody.radon.utils.WatermarkUtils;
-
 import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -32,25 +25,29 @@ import java.util.Date;
 import java.util.logging.*;
 import java.util.zip.ZipFile;
 
+import me.itzsomebody.radon.cli.CommandArgumentsParser;
+import me.itzsomebody.radon.config.Configuration;
+import me.itzsomebody.radon.config.ObfuscationConfiguration;
+import me.itzsomebody.radon.utils.CustomOutputStream;
+import me.itzsomebody.radon.utils.IOUtils;
+import me.itzsomebody.radon.utils.WatermarkUtils;
+
 /**
- * Main class of obfuscator. \o/
- * TODO: Renamer transformer should correct strings used for reflection. (i.e. Class.forName("me.itzsomebody.Thing"))
+ * Main class of obfuscator. \o/ TODO: Renamer transformer should correct strings used for reflection. (i.e. Class.forName("me.itzsomebody.Thing"))
  * <p>
  * TODO: Clean code up in general.
  *
  * @author ItzSomebody
  */
-public class Main
+public final class Main
 {
 	private static final Logger LOGGER = Logger.getLogger(Main.class.getName());
 	public static final String VERSION = "2.0.0";
-	public static final String[] CONTRIBUTORS = {
-			"ItzSomebody", "x0ark", "Col-E", "Artel", "kazigk", "Olexorus",
-			"freeasbird", "CertainLach", "xxDark", "vovanre"
+	public static final String[] CONTRIBUTORS =
+	{
+			"ItzSomebody", "x0ark", "Col-E", "Artel", "kazigk", "Olexorus", "freeasbird", "CertainLach", "xxDark", "vovanre"
 	};
-	public static final String ATTRIBUTION = String.format("Radon is a free and open-source Java obfuscator " +
-					"with contributions from %s.\nVersion: %s\nWebsite: https://github.com/ItzSomebody/Radon",
-			formatContributorList(), VERSION);
+	public static final String ATTRIBUTION = String.format("Radon is a free and open-source Java obfuscator " + "with contributions from %s.\nVersion: %s\nWebsite: https://github.com/ItzSomebody/Radon", formatContributorList(), VERSION);
 
 	private static String formatContributorList()
 	{
@@ -64,7 +61,8 @@ public class Main
 	/**
 	 * Main method.
 	 *
-	 * @param args arguments from command line.
+	 * @param args
+	 *             arguments from command line.
 	 */
 	public static void main(final String[] args) throws IOException
 	{
@@ -78,10 +76,7 @@ public class Main
 			@Override
 			public String format(final LogRecord record)
 			{
-				return String.format("[%s] %s: %s\n",
-						new SimpleDateFormat("dd/MM/yyyy-hh:mm:ss").format(new Date(record.getMillis())),
-						record.getLevel().getName(),
-						formatMessage(record));
+				return String.format("[%s] %s: %s\n", new SimpleDateFormat("dd/MM/yyyy-hh:mm:ss").format(new Date(record.getMillis())), record.getLevel().getName(), formatMessage(record));
 			}
 		});
 		LOGGER.addHandler(handler);
@@ -127,7 +122,8 @@ public class Main
 			{
 				t.printStackTrace();
 			}
-		} else if (parser.containsSwitch("extract"))
+		}
+		else if (parser.containsSwitch("extract"))
 		{
 			// Watermark extraction.
 			final String[] switchArgs = parser.getSwitchArgs("extract");
@@ -149,7 +145,8 @@ public class Main
 			{
 				t.printStackTrace();
 			}
-		} else
+		}
+		else
 			showHelpMenu();
 
 		cos.close();
@@ -193,5 +190,9 @@ public class Main
 	private static void showLicense()
 	{
 		System.out.println(new String(IOUtils.toByteArray(Main.class.getResourceAsStream("/license.txt"))));
+	}
+
+	private Main()
+	{
 	}
 }

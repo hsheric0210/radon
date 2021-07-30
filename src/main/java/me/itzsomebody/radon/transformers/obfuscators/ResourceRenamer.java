@@ -18,17 +18,18 @@
 
 package me.itzsomebody.radon.transformers.obfuscators;
 
-import me.itzsomebody.radon.Main;
-import me.itzsomebody.radon.config.Configuration;
-import me.itzsomebody.radon.exclusions.ExclusionType;
-import me.itzsomebody.radon.transformers.Transformer;
-import org.objectweb.asm.tree.LdcInsnNode;
-import org.objectweb.asm.tree.MethodNode;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
+
+import org.objectweb.asm.tree.LdcInsnNode;
+import org.objectweb.asm.tree.MethodNode;
+
+import me.itzsomebody.radon.Main;
+import me.itzsomebody.radon.config.Configuration;
+import me.itzsomebody.radon.exclusions.ExclusionType;
+import me.itzsomebody.radon.transformers.Transformer;
 
 /**
  * Renames bundled JAR resources to make their purpose less obvious.
@@ -45,34 +46,31 @@ public class ResourceRenamer extends Transformer
 		mappings = new HashMap<>();
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper ->
-				classWrapper.getMethods().stream().filter(methodWrapper -> !excluded(methodWrapper)
-						&& methodWrapper.hasInstructions()).forEach(methodWrapper ->
-				{
-					final MethodNode methodNode = methodWrapper.getMethodNode();
+		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper -> classWrapper.getMethods().stream().filter(methodWrapper -> !excluded(methodWrapper) && methodWrapper.hasInstructions()).forEach(methodWrapper ->
+		{
+			final MethodNode methodNode = methodWrapper.getMethodNode();
 
-					Stream.of(methodNode.instructions.toArray()).filter(insn -> insn instanceof LdcInsnNode
-							&& ((LdcInsnNode) insn).cst instanceof String).forEach(insn ->
+			Stream.of(methodNode.instructions.toArray()).filter(insn -> insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof String).forEach(insn ->
+			{
+				final String s = (String) ((LdcInsnNode) insn).cst;
+				final String resourceName;
+
+				if (!s.isEmpty() && s.charAt(0) == '/')
+					resourceName = s.substring(1);
+				else
+					resourceName = classWrapper.getOriginalName().substring(0, classWrapper.getOriginalName().lastIndexOf('/') + 1) + s;
+
+				if (getResources().containsKey(resourceName))
+					if (mappings.containsKey(resourceName))
+						((LdcInsnNode) insn).cst = mappings.get(resourceName);
+					else
 					{
-						final String s = (String) ((LdcInsnNode) insn).cst;
-						final String resourceName;
-
-						if (s.startsWith("/"))
-							resourceName = s.substring(1);
-						else
-							resourceName = classWrapper.getOriginalName().substring(0, classWrapper.getOriginalName().lastIndexOf('/') + 1) + s;
-
-						if (getResources().containsKey(resourceName))
-							if (mappings.containsKey(resourceName))
-								((LdcInsnNode) insn).cst = mappings.get(resourceName);
-							else
-							{
-								final String newName = '/' + uniqueRandomString();
-								((LdcInsnNode) insn).cst = newName;
-								mappings.put(resourceName, newName);
-							}
-					});
-				}));
+						final String newName = '/' + uniqueRandomString();
+						((LdcInsnNode) insn).cst = newName;
+						mappings.put(resourceName, newName);
+					}
+			});
+		}));
 
 		new HashMap<>(getResources()).forEach((name, b) ->
 		{

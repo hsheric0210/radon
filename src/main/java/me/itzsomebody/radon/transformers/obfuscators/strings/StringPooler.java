@@ -18,13 +18,14 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.strings;
 
-import me.itzsomebody.radon.Main;
-import me.itzsomebody.radon.utils.ASMUtils;
-import org.objectweb.asm.tree.*;
-
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
+
+import org.objectweb.asm.tree.*;
+
+import me.itzsomebody.radon.Main;
+import me.itzsomebody.radon.utils.ASMUtils;
 
 public class StringPooler extends StringEncryption
 {
@@ -46,13 +47,11 @@ public class StringPooler extends StringEncryption
 			final String methodName = uniqueRandomString();
 			final String fieldName = uniqueRandomString();
 
-			cw.getMethods().stream().filter(methodWrapper -> !excluded(methodWrapper)
-					&& methodWrapper.hasInstructions()).forEach(methodWrapper ->
+			cw.getMethods().stream().filter(methodWrapper -> !excluded(methodWrapper) && methodWrapper.hasInstructions()).forEach(methodWrapper ->
 			{
 				final InsnList insns = methodWrapper.getInstructions();
 
-				Stream.of(insns.toArray()).filter(insn -> insn instanceof LdcInsnNode
-						&& ((LdcInsnNode) insn).cst instanceof String).forEach(insn ->
+				Stream.of(insns.toArray()).filter(insn -> insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof String).forEach(insn ->
 				{
 					final String str = (String) ((LdcInsnNode) insn).cst;
 
@@ -74,8 +73,7 @@ public class StringPooler extends StringEncryption
 			{
 				cw.addMethod(stringPool(cw.getName(), methodName, fieldName, strList));
 
-				MethodNode clinit = cw.getClassNode().methods.stream().filter(methodNode ->
-						"<clinit>".equals(methodNode.name)).findFirst().orElse(null);
+				MethodNode clinit = cw.getClassNode().methods.stream().filter(methodNode -> "<clinit>".equals(methodNode.name)).findFirst().orElse(null);
 				if (clinit == null)
 				{
 					clinit = new MethodNode(ACC_PRIVATE | ACC_STATIC | ACC_SYNTHETIC, "<clinit>", "()V", null, null);
@@ -84,9 +82,9 @@ public class StringPooler extends StringEncryption
 					insns.add(new InsnNode(RETURN));
 					clinit.instructions = insns;
 					cw.getClassNode().methods.add(clinit);
-				} else
-					clinit.instructions.insertBefore(clinit.instructions.getFirst(), new MethodInsnNode(INVOKESTATIC,
-							cw.getName(), methodName, "()V", false));
+				}
+				else
+					clinit.instructions.insertBefore(clinit.instructions.getFirst(), new MethodInsnNode(INVOKESTATIC, cw.getName(), methodName, "()V", false));
 				final FieldNode fieldNode = new FieldNode(ACC_PRIVATE | ACC_STATIC | ACC_SYNTHETIC, fieldName, "[Ljava/lang/String;", null, null);
 				cw.addField(fieldNode);
 			}
@@ -97,8 +95,7 @@ public class StringPooler extends StringEncryption
 
 	private MethodNode stringPool(final String className, final String methodName, final String fieldName, final ArrayList<String> strings)
 	{
-		final MethodNode method = new MethodNode(ACC_PRIVATE | ACC_STATIC | ACC_SYNTHETIC | ACC_BRIDGE, methodName, "()V",
-				null, null);
+		final MethodNode method = new MethodNode(ACC_PRIVATE | ACC_STATIC | ACC_SYNTHETIC | ACC_BRIDGE, methodName, "()V", null, null);
 
 		method.visitCode();
 		final int numberOfStrings = strings.size();

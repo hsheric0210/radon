@@ -30,9 +30,7 @@ public class StrSequence
 	{
 		final List<String> strList = new ArrayList<>();
 		for (final CharSequence charSequence : collection)
-		{
 			strList.add(charSequence.toString());
-		}
 		sequence = strList.toArray(new String[0]);
 	}
 

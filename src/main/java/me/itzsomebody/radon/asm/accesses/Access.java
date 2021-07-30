@@ -196,9 +196,10 @@ public interface Access extends Opcodes
 	boolean isDeprecated();
 
 	/**
-	 * @param type Stuff to include in debug message.
+	 * @param  type
+	 *              Stuff to include in debug message.
 	 *
-	 * @return nothing. Should always throw an exception.
+	 * @return      nothing. Should always throw an exception.
 	 */
 	boolean badAccessCheck(String type);
 }

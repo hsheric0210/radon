@@ -18,9 +18,10 @@
 
 package me.itzsomebody.radon.analysis.constant;
 
-import me.itzsomebody.radon.analysis.constant.values.AbstractValue;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.analysis.Analyzer;
+
+import me.itzsomebody.radon.analysis.constant.values.AbstractValue;
 
 public class ConstantAnalyzer extends Analyzer<AbstractValue>
 {

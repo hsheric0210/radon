@@ -24,13 +24,13 @@ import me.itzsomebody.vm.datatypes.JInteger;
 public class Dcmpl extends Handler
 {
 	@Override
-	public void handle(VM vm, Object[] operands)
+	public void handle(final VM vm, final Object[] operands)
 	{
 		vm.pop();
-		double second = vm.pop().asDouble();
+		final double second = vm.pop().asDouble();
 
 		vm.pop();
-		double first = vm.pop().asDouble();
+		final double first = vm.pop().asDouble();
 
 		if (Double.isNaN(first) || Double.isNaN(second))
 		{
@@ -38,7 +38,7 @@ public class Dcmpl extends Handler
 			return;
 		}
 
-		double result = first - second;
+		final double result = first - second;
 
 		if (result == 0)
 			vm.push(new JInteger(0));

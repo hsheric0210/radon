@@ -18,15 +18,15 @@
 
 package me.itzsomebody.radon.transformers.optimizers;
 
-import me.itzsomebody.radon.config.Configuration;
-import me.itzsomebody.radon.exclusions.ExclusionType;
-import me.itzsomebody.radon.transformers.Transformer;
+import static me.itzsomebody.radon.config.ConfigurationSetting.OPTIMIZER;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static me.itzsomebody.radon.config.ConfigurationSetting.OPTIMIZER;
+import me.itzsomebody.radon.config.Configuration;
+import me.itzsomebody.radon.exclusions.ExclusionType;
+import me.itzsomebody.radon.transformers.Transformer;
 
 /**
  * Optimizer.
@@ -67,9 +67,7 @@ public class Optimizer extends Transformer
 			final String path = OPTIMIZER + "." + setting.getName();
 
 			if (config.contains(path))
-			{
 				return config.get(path);
-			}
 
 			return false;
 		}).forEach(setting -> optimizers.add(setting.getOptimizer()));

@@ -27,7 +27,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * @author ItzSomebody
  * @author freeasbird
  */
-public class RandomUtils
+public final class RandomUtils
 {
 	public static int getRandomInt()
 	{
@@ -82,5 +82,9 @@ public class RandomUtils
 	public static double getRandomDouble(final double bounds)
 	{
 		return ThreadLocalRandom.current().nextDouble(bounds);
+	}
+
+	private RandomUtils()
+	{
 	}
 }

@@ -18,6 +18,15 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.ejector;
 
+import static me.itzsomebody.radon.config.ConfigurationSetting.EJECTOR;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.objectweb.asm.tree.analysis.AnalyzerException;
+import org.objectweb.asm.tree.analysis.Frame;
+
 import me.itzsomebody.radon.Main;
 import me.itzsomebody.radon.analysis.constant.ConstantAnalyzer;
 import me.itzsomebody.radon.analysis.constant.values.AbstractValue;
@@ -28,14 +37,6 @@ import me.itzsomebody.radon.transformers.Transformer;
 import me.itzsomebody.radon.transformers.obfuscators.ejector.phases.AbstractEjectPhase;
 import me.itzsomebody.radon.transformers.obfuscators.ejector.phases.FieldSetEjector;
 import me.itzsomebody.radon.transformers.obfuscators.ejector.phases.MethodCallEjector;
-import org.objectweb.asm.tree.analysis.AnalyzerException;
-import org.objectweb.asm.tree.analysis.Frame;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static me.itzsomebody.radon.config.ConfigurationSetting.EJECTOR;
 
 /**
  * Extracts parts of code to individual methods.
@@ -54,9 +55,7 @@ public class Ejector extends Transformer
 	{
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream()
-				.filter(classWrapper -> !excluded(classWrapper))
-				.forEach(classWrapper -> processClass(classWrapper, counter));
+		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper -> processClass(classWrapper, counter));
 
 		Main.info(String.format("Ejected %d regions.", counter.get()));
 	}
@@ -64,38 +63,35 @@ public class Ejector extends Transformer
 	private List<AbstractEjectPhase> getPhases(final EjectorContext ejectorContext)
 	{
 		final List<AbstractEjectPhase> phases = new ArrayList<>();
-		if (isEjectMethodCalls())
+		if (ejectMethodCalls)
 			phases.add(new MethodCallEjector(ejectorContext));
-		if (isEjectFieldSet())
+		if (ejectFieldSet)
 			phases.add(new FieldSetEjector(ejectorContext));
 		return phases;
 	}
 
 	private void processClass(final ClassWrapper classWrapper, final AtomicInteger counter)
 	{
-		new ArrayList<>(classWrapper.getMethods()).stream()
-				.filter(methodWrapper -> !excluded(methodWrapper))
-				.filter(methodWrapper -> !"<init>".equals(methodWrapper.getMethodNode().name))
-				.forEach(methodWrapper ->
+		new ArrayList<>(classWrapper.getMethods()).stream().filter(methodWrapper -> !excluded(methodWrapper)).filter(methodWrapper -> !"<init>".equals(methodWrapper.getMethodNode().name)).forEach(methodWrapper ->
+		{
+			final EjectorContext ejectorContext = new EjectorContext(counter, classWrapper, junkArguments, junkArgumentStrength);
+			getPhases(ejectorContext).forEach(ejectPhase ->
+			{
+				final ConstantAnalyzer constantAnalyzer = new ConstantAnalyzer();
+				try
 				{
-					final EjectorContext ejectorContext = new EjectorContext(counter, classWrapper, junkArguments, junkArgumentStrength);
-					getPhases(ejectorContext).forEach(ejectPhase ->
-					{
-						final ConstantAnalyzer constantAnalyzer = new ConstantAnalyzer();
-						try
-						{
-							Main.info("Analyze: " + classWrapper.getOriginalName() + "::" + methodWrapper.getOriginalName() + methodWrapper.getOriginalDescription());
-							final Frame<AbstractValue>[] frames = constantAnalyzer.analyze(classWrapper.getName(), methodWrapper.getMethodNode());
+					Main.info("Analyze: " + classWrapper.getOriginalName() + "::" + methodWrapper.getOriginalName() + methodWrapper.getOriginalDescription());
+					final Frame<AbstractValue>[] frames = constantAnalyzer.analyze(classWrapper.getName(), methodWrapper.getMethodNode());
 
-							ejectPhase.process(methodWrapper, frames);
-						}
-						catch (final AnalyzerException e)
-						{
-							Main.severe("Can't analyze method: " + classWrapper.getOriginalName() + "::" + methodWrapper.getOriginalName() + methodWrapper.getOriginalDescription());
-							Main.severe(e.toString());
-						}
-					});
-				});
+					ejectPhase.process(methodWrapper, frames);
+				}
+				catch (final AnalyzerException e)
+				{
+					Main.severe("Can't analyze method: " + classWrapper.getOriginalName() + "::" + methodWrapper.getOriginalName() + methodWrapper.getOriginalDescription());
+					Main.severe(e.toString());
+				}
+			});
+		});
 	}
 
 	@Override

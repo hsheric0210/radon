@@ -23,9 +23,9 @@ import me.itzsomebody.vm.VM;
 public class Jne extends Handler
 {
 	@Override
-	public void handle(VM vm, Object[] operands)
+	public void handle(final VM vm, final Object[] operands)
 	{
-		int jumpTo = vm.pop().asInt();
+		final int jumpTo = vm.pop().asInt();
 
 		if (vm.pop().asObj() != vm.pop().asObj())
 			vm.setPc(jumpTo);

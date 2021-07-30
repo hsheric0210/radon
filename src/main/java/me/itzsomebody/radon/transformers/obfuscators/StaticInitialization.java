@@ -18,15 +18,16 @@
 
 package me.itzsomebody.radon.transformers.obfuscators;
 
+import java.lang.reflect.Modifier;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.objectweb.asm.tree.*;
+
 import me.itzsomebody.radon.Main;
 import me.itzsomebody.radon.config.Configuration;
 import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.transformers.Transformer;
 import me.itzsomebody.radon.utils.ASMUtils;
-import org.objectweb.asm.tree.*;
-
-import java.lang.reflect.Modifier;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Moves initialization of all static fields into {@code <clinit>} of the class
@@ -45,9 +46,7 @@ public class StaticInitialization extends Transformer
 		{
 			final MethodNode clinit = classWrapper.getOrCreateClinit();
 
-			classWrapper.getFields().stream().filter(fieldWrapper -> !excluded(fieldWrapper)
-					&& Modifier.isStatic(fieldWrapper.getFieldNode().access)
-					&& fieldWrapper.getFieldNode().value != null).forEach(fieldWrapper ->
+			classWrapper.getFields().stream().filter(fieldWrapper -> !excluded(fieldWrapper) && Modifier.isStatic(fieldWrapper.getFieldNode().access) && fieldWrapper.getFieldNode().value != null).forEach(fieldWrapper ->
 			{
 				final FieldNode fieldNode = fieldWrapper.getFieldNode();
 				final Object val = fieldNode.value;

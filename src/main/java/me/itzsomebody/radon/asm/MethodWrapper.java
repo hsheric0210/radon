@@ -18,14 +18,15 @@
 
 package me.itzsomebody.radon.asm;
 
-import me.itzsomebody.radon.asm.accesses.Access;
-import me.itzsomebody.radon.asm.accesses.MethodAccess;
+import java.util.List;
+
 import org.objectweb.asm.commons.CodeSizeEvaluator;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 
-import java.util.List;
+import me.itzsomebody.radon.asm.accesses.Access;
+import me.itzsomebody.radon.asm.accesses.MethodAccess;
 
 /**
  * Wrapper for MethodNodes.
@@ -47,8 +48,10 @@ public class MethodWrapper
 	/**
 	 * Creates a MethodWrapper object.
 	 *
-	 * @param methodNode the {@link MethodNode} this wrapper represents.
-	 * @param owner      the owner of this represented method.
+	 * @param methodNode
+	 *                   the {@link MethodNode} this wrapper represents.
+	 * @param owner
+	 *                   the owner of this represented method.
 	 */
 	public MethodWrapper(final MethodNode methodNode, final ClassWrapper owner)
 	{
@@ -150,7 +153,8 @@ public class MethodWrapper
 	}
 
 	/**
-	 * @param access access flags to set.
+	 * @param access
+	 *               access flags to set.
 	 */
 	public void setAccessFlags(final int access)
 	{

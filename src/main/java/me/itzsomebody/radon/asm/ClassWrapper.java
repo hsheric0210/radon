@@ -18,10 +18,9 @@
 
 package me.itzsomebody.radon.asm;
 
-import me.itzsomebody.radon.Main;
-import me.itzsomebody.radon.Radon;
-import me.itzsomebody.radon.asm.accesses.Access;
-import me.itzsomebody.radon.asm.accesses.ClassAccess;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
@@ -30,8 +29,10 @@ import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import java.util.ArrayList;
-import java.util.List;
+import me.itzsomebody.radon.Main;
+import me.itzsomebody.radon.Radon;
+import me.itzsomebody.radon.asm.accesses.Access;
+import me.itzsomebody.radon.asm.accesses.ClassAccess;
 
 /**
  * Wrapper for ClassNodes.
@@ -94,7 +95,8 @@ public class ClassWrapper
 	}
 
 	/**
-	 * @param s constant literal to add to constant pool.
+	 * @param s
+	 *          constant literal to add to constant pool.
 	 */
 	public void addStringConst(final String s)
 	{
@@ -103,8 +105,7 @@ public class ClassWrapper
 
 	public MethodNode getMethod(final String name, final String desc)
 	{
-		return getClassNode().methods.stream().filter(methodNode -> name.equals(methodNode.name)
-				&& desc.equals(methodNode.desc)).findAny().orElse(null);
+		return classNode.methods.stream().filter(methodNode -> name.equals(methodNode.name) && desc.equals(methodNode.desc)).findAny().orElse(null);
 	}
 
 	public MethodNode getOrCreateClinit()
@@ -230,7 +231,8 @@ public class ClassWrapper
 	}
 
 	/**
-	 * @param access access flags to set.
+	 * @param access
+	 *               access flags to set.
 	 */
 	public void setAccessFlags(final int access)
 	{

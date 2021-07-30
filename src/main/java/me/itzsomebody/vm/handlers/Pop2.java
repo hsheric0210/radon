@@ -23,7 +23,7 @@ import me.itzsomebody.vm.VM;
 public class Pop2 extends Handler
 {
 	@Override
-	public void handle(VM vm, Object[] operands)
+	public void handle(final VM vm, final Object[] operands)
 	{
 		vm.pop();
 		vm.pop();

@@ -18,18 +18,17 @@
 
 package me.itzsomebody.radon.transformers.obfuscators;
 
-import me.itzsomebody.radon.config.Configuration;
-import me.itzsomebody.radon.exclusions.ExclusionType;
-import me.itzsomebody.radon.transformers.Transformer;
+import java.util.ArrayList;
+
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import java.util.ArrayList;
+import me.itzsomebody.radon.config.Configuration;
+import me.itzsomebody.radon.exclusions.ExclusionType;
+import me.itzsomebody.radon.transformers.Transformer;
 
 /**
- * Adds {@code @} annotation to all methods
- * Fernflower refuses to decompile the class.
- * Java will crash on attempt to parse annotations
+ * Adds {@code @} annotation to all methods Fernflower refuses to decompile the class. Java will crash on attempt to parse annotations
  *
  * @author xDark
  */
@@ -38,19 +37,18 @@ public class BadAnnotation extends Transformer
 	@Override
 	public void transform()
 	{
-		getClassWrappers().stream().filter(cw -> !excluded(cw)).forEach(cw ->
-				cw.getMethods().stream().filter(mw -> !excluded(mw)).forEach(mw ->
-				{
-					final MethodNode methodNode = mw.getMethodNode();
+		getClassWrappers().stream().filter(cw -> !excluded(cw)).forEach(cw -> cw.getMethods().stream().filter(mw -> !excluded(mw)).forEach(mw ->
+		{
+			final MethodNode methodNode = mw.getMethodNode();
 
-					if (methodNode.visibleAnnotations == null)
-						methodNode.visibleAnnotations = new ArrayList<>();
-					if (methodNode.invisibleAnnotations == null)
-						methodNode.invisibleAnnotations = new ArrayList<>();
+			if (methodNode.visibleAnnotations == null)
+				methodNode.visibleAnnotations = new ArrayList<>();
+			if (methodNode.invisibleAnnotations == null)
+				methodNode.invisibleAnnotations = new ArrayList<>();
 
-					methodNode.visibleAnnotations.add(new AnnotationNode("@"));
-					methodNode.invisibleAnnotations.add(new AnnotationNode("@"));
-				}));
+			methodNode.visibleAnnotations.add(new AnnotationNode("@"));
+			methodNode.invisibleAnnotations.add(new AnnotationNode("@"));
+		}));
 	}
 
 	@Override

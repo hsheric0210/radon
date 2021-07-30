@@ -26,16 +26,18 @@ package me.itzsomebody.radon.dictionaries;
 public interface Dictionary
 {
 	/**
-	 * @param length the length the generated string should be.
+	 * @param  length
+	 *                the length the generated string should be.
 	 *
-	 * @return generates string randomly.
+	 * @return        generates string randomly.
 	 */
 	String randomString(int length);
 
 	/**
-	 * @param length the length the generated string should be.
+	 * @param  length
+	 *                the length the generated string should be.
 	 *
-	 * @return generates unique string randomly.
+	 * @return        generates unique string randomly.
 	 */
 	String uniqueRandomString(int length);
 

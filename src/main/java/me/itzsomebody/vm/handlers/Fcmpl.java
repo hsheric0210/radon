@@ -24,10 +24,10 @@ import me.itzsomebody.vm.datatypes.JInteger;
 public class Fcmpl extends Handler
 {
 	@Override
-	public void handle(VM vm, Object[] operands)
+	public void handle(final VM vm, final Object[] operands)
 	{
-		float second = vm.pop().asFloat();
-		float first = vm.pop().asFloat();
+		final float second = vm.pop().asFloat();
+		final float first = vm.pop().asFloat();
 
 		if (Float.isNaN(first) || Float.isNaN(second))
 		{
@@ -35,7 +35,7 @@ public class Fcmpl extends Handler
 			return;
 		}
 
-		float result = first - second;
+		final float result = first - second;
 
 		if (result == 0)
 			vm.push(new JInteger(0));

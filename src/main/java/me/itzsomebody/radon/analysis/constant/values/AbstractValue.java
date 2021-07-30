@@ -18,14 +18,14 @@
 
 package me.itzsomebody.radon.analysis.constant.values;
 
-import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.analysis.Value;
-
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+
+import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.analysis.Value;
 
 public abstract class AbstractValue implements Value
 {
@@ -43,9 +43,7 @@ public abstract class AbstractValue implements Value
 	private static <E> boolean containsAll(final Set<E> self, final Set<E> other)
 	{
 		if (self.size() < other.size())
-		{
 			return false;
-		}
 		return self.containsAll(other);
 	}
 
@@ -80,12 +78,12 @@ public abstract class AbstractValue implements Value
 	@Override
 	public boolean equals(final Object o)
 	{
-		if (this == o) return true;
-		if (!(o instanceof AbstractValue)) return false;
+		if (this == o)
+			return true;
+		if (!(o instanceof AbstractValue))
+			return false;
 		final AbstractValue that = (AbstractValue) o;
-		return Objects.equals(insnNode, that.insnNode) &&
-				Objects.equals(type, that.type) &&
-				containsAll(usages, that.usages);
+		return Objects.equals(insnNode, that.insnNode) && Objects.equals(type, that.type) && containsAll(usages, that.usages);
 	}
 
 	@Override

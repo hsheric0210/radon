@@ -24,11 +24,11 @@ import me.itzsomebody.vm.datatypes.JInteger;
 public class Instanceof extends Handler
 {
 	@Override
-	public void handle(VM vm, Object[] operands) throws Throwable
+	public void handle(final VM vm, final Object[] operands) throws Throwable
 	{
-		Class clazz = VM.getClazz((String) operands[0]);
+		final Class clazz = VM.getClazz((String) operands[0]);
 
-		Object ref = vm.pop().asObj();
+		final Object ref = vm.pop().asObj();
 		if (ref == null) // Null can be casted to anything
 			return;
 

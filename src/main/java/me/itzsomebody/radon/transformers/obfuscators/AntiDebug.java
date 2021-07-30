@@ -18,16 +18,17 @@
 
 package me.itzsomebody.radon.transformers.obfuscators;
 
+import static me.itzsomebody.radon.config.ConfigurationSetting.ANTI_DEBUG;
+
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.objectweb.asm.tree.*;
+
 import me.itzsomebody.radon.Main;
 import me.itzsomebody.radon.config.Configuration;
 import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.transformers.Transformer;
 import me.itzsomebody.radon.utils.RandomUtils;
-import org.objectweb.asm.tree.*;
-
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static me.itzsomebody.radon.config.ConfigurationSetting.ANTI_DEBUG;
 
 /**
  * Blocks debugging options on the commandline.
@@ -36,7 +37,10 @@ import static me.itzsomebody.radon.config.ConfigurationSetting.ANTI_DEBUG;
  */
 public class AntiDebug extends Transformer
 {
-	private static final String[] DEBUG_OPTIONS = {"-agentlib:jdwp", "-Xdebug", "-Xrunjdwp:", "-javaagent:"};
+	private static final String[] DEBUG_OPTIONS =
+	{
+			"-agentlib:jdwp", "-Xdebug", "-Xrunjdwp:", "-javaagent:"
+	};
 
 	private AtomicInteger debugOptionIndex;
 	private String message;
@@ -71,25 +75,27 @@ public class AntiDebug extends Transformer
 
 		if (RandomUtils.getRandomBoolean())
 		{
-			if (getMessage() != null)
+			if (message != null)
 			{
 				insnList.add(new FieldInsnNode(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;"));
-				insnList.add(new LdcInsnNode(getMessage()));
+				insnList.add(new LdcInsnNode(message));
 				insnList.add(new MethodInsnNode(INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false));
 			}
 			if (RandomUtils.getRandomBoolean())
 			{
 				insnList.add(new LdcInsnNode(RandomUtils.getRandomInt()));
 				insnList.add(new MethodInsnNode(INVOKESTATIC, "java/lang/System", "exit", "(I)V", false));
-			} else
+			}
+			else
 			{
 				insnList.add(new MethodInsnNode(INVOKESTATIC, "java/lang/Runtime", "getRuntime", "()Ljava/lang/Runtime;", false));
 				insnList.add(new LdcInsnNode(RandomUtils.getRandomInt()));
 				insnList.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Runtime", "halt", "(I)V", false));
 			}
-		} else
+		}
+		else
 		{
-			String message = getMessage();
+			String message = this.message;
 			if (message == null)
 				message = randomString();
 

@@ -18,23 +18,23 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.flow;
 
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.*;
+
 import me.itzsomebody.radon.Main;
 import me.itzsomebody.radon.asm.StackHeightZeroFinder;
 import me.itzsomebody.radon.exceptions.RadonException;
 import me.itzsomebody.radon.exceptions.StackEmulationException;
 import me.itzsomebody.radon.utils.ASMUtils;
 import me.itzsomebody.radon.utils.RandomUtils;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.*;
-
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Inserts opaque predicates which always evaluate to false but are meant to insert significantly more
- * edges to a control flow graph. To determine where we should insert the conditions, we use an analyzer
- * to determine where the stack is empty. This leads to less complication when applying obfuscation.
+ * Inserts opaque predicates which always evaluate to false but are meant to insert significantly more edges to a control flow graph. To determine where we should insert the conditions, we use an analyzer to determine where the stack is empty. This leads
+ * to less complication when applying obfuscation.
  *
  * @author ItzSomebody
  */
@@ -72,8 +72,7 @@ public class BogusJumpInserter extends FlowObfuscation
 				catch (final StackEmulationException e)
 				{
 					e.printStackTrace();
-					throw new RadonException(String.format("Error happened while trying to emulate the stack of %s.%s%s",
-							classWrapper.getName(), mw.getName(), mw.getDescription()));
+					throw new RadonException(String.format("Error happened while trying to emulate the stack of %s.%s%s", classWrapper.getName(), mw.getName(), mw.getDescription()));
 				}
 
 				final Set<AbstractInsnNode> emptyAt = shzf.getEmptyAt();
@@ -84,8 +83,7 @@ public class BogusJumpInserter extends FlowObfuscation
 
 					// Bad way of detecting if this class was instantiated
 					if ("<init>".equals(mw.getName()))
-						calledSuper = insn instanceof MethodInsnNode && insn.getOpcode() == INVOKESPECIAL
-								&& insn.getPrevious() instanceof VarInsnNode && ((VarInsnNode) insn.getPrevious()).var == 0;
+						calledSuper = insn instanceof MethodInsnNode && insn.getOpcode() == INVOKESPECIAL && insn.getPrevious() instanceof VarInsnNode && ((VarInsnNode) insn.getPrevious()).var == 0;
 					if (insn != insns.getFirst() && !(insn instanceof LineNumberNode))
 					{
 						if ("<init>".equals(mw.getName()) && !calledSuper)
@@ -118,9 +116,10 @@ public class BogusJumpInserter extends FlowObfuscation
 	/**
 	 * Generates a generic "escape" pattern to avoid inserting multiple copies of the same bytecode instructions.
 	 *
-	 * @param methodNode the {@link MethodNode} we are inserting into.
+	 * @param  methodNode
+	 *                    the {@link MethodNode} we are inserting into.
 	 *
-	 * @return a {@link LabelNode} which "escapes" all other flow.
+	 * @return            a {@link LabelNode} which "escapes" all other flow.
 	 */
 	private static LabelNode exitLabel(final MethodNode methodNode)
 	{
@@ -143,8 +142,7 @@ public class BogusJumpInserter extends FlowObfuscation
 				insns.insertBefore(target, new InsnNode(IRETURN));
 				break;
 			case Type.CHAR:
-				insns.insertBefore(target, ASMUtils.getNumberInsn(RandomUtils
-						.getRandomInt(Character.MAX_VALUE + 1)));
+				insns.insertBefore(target, ASMUtils.getNumberInsn(RandomUtils.getRandomInt(Character.MAX_VALUE + 1)));
 				insns.insertBefore(target, new InsnNode(IRETURN));
 				break;
 			case Type.BYTE:

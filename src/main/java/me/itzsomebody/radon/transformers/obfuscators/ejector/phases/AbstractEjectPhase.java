@@ -18,17 +18,18 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.ejector.phases;
 
-import me.itzsomebody.radon.analysis.constant.values.AbstractValue;
-import me.itzsomebody.radon.asm.MethodWrapper;
-import me.itzsomebody.radon.transformers.obfuscators.ejector.EjectorContext;
-import me.itzsomebody.radon.utils.RandomUtils;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Map;
+
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
 import org.objectweb.asm.tree.analysis.Frame;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Map;
+import me.itzsomebody.radon.analysis.constant.values.AbstractValue;
+import me.itzsomebody.radon.asm.MethodWrapper;
+import me.itzsomebody.radon.transformers.obfuscators.ejector.EjectorContext;
+import me.itzsomebody.radon.utils.RandomUtils;
 
 public abstract class AbstractEjectPhase implements Opcodes
 {

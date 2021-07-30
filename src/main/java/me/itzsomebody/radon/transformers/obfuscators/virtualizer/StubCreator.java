@@ -18,15 +18,16 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.virtualizer;
 
-import me.itzsomebody.vm.Instruction;
-import org.objectweb.asm.Type;
-
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.GZIPOutputStream;
+
+import org.objectweb.asm.Type;
+
+import me.itzsomebody.vm.Instruction;
 
 public class StubCreator
 {
@@ -68,28 +69,32 @@ public class StubCreator
 				dos.writeByte(instruction.getOperands().length);
 
 				for (final Object operand : instruction.getOperands())
-				{
 					if (operand instanceof Integer)
 					{
 						dos.writeByte(INT);
 						dos.writeInt((Integer) operand);
-					} else if (operand instanceof Long)
+					}
+					else if (operand instanceof Long)
 					{
 						dos.writeByte(LONG);
 						dos.writeLong((Long) operand);
-					} else if (operand instanceof Float)
+					}
+					else if (operand instanceof Float)
 					{
 						dos.writeByte(FLOAT);
 						dos.writeFloat((Float) operand);
-					} else if (operand instanceof Double)
+					}
+					else if (operand instanceof Double)
 					{
 						dos.writeByte(DOUBLE);
 						dos.writeDouble((Double) operand);
-					} else if (operand instanceof String)
+					}
+					else if (operand instanceof String)
 					{
 						dos.writeByte(STRING);
 						dos.writeUTF((String) operand);
-					} else if (operand instanceof Type)
+					}
+					else if (operand instanceof Type)
 					{
 						dos.writeByte(CLASS);
 
@@ -100,7 +105,6 @@ public class StubCreator
 						else
 							dos.writeUTF(type.getClassName());
 					}
-				}
 			}
 		}
 

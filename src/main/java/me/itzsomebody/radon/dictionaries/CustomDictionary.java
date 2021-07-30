@@ -18,12 +18,13 @@
 
 package me.itzsomebody.radon.dictionaries;
 
-import me.itzsomebody.radon.utils.RandomUtils;
-import me.itzsomebody.radon.utils.StrSequence;
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.IntStream;
+
+import me.itzsomebody.radon.utils.RandomUtils;
+import me.itzsomebody.radon.utils.StrSequence;
 
 /**
  * Generates strings based on custom user-defined dictionary.
@@ -56,10 +57,7 @@ public class CustomDictionary implements Dictionary
 	@Override
 	public String randomString(final int length)
 	{
-		final String[] c = new String[length];
-
-		for (int i = 0; i < length; i++)
-			c[i] = CHARSET.strAt(RandomUtils.getRandomInt(CHARSET.length()));
+		final String[] c = IntStream.range(0, length).mapToObj(i -> CHARSET.strAt(RandomUtils.getRandomInt(CHARSET.length()))).toArray(String[]::new);
 
 		return String.join("", c);
 	}
@@ -83,7 +81,8 @@ public class CustomDictionary implements Dictionary
 				length++;
 				count = 0;
 			}
-		} while (cache.contains(s));
+		}
+		while (cache.contains(s));
 
 		cache.add(s);
 		cachedLength = length;
@@ -104,10 +103,12 @@ public class CustomDictionary implements Dictionary
 	}
 
 	/**
-	 * @param index   A unique positive integer
-	 * @param charset A dictionary to permutate through
+	 * @param  index
+	 *                 A unique positive integer
+	 * @param  charset
+	 *                 A dictionary to permutate through
 	 *
-	 * @return A unique string from for the given integer using permutations of the given charset
+	 * @return         A unique string from for the given integer using permutations of the given charset
 	 */
 	private String intToStr(int index, final StrSequence charset)
 	{
