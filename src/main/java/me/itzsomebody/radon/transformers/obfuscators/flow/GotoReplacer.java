@@ -21,6 +21,10 @@ package me.itzsomebody.radon.transformers.obfuscators.flow;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import me.itzsomebody.radon.utils.ASMUtils;
+import me.itzsomebody.radon.utils.BogusJumps;
+import me.itzsomebody.radon.utils.RandomUtils;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 
 import me.itzsomebody.radon.Main;
@@ -42,7 +46,12 @@ public class GotoReplacer extends FlowObfuscation
 		getClassWrappers().stream().filter(this::included).forEach(cw ->
 		{
 			final AtomicBoolean shouldAdd = new AtomicBoolean();
-			final FieldNode predicate = new FieldNode(PRED_ACCESS, fieldDictionary.uniqueRandomString(), "Z", null, null);
+
+			final Type predicateType = ASMUtils.getRandomType(); // Boolean ~ Double. see java.lang.reflect.Type
+			final String predicateDescriptor = predicateType.getDescriptor();
+			final Object predicateInitialValue = RandomUtils.getRandomBoolean() ? RandomUtils.getRandomValue(predicateType) : null;
+
+			final FieldNode predicate = new FieldNode(PRED_ACCESS, fieldDictionary.uniqueRandomString(), predicateDescriptor, null, predicateInitialValue);
 
 			cw.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
 			{
@@ -59,13 +68,11 @@ public class GotoReplacer extends FlowObfuscation
 
 					if (insn.getOpcode() == GOTO)
 					{
-						insns.insertBefore(insn, new VarInsnNode(ILOAD, varIndex));
-						insns.insertBefore(insn, new JumpInsnNode(IFEQ, ((JumpInsnNode) insn).label));
-						insns.insert(insn, new InsnNode(ATHROW));
-						insns.insert(insn, new InsnNode(ACONST_NULL));
+						insns.insertBefore(insn, BogusJumps.createBogusJump(varIndex, predicateType, predicateInitialValue, ((JumpInsnNode) insn).label, true));
+						insns.insert(insn, BogusJumps.createBogusExit(mw.getMethodNode()));
 						insns.remove(insn);
 
-						leeway -= 10;
+						leeway -= 16;
 
 						counter.incrementAndGet();
 						shouldAdd.set(true);
@@ -74,8 +81,24 @@ public class GotoReplacer extends FlowObfuscation
 
 				if (shouldAdd.get())
 				{
-					insns.insert(new VarInsnNode(ISTORE, varIndex));
-					insns.insert(new FieldInsnNode(GETSTATIC, cw.getName(), predicate.name, "Z"));
+//					insnList.insert(new VarInsnNode(ISTORE, varIndex));
+					switch (predicateType.getSort())
+					{
+						case Type.FLOAT:
+							insns.insert(new VarInsnNode(FSTORE, varIndex));
+							break;
+						case Type.LONG:
+							insns.insert(new VarInsnNode(LSTORE, varIndex));
+							break;
+						case Type.DOUBLE:
+							insns.insert(new VarInsnNode(DSTORE, varIndex));
+							break;
+						default:
+							insns.insert(new VarInsnNode(ISTORE, varIndex));
+							break;
+					}
+
+					insns.insert(new FieldInsnNode(GETSTATIC, cw.getName(), predicate.name, predicateDescriptor));
 				}
 			});
 
@@ -83,6 +106,6 @@ public class GotoReplacer extends FlowObfuscation
 				cw.addField(predicate);
 		});
 
-		Main.info("Swapped " + counter.get() + " GOTO instructions");
+		Main.info("+ Swapped " + counter.get() + " GOTO instructions");
 	}
 }

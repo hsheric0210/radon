@@ -6,7 +6,7 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 
-public final class BogusJumps
+public final class BogusJumps implements Opcodes
 {
 
 	/**
@@ -32,7 +32,7 @@ public final class BogusJumps
 		insnList.add(new VarInsnNode(ASMUtils.getVarOpcode(predicateType, false), predicateLocalVarIndex));
 
 		if (predicateType.getSort() == Type.BOOLEAN)
-			insnList.add(new JumpInsnNode((predicateValue == null || (int) predicateValue == 0) == invertCondition ? Opcodes.IFEQ : Opcodes.IFNE, jumpTo));
+			insnList.add(new JumpInsnNode((predicateValue == null || (int) predicateValue == 0) == invertCondition ? IFEQ : IFNE, jumpTo));
 		else if (RandomUtils.getRandomBoolean())
 			switch (predicateType.getSort())
 			{
@@ -77,19 +77,19 @@ public final class BogusJumps
 			switch (RandomUtils.getRandomInt(3))
 			{
 				case 0:
-					jumpOpcode = invertCondition ? Opcodes.IFGE : Opcodes.IFLT;
+					jumpOpcode = invertCondition ? IFGE : IFLT;
 					break;
 				case 1:
-					jumpOpcode = invertCondition ? Opcodes.IFEQ : Opcodes.IFNE;
+					jumpOpcode = invertCondition ? IFEQ : IFNE;
 					break;
 				default:
-					jumpOpcode = invertCondition ? Opcodes.IFLE : Opcodes.IFGT;
+					jumpOpcode = invertCondition ? IFLE : IFGT;
 					break;
 			}
 		else if (RandomUtils.getRandomBoolean()) // The predicate is not zero
-			jumpOpcode = value < 0 ? invertCondition ? Opcodes.IFLT : Opcodes.IFGE : invertCondition ? Opcodes.IFGT : Opcodes.IFLE;
+			jumpOpcode = value < 0 ? invertCondition ? IFLT : IFGE : invertCondition ? IFGT : IFLE;
 		else
-			jumpOpcode = invertCondition ? Opcodes.IFNE : Opcodes.IFEQ;
+			jumpOpcode = invertCondition ? IFNE : IFEQ;
 
 		insnList.add(new JumpInsnNode(jumpOpcode, jumpTo));
 	}
@@ -104,29 +104,29 @@ public final class BogusJumps
 			switch (RandomUtils.getRandomInt(3))
 			{
 				case 0:
-					jumpOpcode = invertCondition ? Opcodes.IFGE : Opcodes.IFLT;
+					jumpOpcode = invertCondition ? IFGE : IFLT;
 					break;
 				case 1:
-					jumpOpcode = invertCondition ? Opcodes.IFEQ : Opcodes.IFNE;
+					jumpOpcode = invertCondition ? IFEQ : IFNE;
 					break;
 				default:
-					jumpOpcode = invertCondition ? Opcodes.IFLE : Opcodes.IFGT;
+					jumpOpcode = invertCondition ? IFLE : IFGT;
 					break;
 			}
 		else if (RandomUtils.getRandomBoolean()) // The predicate is not zero
-			jumpOpcode = value < 0L ? invertCondition ? Opcodes.IFLT : Opcodes.IFGE : invertCondition ? Opcodes.IFGT : Opcodes.IFLE;
+			jumpOpcode = value < 0L ? invertCondition ? IFLT : IFGE : invertCondition ? IFGT : IFLE;
 		else
-			jumpOpcode = invertCondition ? Opcodes.IFNE : Opcodes.IFEQ;
+			jumpOpcode = invertCondition ? IFNE : IFEQ;
 
-		insnList.add(new InsnNode(Opcodes.LCONST_0));
-		insnList.add(new InsnNode(Opcodes.LCMP));
+		insnList.add(new InsnNode(LCONST_0));
+		insnList.add(new InsnNode(LCMP));
 		insnList.add(new JumpInsnNode(jumpOpcode, jumpTo));
 	}
 
 	private static void createFakeEqualityCheckFloat(final Object predicateValue, final LabelNode jumpTo, final boolean invertCondition, final InsnList insnList)
 	{
 		final float value = Optional.ofNullable(predicateValue).map(o -> (float) o).orElse(0.0F);
-		insnList.add(new InsnNode(Opcodes.FCONST_0));
+		insnList.add(new InsnNode(FCONST_0));
 		final int compareOpcode;
 		final int jumpOpcode;
 
@@ -134,27 +134,27 @@ public final class BogusJumps
 			switch (RandomUtils.getRandomInt(3))
 			{
 				case 0:
-					compareOpcode = Opcodes.FCMPG;
-					jumpOpcode = invertCondition ? Opcodes.IFGE : Opcodes.IFLT;
+					compareOpcode = FCMPG;
+					jumpOpcode = invertCondition ? IFGE : IFLT;
 					break;
 				case 1:
-					compareOpcode = Opcodes.FCMPL;
-					jumpOpcode = invertCondition ? Opcodes.IFEQ : Opcodes.IFNE;
+					compareOpcode = FCMPL;
+					jumpOpcode = invertCondition ? IFEQ : IFNE;
 					break;
 				default:
-					compareOpcode = Opcodes.FCMPL;
-					jumpOpcode = invertCondition ? Opcodes.IFNE : Opcodes.IFGT;
+					compareOpcode = FCMPL;
+					jumpOpcode = invertCondition ? IFNE : IFGT;
 					break;
 			}
 		else if (RandomUtils.getRandomBoolean()) // The predicate is not zero
 		{
-			compareOpcode = value < 0 ? Opcodes.FCMPL : Opcodes.FCMPG;
-			jumpOpcode = value < 0 ? invertCondition ? Opcodes.IFLT : Opcodes.IFGE : invertCondition ? Opcodes.IFGT : Opcodes.IFLE;
+			compareOpcode = value < 0 ? FCMPL : FCMPG;
+			jumpOpcode = value < 0 ? invertCondition ? IFLT : IFGE : invertCondition ? IFGT : IFLE;
 		}
 		else
 		{
-			compareOpcode = Opcodes.FCMPL;
-			jumpOpcode = invertCondition ? Opcodes.IFNE : Opcodes.IFEQ;
+			compareOpcode = FCMPL;
+			jumpOpcode = invertCondition ? IFNE : IFEQ;
 		}
 
 		insnList.add(new InsnNode(compareOpcode));
@@ -164,7 +164,7 @@ public final class BogusJumps
 	private static void createFakeEqualityCheckDouble(final Object predicateValue, final LabelNode jumpTo, final boolean invertCondition, final InsnList insnList)
 	{
 		final double value = Optional.ofNullable(predicateValue).map(o -> (double) o).orElse(0.0);
-		insnList.add(new InsnNode(Opcodes.DCONST_0));
+		insnList.add(new InsnNode(DCONST_0));
 		final int compareOpcode;
 		final int jumpOpcode;
 
@@ -172,27 +172,27 @@ public final class BogusJumps
 			switch (RandomUtils.getRandomInt(3))
 			{
 				case 0:
-					compareOpcode = Opcodes.DCMPG;
-					jumpOpcode = invertCondition ? Opcodes.IFGE : Opcodes.IFLT;
+					compareOpcode = DCMPG;
+					jumpOpcode = invertCondition ? IFGE : IFLT;
 					break;
 				case 1:
-					compareOpcode = Opcodes.DCMPL;
-					jumpOpcode = invertCondition ? Opcodes.IFEQ : Opcodes.IFNE;
+					compareOpcode = DCMPL;
+					jumpOpcode = invertCondition ? IFEQ : IFNE;
 					break;
 				default:
-					compareOpcode = Opcodes.DCMPL;
-					jumpOpcode = invertCondition ? Opcodes.IFLE : Opcodes.IFGT;
+					compareOpcode = DCMPL;
+					jumpOpcode = invertCondition ? IFLE : IFGT;
 					break;
 			}
 		else if (RandomUtils.getRandomBoolean()) // The predicate is not zero
 		{
-			compareOpcode = value < 0 ? Opcodes.DCMPL : Opcodes.DCMPG;
-			jumpOpcode = value < 0 ? invertCondition ? Opcodes.IFLT : Opcodes.IFGE : invertCondition ? Opcodes.IFGT : Opcodes.IFLE;
+			compareOpcode = value < 0 ? DCMPL : DCMPG;
+			jumpOpcode = value < 0 ? invertCondition ? IFLT : IFGE : invertCondition ? IFGT : IFLE;
 		}
 		else
 		{
-			compareOpcode = Opcodes.DCMPL;
-			jumpOpcode = invertCondition ? Opcodes.IFNE : Opcodes.IFEQ;
+			compareOpcode = DCMPL;
+			jumpOpcode = invertCondition ? IFNE : IFEQ;
 		}
 
 		insnList.add(new InsnNode(compareOpcode));
@@ -209,19 +209,19 @@ public final class BogusJumps
 		{
 			case 0:
 				operand = RandomUtils.getRandomInt(Integer.MIN_VALUE, value);
-				jumpOpcode = invertCondition ? Opcodes.IF_ICMPGE : Opcodes.IF_ICMPLT; // less
+				jumpOpcode = invertCondition ? IF_ICMPGE : IF_ICMPLT; // less
 				break;
 			case 1:
 				operand = RandomUtils.getRandomInt(value, Integer.MAX_VALUE);
-				jumpOpcode = invertCondition ? Opcodes.IF_ICMPLE : Opcodes.IF_ICMPGT;
+				jumpOpcode = invertCondition ? IF_ICMPLE : IF_ICMPGT;
 				break;
 			case 2:
 				operand = RandomUtils.getRandomInt(Integer.MIN_VALUE, value - 1);
-				jumpOpcode = invertCondition ? Opcodes.IF_ICMPGT : Opcodes.IF_ICMPLE;
+				jumpOpcode = invertCondition ? IF_ICMPGT : IF_ICMPLE;
 				break;
 			case 3:
 				operand = RandomUtils.getRandomInt(value + 1, Integer.MAX_VALUE);
-				jumpOpcode = invertCondition ? Opcodes.IF_ICMPLT : Opcodes.IF_ICMPGE;
+				jumpOpcode = invertCondition ? IF_ICMPLT : IF_ICMPGE;
 				break;
 			case 4:
 				int findOperand;
@@ -230,11 +230,11 @@ public final class BogusJumps
 				while (findOperand == value);
 
 				operand = findOperand;
-				jumpOpcode = invertCondition ? Opcodes.IF_ICMPNE : Opcodes.IF_ICMPEQ;
+				jumpOpcode = invertCondition ? IF_ICMPNE : IF_ICMPEQ;
 				break;
 			default: // 5
 				operand = value;
-				jumpOpcode = invertCondition ? Opcodes.IF_ICMPEQ : Opcodes.IF_ICMPNE;
+				jumpOpcode = invertCondition ? IF_ICMPEQ : IF_ICMPNE;
 				break;
 		}
 
@@ -252,19 +252,19 @@ public final class BogusJumps
 		{
 			case 0:
 				operand = RandomUtils.getRandomLong(Long.MIN_VALUE, value); // long.minvalue ~ value
-				jumpOpcode = invertCondition ? Opcodes.IFGE : Opcodes.IFLT;
+				jumpOpcode = invertCondition ? IFGE : IFLT;
 				break;
 			case 1:
 				operand = RandomUtils.getRandomLong(Long.MIN_VALUE, value - 1L); // long.minvalue ~ (value + 1)
-				jumpOpcode = invertCondition ? Opcodes.IFGT : Opcodes.IFLE;
+				jumpOpcode = invertCondition ? IFGT : IFLE;
 				break;
 			case 2:
 				operand = RandomUtils.getRandomLong(value, Long.MAX_VALUE); // value ~ long.maxvalue
-				jumpOpcode = invertCondition ? Opcodes.IFLE : Opcodes.IFGT;
+				jumpOpcode = invertCondition ? IFLE : IFGT;
 				break;
 			case 3:
 				operand = RandomUtils.getRandomLong(value + 1L, Long.MAX_VALUE); // (value + 1) ~ long.maxvalue
-				jumpOpcode = invertCondition ? Opcodes.IFLT : Opcodes.IFGE;
+				jumpOpcode = invertCondition ? IFLT : IFGE;
 				break;
 			case 4:
 				long findOperand;
@@ -273,16 +273,16 @@ public final class BogusJumps
 				while (findOperand == value);
 
 				operand = findOperand;
-				jumpOpcode = invertCondition ? Opcodes.IFNE : Opcodes.IFEQ;
+				jumpOpcode = invertCondition ? IFNE : IFEQ;
 				break;
 			default:
 				operand = value;
-				jumpOpcode = invertCondition ? Opcodes.IFEQ : Opcodes.IFNE;
+				jumpOpcode = invertCondition ? IFEQ : IFNE;
 				break;
 		}
 
 		insnList.add(ASMUtils.getNumberInsn(operand));
-		insnList.add(new InsnNode(Opcodes.LCMP));
+		insnList.add(new InsnNode(LCMP));
 		insnList.add(new JumpInsnNode(jumpOpcode, jumpTo));
 	}
 
@@ -300,23 +300,23 @@ public final class BogusJumps
 		{
 			case 0:
 				operand = RandomUtils.getRandomFloat(min, value);
-				compareOpcode = Opcodes.FCMPG;
-				jumpOpcode = invertCondition ? Opcodes.IFGE : Opcodes.IFLT;
+				compareOpcode = FCMPG;
+				jumpOpcode = invertCondition ? IFGE : IFLT;
 				break;
 			case 1:
 				operand = RandomUtils.getRandomFloat(value, max);
-				compareOpcode = Opcodes.FCMPL;
-				jumpOpcode = invertCondition ? Opcodes.IFLE : Opcodes.IFGT;
+				compareOpcode = FCMPL;
+				jumpOpcode = invertCondition ? IFLE : IFGT;
 				break;
 			case 2:
 				operand = RandomUtils.getRandomFloat(min, value - 1.0F);
-				compareOpcode = Opcodes.FCMPG;
-				jumpOpcode = invertCondition ? Opcodes.IFGT : Opcodes.IFLE;
+				compareOpcode = FCMPG;
+				jumpOpcode = invertCondition ? IFGT : IFLE;
 				break;
 			case 3:
 				operand = RandomUtils.getRandomFloat(value + 1.0F, max);
-				compareOpcode = Opcodes.FCMPL;
-				jumpOpcode = invertCondition ? Opcodes.IFLT : Opcodes.IFGE;
+				compareOpcode = FCMPL;
+				jumpOpcode = invertCondition ? IFLT : IFGE;
 				break;
 			case 4:
 				float findOperand;
@@ -325,13 +325,13 @@ public final class BogusJumps
 				while (findOperand == value);
 
 				operand = findOperand;
-				compareOpcode = Opcodes.FCMPL;
-				jumpOpcode = invertCondition ? Opcodes.IFNE : Opcodes.IFEQ;
+				compareOpcode = FCMPL;
+				jumpOpcode = invertCondition ? IFNE : IFEQ;
 				break;
 			default:
 				operand = value;
-				compareOpcode = Opcodes.FCMPL;
-				jumpOpcode = invertCondition ? Opcodes.IFEQ : Opcodes.IFNE;
+				compareOpcode = FCMPL;
+				jumpOpcode = invertCondition ? IFEQ : IFNE;
 				break;
 		}
 
@@ -354,23 +354,23 @@ public final class BogusJumps
 		{
 			case 0:
 				operand = RandomUtils.getRandomDouble(min, value);
-				compareOpcode = Opcodes.DCMPG;
-				jumpConditionOpcode = invertCondition ? Opcodes.IFGE : Opcodes.IFLT;
+				compareOpcode = DCMPG;
+				jumpConditionOpcode = invertCondition ? IFGE : IFLT;
 				break;
 			case 1:
 				operand = RandomUtils.getRandomDouble(value, max);
-				compareOpcode = Opcodes.DCMPL;
-				jumpConditionOpcode = invertCondition ? Opcodes.IFLE : Opcodes.IFGT;
+				compareOpcode = DCMPL;
+				jumpConditionOpcode = invertCondition ? IFLE : IFGT;
 				break;
 			case 2:
 				operand = RandomUtils.getRandomDouble(min, value - 1.0);
-				compareOpcode = Opcodes.DCMPG;
-				jumpConditionOpcode = invertCondition ? Opcodes.IFGT : Opcodes.IFLE;
+				compareOpcode = DCMPG;
+				jumpConditionOpcode = invertCondition ? IFGT : IFLE;
 				break;
 			case 3:
 				operand = RandomUtils.getRandomDouble(value + 1.0, max);
-				compareOpcode = Opcodes.DCMPL;
-				jumpConditionOpcode = invertCondition ? Opcodes.IFLT : Opcodes.IFGE;
+				compareOpcode = DCMPL;
+				jumpConditionOpcode = invertCondition ? IFLT : IFGE;
 				break;
 			case 4:
 				float findOperand;
@@ -379,13 +379,13 @@ public final class BogusJumps
 				while (findOperand == value);
 
 				operand = findOperand;
-				compareOpcode = Opcodes.DCMPL;
-				jumpConditionOpcode = invertCondition ? Opcodes.IFNE : Opcodes.IFEQ;
+				compareOpcode = DCMPL;
+				jumpConditionOpcode = invertCondition ? IFNE : IFEQ;
 				break;
 			default:
 				operand = value;
-				compareOpcode = Opcodes.DCMPL;
-				jumpConditionOpcode = invertCondition ? Opcodes.IFEQ : Opcodes.IFNE;
+				compareOpcode = DCMPL;
+				jumpConditionOpcode = invertCondition ? IFEQ : IFNE;
 				break;
 		}
 
@@ -394,14 +394,7 @@ public final class BogusJumps
 		insnList.add(new JumpInsnNode(jumpConditionOpcode, jumpTo));
 	}
 
-	/**
-	 * Create the exit instruction such as RETURN, IRETURN, ARETURN. Usuful for creating fake-exit label.
-	 * 
-	 * @param  type
-	 *              Type of the method which this exit label inserted in.
-	 * @return      The generated exit label.
-	 */
-	public static InsnList createBogusExit(final Type type)
+	public static InsnList createBogusExit(final MethodNode mn)
 	{
 		final InsnList insnList = new InsnList();
 
@@ -409,53 +402,61 @@ public final class BogusJumps
 		final int popNodeOp;
 
 		if (RandomUtils.getRandomBoolean())
-			switch (type.getSort()) // Create fake 'return' statement
+			switch (Type.getReturnType(mn.desc).getSort()) // Create fake 'return' statement
 			{
 				case Type.VOID:
-					popNodeOp = Opcodes.RETURN;
+					popNodeOp = RETURN;
 					break;
 				case Type.BOOLEAN:
 					pushNode = ASMUtils.getNumberInsn(RandomUtils.getRandomInt(2));
-					popNodeOp = Opcodes.IRETURN;
+					popNodeOp = IRETURN;
 					break;
 				case Type.CHAR:
 					pushNode = ASMUtils.getNumberInsn(RandomUtils.getRandomInt(Character.MAX_VALUE + 1));
-					popNodeOp = Opcodes.IRETURN;
+					popNodeOp = IRETURN;
 					break;
 				case Type.BYTE:
 					pushNode = ASMUtils.getNumberInsn(RandomUtils.getRandomInt(Byte.MAX_VALUE + 1));
-					popNodeOp = Opcodes.IRETURN;
+					popNodeOp = IRETURN;
 					break;
 				case Type.SHORT:
 					pushNode = ASMUtils.getNumberInsn(RandomUtils.getRandomInt(Short.MAX_VALUE + 1));
-					popNodeOp = Opcodes.IRETURN;
+					popNodeOp = IRETURN;
 					break;
 				case Type.INT:
 					pushNode = ASMUtils.getNumberInsn(RandomUtils.getRandomInt());
-					popNodeOp = Opcodes.IRETURN;
+					popNodeOp = IRETURN;
 					break;
 				case Type.LONG:
 					pushNode = ASMUtils.getNumberInsn(RandomUtils.getRandomLong());
-					popNodeOp = Opcodes.LRETURN;
+					popNodeOp = LRETURN;
 					break;
 				case Type.FLOAT:
 					pushNode = ASMUtils.getNumberInsn(RandomUtils.getRandomFloat());
-					popNodeOp = Opcodes.FRETURN;
+					popNodeOp = FRETURN;
 					break;
 				case Type.DOUBLE:
 					pushNode = ASMUtils.getNumberInsn(RandomUtils.getRandomDouble());
-					popNodeOp = Opcodes.DRETURN;
+					popNodeOp = DRETURN;
 					break;
 				default:
-					pushNode = new InsnNode(Opcodes.ACONST_NULL);
-					popNodeOp = Opcodes.ARETURN;
+					pushNode = new InsnNode(ACONST_NULL);
+					popNodeOp = ARETURN;
 			}
+		else if (RandomUtils.getRandomBoolean())
+		{
+			mn.maxStack++;
+			final String exceptionClass = RandomUtils.getRandomElement(Throwables.getRandomThrowable());
+			insnList.add(new TypeInsnNode(NEW, exceptionClass));
+			insnList.add(new InsnNode(DUP));
+			insnList.add(new MethodInsnNode(INVOKESPECIAL, exceptionClass, "<init>", "()V", false));
+			popNodeOp = ATHROW;
+		}
 		else
 		{
 			// Create unused 'throw null' statement
-			// TODO: Diversify exception types - if you want to use it, you should expand stack size before, or get a VerifyError.
-			pushNode = new InsnNode(Opcodes.ACONST_NULL);
-			popNodeOp = Opcodes.ATHROW;
+			pushNode = new InsnNode(ACONST_NULL);
+			popNodeOp = ATHROW;
 		}
 
 		if (pushNode != null)

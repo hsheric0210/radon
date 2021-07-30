@@ -18,20 +18,20 @@
 
 package me.itzsomebody.radon.utils;
 
+import java.util.Arrays;
+
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 
 import me.itzsomebody.radon.exceptions.RadonException;
 
-import java.util.Arrays;
-
 /**
  * Bytecode utilities for bytecode instructions.
  *
  * @author ItzSomebody.
  */
-public final class ASMUtils
+public final class ASMUtils implements Opcodes
 {
 	public static boolean isInstruction(final AbstractInsnNode insn)
 	{
@@ -40,7 +40,7 @@ public final class ASMUtils
 
 	public static boolean isReturn(final int opcode)
 	{
-		return opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN;
+		return opcode >= IRETURN && opcode <= RETURN;
 	}
 
 	public static boolean hasAnnotations(final ClassNode classNode)
@@ -63,25 +63,25 @@ public final class ASMUtils
 		if (insn == null)
 			return false;
 		final int opcode = insn.getOpcode();
-		return opcode >= Opcodes.ICONST_M1 && opcode <= Opcodes.ICONST_5 || opcode == Opcodes.BIPUSH || opcode == Opcodes.SIPUSH || insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof Integer;
+		return opcode >= ICONST_M1 && opcode <= ICONST_5 || opcode == BIPUSH || opcode == SIPUSH || insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof Integer;
 	}
 
 	public static boolean isLongInsn(final AbstractInsnNode insn)
 	{
 		final int opcode = insn.getOpcode();
-		return opcode == Opcodes.LCONST_0 || opcode == Opcodes.LCONST_1 || insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof Long;
+		return opcode == LCONST_0 || opcode == LCONST_1 || insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof Long;
 	}
 
 	public static boolean isFloatInsn(final AbstractInsnNode insn)
 	{
 		final int opcode = insn.getOpcode();
-		return opcode >= Opcodes.FCONST_0 && opcode <= Opcodes.FCONST_2 || insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof Float;
+		return opcode >= FCONST_0 && opcode <= FCONST_2 || insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof Float;
 	}
 
 	public static boolean isDoubleInsn(final AbstractInsnNode insn)
 	{
 		final int opcode = insn.getOpcode();
-		return opcode >= Opcodes.DCONST_0 && opcode <= Opcodes.DCONST_1 || insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof Double;
+		return opcode >= DCONST_0 && opcode <= DCONST_1 || insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof Double;
 	}
 
 	public static AbstractInsnNode getNumberInsn(final int number)
@@ -89,9 +89,9 @@ public final class ASMUtils
 		if (number >= -1 && number <= 5)
 			return new InsnNode(number + 3);
 		if (number >= -128 && number <= 127)
-			return new IntInsnNode(Opcodes.BIPUSH, number);
+			return new IntInsnNode(BIPUSH, number);
 		if (number >= -32768 && number <= 32767)
-			return new IntInsnNode(Opcodes.SIPUSH, number);
+			return new IntInsnNode(SIPUSH, number);
 		return new LdcInsnNode(number);
 	}
 
@@ -120,9 +120,9 @@ public final class ASMUtils
 	{
 		final int opcode = insn.getOpcode();
 
-		if (opcode >= Opcodes.ICONST_M1 && opcode <= Opcodes.ICONST_5)
+		if (opcode >= ICONST_M1 && opcode <= ICONST_5)
 			return opcode - 3;
-		if (insn instanceof IntInsnNode && insn.getOpcode() != Opcodes.NEWARRAY)
+		if (insn instanceof IntInsnNode && insn.getOpcode() != NEWARRAY)
 			return ((IntInsnNode) insn).operand;
 		if (insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof Integer)
 			return (Integer) ((LdcInsnNode) insn).cst;
@@ -134,7 +134,7 @@ public final class ASMUtils
 	{
 		final int opcode = insn.getOpcode();
 
-		if (opcode >= Opcodes.LCONST_0 && opcode <= Opcodes.LCONST_1)
+		if (opcode >= LCONST_0 && opcode <= LCONST_1)
 			return opcode - 9;
 		if (insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof Long)
 			return (Long) ((LdcInsnNode) insn).cst;
@@ -146,7 +146,7 @@ public final class ASMUtils
 	{
 		final int opcode = insn.getOpcode();
 
-		if (opcode >= Opcodes.FCONST_0 && opcode <= Opcodes.FCONST_2)
+		if (opcode >= FCONST_0 && opcode <= FCONST_2)
 			return opcode - 11;
 		if (insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof Float)
 			return (Float) ((LdcInsnNode) insn).cst;
@@ -158,7 +158,7 @@ public final class ASMUtils
 	{
 		final int opcode = insn.getOpcode();
 
-		if (opcode >= Opcodes.DCONST_0 && opcode <= Opcodes.DCONST_1)
+		if (opcode >= DCONST_0 && opcode <= DCONST_1)
 			return opcode - 14;
 		if (insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof Double)
 			return (Double) ((LdcInsnNode) insn).cst;
@@ -190,18 +190,18 @@ public final class ASMUtils
 			case Type.BYTE:
 			case Type.SHORT:
 			case Type.INT:
-				return Opcodes.IRETURN;
+				return IRETURN;
 			case Type.FLOAT:
-				return Opcodes.FRETURN;
+				return FRETURN;
 			case Type.LONG:
-				return Opcodes.LRETURN;
+				return LRETURN;
 			case Type.DOUBLE:
-				return Opcodes.DRETURN;
+				return DRETURN;
 			case Type.ARRAY:
 			case Type.OBJECT:
-				return Opcodes.ARETURN;
+				return ARETURN;
 			case Type.VOID:
-				return Opcodes.RETURN;
+				return RETURN;
 			default:
 				throw new AssertionError("Unknown type sort: " + type.getClassName());
 		}
@@ -216,16 +216,16 @@ public final class ASMUtils
 			case Type.BYTE:
 			case Type.SHORT:
 			case Type.INT:
-				return store ? Opcodes.ISTORE : Opcodes.ILOAD;
+				return store ? ISTORE : ILOAD;
 			case Type.FLOAT:
-				return store ? Opcodes.FSTORE : Opcodes.FLOAD;
+				return store ? FSTORE : FLOAD;
 			case Type.LONG:
-				return store ? Opcodes.LSTORE : Opcodes.LLOAD;
+				return store ? LSTORE : LLOAD;
 			case Type.DOUBLE:
-				return store ? Opcodes.DSTORE : Opcodes.DLOAD;
+				return store ? DSTORE : DLOAD;
 			case Type.ARRAY:
 			case Type.OBJECT:
-				return store ? Opcodes.ASTORE : Opcodes.ALOAD;
+				return store ? ASTORE : ALOAD;
 			default:
 				throw new AssertionError("Unknown type: " + type.getClassName());
 		}
@@ -265,7 +265,7 @@ public final class ASMUtils
 			case Type.DOUBLE:
 				return getNumberInsn(0.00d);
 			case Type.OBJECT:
-				return new InsnNode(Opcodes.ACONST_NULL);
+				return new InsnNode(ACONST_NULL);
 			default:
 				throw new AssertionError();
 		}
@@ -316,10 +316,69 @@ public final class ASMUtils
 				return getNumberInsn(RandomUtils.getRandomDouble());
 			case Type.ARRAY:
 			case Type.OBJECT:
-				return new InsnNode(Opcodes.ACONST_NULL);
+				return new InsnNode(ACONST_NULL);
 			default:
 				throw new AssertionError();
 		}
+	}
+
+	public static InsnList createNPERaiser()
+	{
+		final int methodOpcode;
+		final String methodOwner;
+		final String methodName;
+		final String methodDescriptor;
+
+		final InsnList insnList = new InsnList();
+
+		switch (RandomUtils.getRandomInt(6))
+		{
+			// Methods in java.lang.Object
+			case 0:
+				methodOpcode = INVOKEVIRTUAL;
+				methodOwner = "java/lang/Object";
+				methodName = "getClass";
+				methodDescriptor = "()Ljava/lang/Class;";
+				break;
+			case 1:
+				methodOpcode = INVOKEVIRTUAL;
+				methodOwner = "java/lang/Object";
+				methodName = "hashCode";
+				methodDescriptor = "()I";
+				break;
+			case 2:
+				insnList.add(new InsnNode(ACONST_NULL));
+				methodOpcode = INVOKEVIRTUAL;
+				methodOwner = "java/lang/Object";
+				methodName = "equals";
+				methodDescriptor = "(Ljava/lang/Object;)Z";
+				break;
+			case 3:
+				methodOpcode = INVOKEVIRTUAL;
+				methodOwner = "java/lang/Object";
+				methodName = "toString";
+				methodDescriptor = "()Ljava/lang/String;";
+				break;
+
+			// java.util.Objects.requireNonNull
+			case 4:
+				methodOpcode = INVOKESTATIC;
+				methodOwner = "java/util/Objects";
+				methodName = "requireNonNull";
+				methodDescriptor = "(Ljava/lang/Object;)Ljava/lang/Object;";
+				break;
+			default:
+				insnList.add(new InsnNode(ACONST_NULL));
+				methodOpcode = INVOKESTATIC;
+				methodOwner = "java/util/Objects";
+				methodName = "requireNonNull";
+				methodDescriptor = "(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;";
+				break;
+		}
+
+		insnList.add(new MethodInsnNode(methodOpcode, methodOwner, methodName, methodDescriptor, false));
+
+		return insnList;
 	}
 
 	private ASMUtils()

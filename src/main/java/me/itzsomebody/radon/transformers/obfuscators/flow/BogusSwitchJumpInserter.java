@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import me.itzsomebody.radon.utils.Constants;
 import org.objectweb.asm.tree.*;
 
 import me.itzsomebody.radon.Main;
@@ -34,11 +33,13 @@ import me.itzsomebody.radon.asm.StackHeightZeroFinder;
 import me.itzsomebody.radon.exceptions.RadonException;
 import me.itzsomebody.radon.exceptions.StackEmulationException;
 import me.itzsomebody.radon.utils.ASMUtils;
+import me.itzsomebody.radon.utils.Constants;
 import me.itzsomebody.radon.utils.RandomUtils;
 
 public class BogusSwitchJumpInserter extends FlowObfuscation
 {
-	private static final int PRED_ACCESS = ACC_PUBLIC | ACC_STATIC | ACC_FINAL;
+	private static final int CLASS_PRED_ACCESS = ACC_PRIVATE | ACC_STATIC | ACC_FINAL | ACC_SYNTHETIC;
+	private static final int INTERFACE_PRED_ACCESS = ACC_PUBLIC | ACC_STATIC | ACC_FINAL;
 
 	@Override
 	public void transform()
@@ -48,7 +49,7 @@ public class BogusSwitchJumpInserter extends FlowObfuscation
 		getClassWrappers().stream().filter(this::included).forEach(classWrapper ->
 		{
 			final AtomicBoolean shouldAdd = new AtomicBoolean();
-			final FieldNode predicate = new FieldNode(PRED_ACCESS, fieldDictionary.uniqueRandomString(), "I", null, null);
+			final FieldNode predicate = new FieldNode((classWrapper.getAccessFlags() & ACC_INTERFACE) != 0 ? INTERFACE_PRED_ACCESS : CLASS_PRED_ACCESS, fieldDictionary.uniqueRandomString(), "I", null, null);
 
 			classWrapper.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
 			{
@@ -119,7 +120,6 @@ public class BogusSwitchJumpInserter extends FlowObfuscation
 				classWrapper.addField(predicate);
 		});
 
-		Main.info("Inserted " + counter.get() + " bogus switch jumps");
+		Main.info("+ Inserted " + counter.get() + " bogus switch jumps");
 	}
-
-	}
+}

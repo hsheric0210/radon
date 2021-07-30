@@ -81,7 +81,7 @@ public class StringPooler extends StringEncryption
 				}
 				else
 					clinit.instructions.insertBefore(clinit.instructions.getFirst(), new MethodInsnNode(INVOKESTATIC, cw.getName(), methodName, "()V", false));
-				final FieldNode fieldNode = new FieldNode(ACC_PRIVATE | ACC_STATIC | ACC_SYNTHETIC, fieldName, "[Ljava/lang/String;", null, null);
+				final FieldNode fieldNode = new FieldNode((cw.getClassNode().access & ACC_INTERFACE) != 0 ? ACC_PUBLIC | ACC_STATIC | ACC_FINAL : ACC_PRIVATE | ACC_STATIC | ACC_SYNTHETIC, fieldName, "[Ljava/lang/String;", null, null);
 				cw.addField(fieldNode);
 			}
 		});

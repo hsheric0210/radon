@@ -27,7 +27,8 @@ import me.itzsomebody.radon.Main;
 import me.itzsomebody.radon.asm.StackHeightZeroFinder;
 import me.itzsomebody.radon.exceptions.RadonException;
 import me.itzsomebody.radon.exceptions.StackEmulationException;
-import me.itzsomebody.radon.utils.RandomUtils;
+import me.itzsomebody.radon.utils.ASMUtils;
+import me.itzsomebody.radon.utils.Throwables;
 
 /**
  * Replaces IFNONNULL and IFNULL with a semantically equivalent try-catch block. This relies on the fact that {@link NullPointerException} is thrown when a method is invoked upon null.
@@ -56,7 +57,7 @@ public class NullCheckMutilator extends FlowObfuscation
 				throw new RadonException(String.format("Error happened while trying to emulate the stack of %s.%s%s", cw.getName(), mw.getName(), mw.getDescription()));
 			}
 			final Set<AbstractInsnNode> emptyAt = shzf.getEmptyAt();
-			final int leeway = mw.getLeewaySize();
+			int leeway = mw.getLeewaySize();
 
 			for (final AbstractInsnNode insn : methodNode.instructions.toArray())
 			{
@@ -80,52 +81,30 @@ public class NullCheckMutilator extends FlowObfuscation
 
 					final InsnList insns = new InsnList();
 					insns.add(trapStart);
-					switch (RandomUtils.getRandomInt(4))
-					{
-						case 0:
-							insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Object", "getClass", "()Ljava/lang/Class;", false));
-							break;
-						case 1:
-							insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Object", "hashCode", "()I", false));
-							break;
-						case 2:
-							insns.add(new InsnNode(ACONST_NULL));
-							insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Object", "equals", "(Ljava/lang/Object;)Z", false));
-							break;
-						case 3:
-						default:
-							insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Object", "toString", "()Ljava/lang/String;", false));
-							break;
-					}
-
-					insns.add(new InsnNode(POP));
+					insns.add(ASMUtils.createNPERaiser()); // Inject NPE Raiser
+					insns.add(new InsnNode(POP)); // Ignore the return value of method
 					insns.add(trapEnd);
 
-					if (insn.getOpcode() == IFNONNULL)
-					{
-						insns.add(new JumpInsnNode(GOTO, jump.label));
-						insns.add(catchStart);
-						insns.add(new InsnNode(POP));
-						insns.add(catchEnd);
-					}
-					else
-					{
+					if (insn.getOpcode() == IFNULL)
 						insns.add(new JumpInsnNode(GOTO, catchEnd));
-						insns.add(catchStart);
-						insns.add(new InsnNode(POP));
+					else
 						insns.add(new JumpInsnNode(GOTO, jump.label));
-						insns.add(catchEnd);
-					}
+					insns.add(catchStart);
+					insns.add(new InsnNode(POP)); // Ignore the catch block parameter
+					if (insn.getOpcode() == IFNULL)
+						insns.add(new JumpInsnNode(GOTO, jump.label));
+					insns.add(catchEnd);
 
 					methodNode.instructions.insert(insn, insns);
 					methodNode.instructions.remove(insn);
-					methodNode.tryCatchBlocks.add(0, new TryCatchBlockNode(trapStart, trapEnd, catchStart, "java/lang/NullPointerException"));
+					methodNode.tryCatchBlocks.add(0, new TryCatchBlockNode(trapStart, trapEnd, catchStart, Throwables.NullPointerException));
 
 					counter.incrementAndGet();
+					leeway -= 10;
 				}
 			}
 		}));
 
-		Main.info("Mutilated " + counter.get() + " null checks");
+		Main.info("+ Mutilated " + counter.get() + " null checks");
 	}
 }

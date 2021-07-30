@@ -18,16 +18,15 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.flow;
 
-import java.io.IOError;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import me.itzsomebody.radon.utils.Throwables;
 import org.objectweb.asm.tree.*;
 
 import me.itzsomebody.radon.Main;
 import me.itzsomebody.radon.asm.ClassWrapper;
 import me.itzsomebody.radon.utils.ASMUtils;
+import me.itzsomebody.radon.utils.Constants;
 import me.itzsomebody.radon.utils.RandomUtils;
 
 /**
@@ -37,28 +36,13 @@ import me.itzsomebody.radon.utils.RandomUtils;
  */
 public class FakeCatchBlocks extends FlowObfuscation
 {
-	private static final String[] HANDLER_NAMES =
-	{
-			RuntimeException.class.getName().replace('.', '/'),
-			LinkageError.class.getName().replace('.', '/'),
-			Error.class.getName().replace('.', '/'),
-			Exception.class.getName().replace('.', '/'),
-			Throwable.class.getName().replace('.', '/'),
-			IllegalArgumentException.class.getName().replace('.', '/'),
-			IllegalStateException.class.getName().replace('.', '/'),
-			IllegalAccessError.class.getName().replace('.', '/'),
-			InvocationTargetException.class.getName().replace('.', '/'),
-			IOException.class.getName().replace('.', '/'),
-			IOError.class.getName().replace('.', '/'),
-	};
-
 	@Override
 	public void transform()
 	{
 		final AtomicInteger counter = new AtomicInteger();
 
 		final ClassNode fakeHandler = new ClassNode();
-		fakeHandler.superName = HANDLER_NAMES[RandomUtils.getRandomInt(HANDLER_NAMES.length)];
+		fakeHandler.superName = RandomUtils.getRandomElement(Throwables.getRandomThrowable());
 		fakeHandler.name = classDictionary.uniqueRandomString();
 		fakeHandler.access = ACC_PUBLIC | ACC_SUPER;
 		fakeHandler.version = V1_5;
@@ -77,7 +61,7 @@ public class FakeCatchBlocks extends FlowObfuscation
 				if (!ASMUtils.isInstruction(insn))
 					continue;
 
-				if (RandomUtils.getRandomInt(10) > 6)
+				if (RandomUtils.getRandomInt(5) > 3)
 				{
 					final LabelNode trapStart = new LabelNode();
 					final LabelNode trapEnd = new LabelNode();
@@ -107,6 +91,6 @@ public class FakeCatchBlocks extends FlowObfuscation
 		getClasses().put(fakeHandler.name, newWrapper);
 		getClassPath().put(fakeHandler.name, newWrapper);
 
-		Main.info("Inserted " + counter.get() + " fake try catches");
+		Main.info("+ Inserted " + counter.get() + " fake try catches");
 	}
 }

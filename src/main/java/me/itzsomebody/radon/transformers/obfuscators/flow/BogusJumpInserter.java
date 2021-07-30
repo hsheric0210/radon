@@ -41,7 +41,8 @@ import me.itzsomebody.radon.utils.RandomUtils;
  */
 public class BogusJumpInserter extends FlowObfuscation
 {
-	private static final int PRED_ACCESS = ACC_PUBLIC | ACC_STATIC | ACC_FINAL;
+	private static final int CLASS_PRED_ACCESS = ACC_PRIVATE | ACC_STATIC | ACC_FINAL | ACC_SYNTHETIC;
+	private static final int INTERFACE_PRED_ACCESS = ACC_PUBLIC | ACC_STATIC | ACC_FINAL;
 
 	@Override
 	public void transform()
@@ -56,7 +57,7 @@ public class BogusJumpInserter extends FlowObfuscation
 			final String predicateDescriptor = predicateType.getDescriptor();
 			final Object predicateInitialValue = RandomUtils.getRandomFloat() > 0.2F ? RandomUtils.getRandomValue(predicateType) : null;
 
-			final FieldNode predicate = new FieldNode(PRED_ACCESS, fieldDictionary.uniqueRandomString(), predicateDescriptor, null, predicateInitialValue);
+			final FieldNode predicate = new FieldNode((classWrapper.getAccessFlags() & ACC_INTERFACE) != 0 ? INTERFACE_PRED_ACCESS : CLASS_PRED_ACCESS, fieldDictionary.uniqueRandomString(), predicateDescriptor, null, predicateInitialValue);
 
 			classWrapper.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
 			{
@@ -173,7 +174,7 @@ public class BogusJumpInserter extends FlowObfuscation
 		final AbstractInsnNode target = insnList.getFirst();
 		insnList.insertBefore(target, new JumpInsnNode(GOTO, escapeNode));
 		insnList.insertBefore(target, label);
-		insnList.insertBefore(target, BogusJumps.createBogusExit(Type.getReturnType(methodNode.desc)));
+		insnList.insertBefore(target, BogusJumps.createBogusExit(methodNode));
 		insnList.insertBefore(target, escapeNode);
 		return label;
 	}

@@ -62,6 +62,11 @@ public final class RandomUtils
 		return list.get(getRandomInt(list.size()));
 	}
 
+	public static <T> T getRandomElement(final T... arr)
+	{
+		return arr[getRandomInt(arr.length)];
+	}
+
 	public static int getRandomIntWithExclusion(final int origin, final int bounds, final Collection<Integer> exclusions)
 	{
 		final List<Integer> list = IntStream.range(origin, bounds).boxed().collect(Collectors.toList());
