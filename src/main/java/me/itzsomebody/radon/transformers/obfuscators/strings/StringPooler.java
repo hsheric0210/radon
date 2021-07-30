@@ -106,7 +106,7 @@ public class StringPooler extends StringEncryption
 
 		method.visitTypeInsn(ANEWARRAY, "java/lang/String");
 
-		for (int i = 0; i < strings.size(); i++)
+		for (int i = 0, j = strings.size(); i < j; i++)
 		{
 			method.visitInsn(DUP);
 

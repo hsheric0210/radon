@@ -84,6 +84,7 @@ public final class WatermarkUtils
 		return IntStream.range(0, embedMap.size()).mapToObj(i -> String.valueOf((char) embedMap.get(i))).collect(Collectors.joining());
 	}
 
+	// TODO: Upgrade cipher
 	private static String decrypt(final String enc, final String key)
 	{
 		final char[] messageChars = enc.toCharArray();

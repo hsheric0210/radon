@@ -51,8 +51,9 @@ public class Watermarker extends Transformer
 	{
 		final ArrayList<ClassWrapper> classWrappers = new ArrayList<>(getClassWrappers());
 
+		// Two extra injections helps with reliability of watermark to be extracted
 		for (int i = 0; i < 3; i++)
-		{ // Two extra injections helps with reliability of watermark to be extracted
+		{
 			final Deque<Character> watermark = cipheredWatermark();
 			while (!watermark.isEmpty())
 			{
@@ -67,9 +68,9 @@ public class Watermarker extends Transformer
 					if (counter > 20)
 						throw new IllegalStateException("Radon couldn't find any methods to embed a watermark in after " + counter + " tries.");
 				}
-				while (classWrapper.getMethods().size() == 0);
+				while (classWrapper.getMethods().isEmpty());
 
-				final MethodWrapper mw = classWrapper.getMethods().get(RandomUtils.getRandomInt(0, classWrapper.getClassNode().methods.size()));
+				final MethodWrapper mw = classWrapper.getMethods().get(RandomUtils.getRandomInt(classWrapper.getMethods().size()));
 				if (mw.hasInstructions())
 				{
 					mw.getInstructions().insert(createInstructions(watermark, mw.getMaxLocals()));
@@ -104,6 +105,7 @@ public class Watermarker extends Transformer
 	}
 
 	// Really weak cipher, lul.
+	// TODO: Upgrade cipher
 	private Deque<Character> cipheredWatermark()
 	{
 		final char[] messageChars = message.toCharArray();

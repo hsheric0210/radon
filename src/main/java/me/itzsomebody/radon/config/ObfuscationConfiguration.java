@@ -76,8 +76,7 @@ public final class ObfuscationConfiguration
 
 		try
 		{
-			final String dictionaryName = config.getOrDefault(GENERIC_DICTIONARY, "alphanumeric");
-			obfConfig.genericDictionary = DictionaryFactory.get(dictionaryName);
+			obfConfig.genericDictionary = DictionaryFactory.get(config.getOrDefault(GENERIC_DICTIONARY, "alphanumeric"));
 		}
 		catch (final ClassCastException e)
 		{
@@ -129,6 +128,20 @@ public final class ObfuscationConfiguration
 		}
 		obfConfig.methodMinRandomizedStringLength = config.getOrDefault(METHOD_MIN_RANDOMIZED_STRING_LENGTH, 16);
 		obfConfig.methodMaxRandomizedStringLength = config.getOrDefault(METHOD_MAX_RANDOMIZED_STRING_LENGTH, 16);
+		
+		try
+		{
+			final String dictionaryName = config.getOrDefault(FIELD_DICTIONARY, "alphanumeric");
+			obfConfig.fieldDictionary = DictionaryFactory.get(dictionaryName);
+		}
+		catch (final ClassCastException e)
+		{
+			// String array charset
+			final List<String> dictionaryCharset = config.getOrDefault(FIELD_DICTIONARY, Collections.emptyList());
+			obfConfig.fieldDictionary = DictionaryFactory.getCustom(dictionaryCharset);
+		}
+		obfConfig.fieldMinRandomizedStringLength = config.getOrDefault(FIELD_MIN_RANDOMIZED_STRING_LENGTH, 16);
+		obfConfig.fieldMaxRandomizedStringLength = config.getOrDefault(FIELD_MAX_RANDOMIZED_STRING_LENGTH, 16);
 
 		// MISC.
 

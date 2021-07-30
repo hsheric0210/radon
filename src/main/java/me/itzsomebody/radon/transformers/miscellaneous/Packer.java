@@ -20,19 +20,20 @@ package me.itzsomebody.radon.transformers.miscellaneous;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.jar.Manifest;
+import java.util.zip.Deflater;
+import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPOutputStream;
 
-import org.objectweb.asm.FieldVisitor;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Type;
+import org.objectweb.asm.*;
 import org.objectweb.asm.tree.ClassNode;
 
 import me.itzsomebody.radon.Main;
 import me.itzsomebody.radon.asm.ClassWrapper;
 import me.itzsomebody.radon.config.Configuration;
+import me.itzsomebody.radon.config.ConfigurationSetting;
 import me.itzsomebody.radon.exceptions.RadonException;
 import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.transformers.Transformer;
@@ -45,6 +46,7 @@ import me.itzsomebody.radon.transformers.Transformer;
 public class Packer extends Transformer
 {
 	private String mainClass;
+	private boolean packWithGZIP;
 
 	@Override
 	public void transform()
@@ -52,12 +54,16 @@ public class Packer extends Transformer
 		final MemberNames memberNames = new MemberNames();
 		final AtomicInteger counter = new AtomicInteger();
 
-		try
+		if (packWithGZIP)
+			Main.info("+ Using GZIP algorithm");
+		else
+			Main.info("+ Using DEFLATE algorithm");
+
+		try (final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+				final DeflaterOutputStream compressedStream = packWithGZIP ? new GZIPOutputStream(bos) : new DeflaterOutputStream(bos, new Deflater(Deflater.BEST_COMPRESSION));
+				final DataOutputStream out = new DataOutputStream(compressedStream))
 		{
-			final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-			final GZIPOutputStream gos = new GZIPOutputStream(bos);
-			final DataOutput out = new DataOutputStream(gos);
-			out.writeInt(getClassWrappers().size() + getResources().size() - 1);
+			out.writeInt(getClassWrappers().stream().filter(this::included).mapToInt(e -> 1).sum() + getResources().keySet().stream().filter(this::included).mapToInt(e -> 1).sum() - 1);
 
 			final ArrayList<String> toRemove = new ArrayList<>();
 
@@ -70,6 +76,9 @@ public class Packer extends Transformer
 			 */
 			getClasses().forEach((name, wrapper) ->
 			{
+				if (!included(wrapper))
+					return;
+
 				try
 				{
 					final byte[] bytes = wrapper.toByteArray(radon);
@@ -90,6 +99,9 @@ public class Packer extends Transformer
 
 			getResources().forEach((name, bytes) ->
 			{
+				if (!included(name))
+					return;
+
 				try
 				{
 					if ("META-INF/MANIFEST.MF".equals(name))
@@ -98,7 +110,7 @@ public class Packer extends Transformer
 						final Manifest manifest = new Manifest(new ByteArrayInputStream(bytes));
 						final String mainClass = manifest.getMainAttributes().getValue("Main-Class");
 						if (mainClass == null)
-							throw new RadonException("Could not find OEP");
+							throw new RadonException("Could not find OEP(Original Entry Point)");
 
 						this.mainClass = mainClass;
 						manifest.getMainAttributes().putValue("Main-Class", memberNames.className.replace('/', '.'));
@@ -121,8 +133,7 @@ public class Packer extends Transformer
 				}
 			});
 
-			if (mainClass == null)
-				throw new RadonException("Could not find OEP");
+			Objects.requireNonNull(mainClass, "Could not find OEP(Original Entry Point)");
 
 			toRemove.forEach(s ->
 			{
@@ -130,7 +141,7 @@ public class Packer extends Transformer
 				getResources().remove(s);
 			});
 
-			gos.close();
+			compressedStream.close();
 
 			getResources().put(memberNames.stubName.substring(1), bos.toByteArray());
 			final ClassNode loader = createPackerEntryPoint(memberNames);
@@ -144,7 +155,7 @@ public class Packer extends Transformer
 			throw new RadonException(e);
 		}
 
-		Main.info("Packed " + counter.get() + " files");
+		Main.info("+ Packed " + counter.get() + " files");
 	}
 
 	@Override
@@ -162,7 +173,7 @@ public class Packer extends Transformer
 	@Override
 	public void setConfiguration(final Configuration config)
 	{
-		// Not needed
+		packWithGZIP = config.getOrDefault(ConfigurationSetting.PACKER + ".useGZIP", false);
 	}
 
 	@SuppressWarnings("Duplicates")
@@ -188,12 +199,12 @@ public class Packer extends Transformer
 			mv.visitMethodInsn(INVOKESPECIAL, "java/lang/ClassLoader", "<init>", "()V", false);
 			final Label l1 = new Label();
 			mv.visitLabel(l1);
-			mv.visitTypeInsn(NEW, "java/util/zip/GZIPInputStream");
+			mv.visitTypeInsn(Opcodes.NEW, packWithGZIP ? "java/util/zip/GZIPInputStream" : "java/util/zip/InflaterInputStream");
 			mv.visitInsn(DUP);
 			mv.visitLdcInsn(Type.getType("L" + memberNames.className + ";"));
 			mv.visitLdcInsn(memberNames.stubName);
 			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Class", "getResourceAsStream", "(Ljava/lang/String;)Ljava/io/InputStream;", false);
-			mv.visitMethodInsn(INVOKESPECIAL, "java/util/zip/GZIPInputStream", "<init>", "(Ljava/io/InputStream;)V", false);
+			mv.visitMethodInsn(Opcodes.INVOKESPECIAL, packWithGZIP ? "java/util/zip/GZIPInputStream" : "java/util/zip/InflaterInputStream", "<init>", "(Ljava/io/InputStream;)V", false);
 			mv.visitVarInsn(ASTORE, 1);
 			final Label l2 = new Label();
 			mv.visitLabel(l2);

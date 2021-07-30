@@ -82,7 +82,7 @@ public class StackHeightZeroFinder implements Opcodes
 	{
 		int stackSize = 0; // Emulated stack
 		final Set<LabelNode> excHandlers = methodNode.tryCatchBlocks.stream().map(tryCatchBlockNode -> tryCatchBlockNode.handler).collect(Collectors.toSet());
-		for (int i = 0; i < methodNode.instructions.size(); i++)
+		for (int i = 0, j = methodNode.instructions.size(); i < j; i++)
 		{
 			final AbstractInsnNode insn = methodNode.instructions.get(i);
 

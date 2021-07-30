@@ -1,0 +1,175 @@
+# Original config file can found on https://github.com/ItzSomebody/radon/wiki
+
+# Input
+input: "Counter.jar"
+
+# Output
+output: "Counter-OBF.jar"
+
+# Classpath to build class hierarchy from
+# Note: if you're on Java 9 or higher, the Java API classes are located in the "jmod" files
+libraries:
+  - "C:/Program Files/Java/jre1.8.0/lib/rt.jar"
+  - "C:/Program Files/Java/jre1.8.0/lib/jce.jar"
+
+# Shrink the jar size
+shrinker:
+  # Remove InnerClass attributes
+  remove_inner_classes: true
+
+  # Remove runtime-invisible annotations
+  remove_invisible_annotations: true
+
+  # Remove runtime-invisible parameter annotations
+  remove_invisible_parameter_annotations: true
+
+  # Remove runtime-invisible type annotations
+  remove_invisible_type_annotations: true
+
+  # Remove line numbers from stacktraces
+  remove_line_numbers: true
+
+  # Remove local variable information
+  remove_local_variables: true
+
+  # Removes OuterClass and OuterMethod attributes
+  remove_outer_method: true
+
+  # Remove class/method/field signatures
+  remove_signature: true
+
+  # Remove SourceDebug attributes
+  remove_source_debug: true
+
+  # Remove SourceFile attributes
+  remove_source_file: true
+
+  # Remove ACC_SYNTHETIC (0x1000) and ACC_BRIDGE (0x0040) access flags
+  remove_synthetic: true
+
+  # Remove unknown attributes
+  remove_unknown_attributes: true
+
+# Optimize the bytecode
+optimizer:
+  # Inline GOTO->GOTO sequences
+  inline_goto_goto: true
+
+  # Inline GOTO->(RETURN/IRETURN/LRETURN/FRETURN/DRETURN/ARETURN) sequences
+  inline_goto_return: true
+
+  # Remove nops
+  remove_nops: true
+
+# Obfuscates the names of classes/methods/fields
+renamer:
+  # Update these regex-matched resources with updated names
+  adapt_these_resources:
+    - "META-INF/MANIFEST.MF"
+    - "mod/classlist.txt"
+    - "extra/.*"
+
+  # Repackage all of the renamed classes to this name ("" = default directory)
+  repackage_name: ""
+
+# Obfuscates the flow of the bytecode
+flow_obfuscation:
+  # Insert fake switches in the bytecode more CFG edges
+  insert_bogus_switch_jumps: true
+
+  # Insert fake if-confitions to create more CFG edges
+  insert_bogus_jumps: true
+
+  # Reorder the bytecode by splitting it in half multiple times
+  split_blocks: true
+
+  # Replace IF_ACMP<EQ/NE> with try-catch blocks
+  mutilate_null_check: true
+
+# Obfuscate API references
+reference_obfuscation:
+  # Hide method invocations using a relatively fast dynamic invoker
+  hide_with_fast_indy: true
+
+# Encrypt string constants
+string_encryption:
+  # Compute decryption keys based on the context of the decryption call
+  # Note: slows down runtime
+  check_context: true
+
+  # Pool strings into field
+  pool_strings: true
+
+# Apply ACC_SYNTHETIC (0x1000) and ACC_BRIDGE (0x0040) access flags to classes/methods/fields
+hide_code:
+  # Apply ACC_SYNTHETIC (0x1000) access flags
+  hide_classes: true
+
+  # Apply ACC_SYNTHETIC (0x1000) and ACC_BRIDGE (0x0040) access flags
+  hide_methods: true
+
+  # Apply ACC_SYNTHETIC (0x1000) access flags
+  hide_fields: true
+
+# Scramble numerical constants
+number_obfuscation:
+  # Allow Radon to tamper with integers
+  integer_tampering: true
+
+  # Allow Radon to tamper with longs
+  long_tampering: true
+
+  # Use bitwise (&, |, ^, <<, >>, >>>) operations to obscure (integers and longs only)
+  bitwise_operations: true
+
+  # Use arithmetic (+, -, *, /, %) operations to obscure
+  arithmetic_operations: true
+
+# Randomize the order of fields and methods
+member_shuffler:
+  # Randomize the order of fields
+  shuffle_fields: true
+
+  # Randomize the order of methods
+  shuffle_methods: true
+
+# Level of compression to use on the output JAR
+compression_level: 9
+
+# Generic name generation dictionary to use
+generic_dictionary: "alphanumeric"
+generic_min_randomized_string_length: 32
+generic_max_randomized_string_length: 32
+
+# Package name generation dictionary to use
+package_dictionary: "alphanumeric"
+package_min_randomized_string_length: 32
+package_max_randomized_string_length: 32
+
+# Class name generation dictionary to use
+class_dictionary: "alphanumeric"
+class_min_randomized_string_length: 32
+class_max_randomized_string_length: 32
+
+# Method name generation dictionary to use
+method_dictionary: "alphanumeric"
+method_min_randomized_string_length: 32
+method_max_randomized_string_length: 32
+
+# Field name generation dictionary to use
+field_dictionary: "alphanumeric"
+field_min_randomized_string_length: 32
+field_max_randomized_string_length: 32
+
+# Exclusions to mask certain classes or their members from being tampered with
+exclusions:
+  # Reference obfuscate classes with names only match the regex pattern "me/itzsomebody/counter.*"
+  - "!reference_obfuscation: me/itzsomebody/counter.*"
+
+  # Exclude library classes which match the regex pattern "org/objectweb/asm.*" from being obfuscated
+  - "flow_obfuscation: org/objectweb/asm.*"
+  - "string_encryption: org/objectweb/asm.*"
+  - "hide_code: org/objectweb/asm.*"
+  - "number_obfuscation: org/objectweb/asm.*"
+  - "anti_tamper: org/objectweb/asm.*"
+  - "virtualizer: org/objectweb/asm.*"

@@ -20,6 +20,7 @@ package me.itzsomebody.radon.transformers.obfuscators.ejector.phases;
 
 import java.util.*;
 
+import me.itzsomebody.radon.utils.Constants;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
@@ -39,7 +40,7 @@ public final class FieldSetEjector extends AbstractEjectPhase
 		super(ejectorContext);
 	}
 
-	private static Map<FieldSetInfo, List<FieldInsnNode>> analyzeFieldSets(final MethodNode methodNode, final Frame<AbstractValue>[] frames)
+	private static Map<FieldSetInfo, List<FieldInsnNode>> analyzeFieldSets(final MethodNode methodNode, final Frame<AbstractValue>... frames)
 	{
 		final Map<FieldSetInfo, List<FieldInsnNode>> result = new HashMap<>();
 		final InsnList insnList = methodNode.instructions;
@@ -54,21 +55,28 @@ public final class FieldSetEjector extends AbstractEjectPhase
 			if (fieldInsnNode.getOpcode() != PUTFIELD && fieldInsnNode.getOpcode() != PUTSTATIC)
 				continue;
 
-			final Frame<AbstractValue> frame = frames[insnList.indexOf(fieldInsnNode)];
+			final int frameIndex = insnList.indexOf(fieldInsnNode);
+			if (frameIndex >= frames.length)
+				continue;
+
+			final Frame<AbstractValue> frame = frames[frameIndex];
+			if (frame == null)
+				continue;
+
 			final AbstractValue value = frame.getStack(frame.getStackSize() - 1);
 			if (!value.isConstant())
 				continue;
 
 			final FieldSetInfo fieldSetInfo = new FieldSetInfo(fieldInsnNode.getOpcode(), fieldInsnNode.desc);
 
-			if (!result.containsKey(fieldSetInfo))
+			if (result.containsKey(fieldSetInfo))
+				result.get(fieldSetInfo).add(fieldInsnNode);
+			else
 			{
 				final List<FieldInsnNode> list = new ArrayList<>();
 				list.add(fieldInsnNode);
 				result.put(fieldSetInfo, list);
 			}
-			else
-				result.get(fieldSetInfo).add(fieldInsnNode);
 		}
 		return result;
 	}
@@ -81,7 +89,7 @@ public final class FieldSetEjector extends AbstractEjectPhase
 		arguments.add(Type.getType(fieldSetInfo.desc));
 		arguments.add(Type.INT_TYPE);
 
-		final MethodNode methodNode = new MethodNode(getRandomAccess(), name, Type.getMethodDescriptor(Type.VOID_TYPE, arguments.toArray(new Type[0])), null, null);
+		final MethodNode methodNode = new MethodNode(getRandomAccess(), name, Type.getMethodDescriptor(Type.VOID_TYPE, arguments.toArray(Constants.ZERO_SIZE_TYPE_ARRAY)), null, null);
 		methodNode.instructions = ASMUtils.singletonList(new InsnNode(Opcodes.RETURN));
 		return methodNode;
 	}
@@ -90,7 +98,7 @@ public final class FieldSetEjector extends AbstractEjectPhase
 	{
 		final Map<Integer, InsnList> junkArguments = new HashMap<>();
 
-		for (int k = 0; k < getJunkArgumentCount(); k++)
+		for (int k = 0, l = getJunkArgumentCount(); k < l; k++)
 		{
 			final FieldInsnNode fieldInsnNode = RandomUtils.getRandomElement(fieldInsnNodes);
 			final Type type = Type.getType(fieldInsnNode.desc);
@@ -146,7 +154,7 @@ public final class FieldSetEjector extends AbstractEjectPhase
 		final Map<AbstractInsnNode, InsnList> patches = new HashMap<>();
 		fieldSets.forEach((key, value) ->
 		{
-			final MethodNode proxyMethod = createProxyMethod(getProxyMethodName(methodNode), key);
+			final MethodNode proxyMethod = createProxyMethod(getProxyMethodName(methodWrapper), key);
 			final boolean isStatic = key.opcode == PUTSTATIC;
 			final int offset = isStatic ? 0 : 1;
 
@@ -208,4 +216,5 @@ public final class FieldSetEjector extends AbstractEjectPhase
 			return Objects.hash(opcode, desc);
 		}
 	}
-}
+
+	}

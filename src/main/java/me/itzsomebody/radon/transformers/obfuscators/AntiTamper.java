@@ -67,7 +67,7 @@ public class AntiTamper extends Transformer
 
 			if (counter.get() > 0)
 			{
-				for (int i = 0; i < RandomUtils.getRandomInt(1, 120); i++)
+				for (int i = 0, j = RandomUtils.getRandomInt(1, 120); i < j; i++)
 					cw.addStringConst(genericDictionary.randomString(RandomUtils.getRandomInt(2, 32)));
 
 				final int cpSize = cw.computeConstantPoolSize(radon);

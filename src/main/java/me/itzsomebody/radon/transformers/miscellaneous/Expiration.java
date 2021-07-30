@@ -106,7 +106,7 @@ public class Expiration extends Transformer
 	@Override
 	public void setConfiguration(final Configuration config)
 	{
-		setExpires(config.getOrDefault(EXPIRATION.getConfigName() + ".expiration_date", "12/31/2020"));
+		setExpires(config.getOrDefault(EXPIRATION.getConfigName() + ".expiration_date", "12/31/2021"));
 		injectJOptionPaneEnabled = config.getOrDefault(EXPIRATION.getConfigName() + ".inject_joptionpane", false);
 		message = config.getOrDefault(EXPIRATION.getConfigName() + ".expiration_message", "Your trial has expired!");
 	}

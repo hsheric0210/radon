@@ -43,12 +43,12 @@ import me.itzsomebody.radon.utils.WatermarkUtils;
 public final class Main
 {
 	private static final Logger LOGGER = Logger.getLogger(Main.class.getName());
-	public static final String VERSION = "2.0.0";
+	public static final String VERSION = "2.0.0-FORK";
 	public static final String[] CONTRIBUTORS =
 	{
 			"ItzSomebody", "x0ark", "Col-E", "Artel", "kazigk", "Olexorus", "freeasbird", "CertainLach", "xxDark", "vovanre", "hsheric0210"
 	};
-	public static final String ATTRIBUTION = String.format(String.join(Constants.LINE_SEPARATOR, "Radon is a free and open-source Java obfuscator with contributions from %s.", "Version: %s", "Website: https://github.com/ItzSomebody/Radon"), formatContributorList(), VERSION);
+	public static final String ATTRIBUTION = String.format(String.join(Constants.LINE_SEPARATOR, "Radon is a free and open-source Java obfuscator with contributions from %s.", "Version: %s", "Original website: https://github.com/ItzSomebody/Radon", "Forked version website: https://github.com/hsheric0210/Radon"), formatContributorList(), VERSION);
 
 	private static String formatContributorList()
 	{

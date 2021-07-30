@@ -21,6 +21,8 @@ package me.itzsomebody.radon.transformers.obfuscators.ejector.phases;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
@@ -41,21 +43,33 @@ public abstract class AbstractEjectPhase implements Opcodes
 	}
 
 	// TODO: Improve name generation logic
-	protected static String getProxyMethodName(final MethodNode methodNode)
+	static String getProxyMethodName(final MethodWrapper mw)
 	{
-		final String name = methodNode.name.replace('<', '_').replace('>', '_');
-		return name + "$" + Math.abs(RandomUtils.getRandomInt());
+//		final String fixedMethodName = mw.getName().replace('<', '_').replace('>', '_');
+//		return fixedMethodName + "$" + Math.abs(RandomUtils.getRandomInt());
+
+		final StringBuilder nameBuilder = new StringBuilder();
+
+		// 사람들은 보통 앞 숫자들을 보고 서로 다른 문자열들을 구분한다. 이 심리를 역이용하여 앞 글자들을 Class name를 XOR 암호화한 문자열로 바꾸면, 같은 클래스 안에서는 앞 숫자들이 모두 같게 나오게 되기에, 헷갈리게 될 것이다. //
+		nameBuilder.append(mw.getOwner().getName().chars().mapToObj(i -> String.valueOf(i ^ mw.getOwner().getName().length())).collect(Collectors.joining()));
+		nameBuilder.append(mw.getName().chars().mapToObj(i -> String.valueOf(i ^ mw.getName().length())).collect(Collectors.joining()));
+		nameBuilder.append(mw.getDescription().chars().mapToObj(i -> String.valueOf(i ^ mw.getDescription().length())).collect(Collectors.joining()));
+		nameBuilder.append("$");
+		IntStream.range(0, RandomUtils.getRandomInt(3, 8)).forEach(i -> nameBuilder.append(Math.abs(RandomUtils.getRandomLong())));
+
+		return nameBuilder.toString();
+
 	}
 
 	protected static int getRandomAccess()
 	{
 		int access = ACC_STATIC;
 		if (RandomUtils.getRandomBoolean())
-			access += ACC_PRIVATE;
+			access += RandomUtils.getRandomBoolean() ? ACC_PRIVATE : ACC_PROTECTED;
 		if (RandomUtils.getRandomBoolean())
-			access += ACC_SYNTHETIC;
-		if (RandomUtils.getRandomBoolean())
-			access += ACC_BRIDGE;
+			access += ACC_FINAL;
+		access += ACC_SYNTHETIC;
+		access += ACC_BRIDGE;
 		return access;
 	}
 
@@ -88,12 +102,10 @@ public abstract class AbstractEjectPhase implements Opcodes
 		methodNode.instructions.insert(proxyFix);
 	}
 
-	public abstract void process(MethodWrapper methodWrapper, Frame<AbstractValue>[] frames);
+	public abstract void process(MethodWrapper methodWrapper, Frame<AbstractValue>... frames);
 
 	protected int getJunkArgumentCount()
 	{
-		if (ejectorContext.getJunkArgumentStrength() == 0)
-			return 0;
-		return RandomUtils.getRandomInt(ejectorContext.getJunkArgumentStrength() / 2, ejectorContext.getJunkArgumentStrength());
+		return ejectorContext.getJunkArgumentStrength() == 0 ? 0 : RandomUtils.getRandomInt(ejectorContext.getJunkArgumentStrength() / 2, ejectorContext.getJunkArgumentStrength());
 	}
 }

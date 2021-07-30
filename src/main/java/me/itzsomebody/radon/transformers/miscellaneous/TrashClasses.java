@@ -59,10 +59,10 @@ public class TrashClasses extends Transformer
 	public void transform()
 	{
 		final ArrayList<String> classNames = new ArrayList<>(getClassPath().keySet());
-		for (int i = 0; i < classNames.size() % 20; i++)
+		for (int i = 0, j = classNames.size() % 20; i < j; i++)
 			DESCRIPTORS.add("L" + classNames.get(RandomUtils.getRandomInt(classNames.size())) + ";");
 
-		for (int i = 0; i < radon.getConfig().getnTrashClasses(); i++)
+		for (int i = 0, j = radon.getConfig().getnTrashClasses(); i < j; i++)
 		{
 			final ClassNode classNode = generateClass();
 			final ClassWriter cw = new ClassWriter(0);
@@ -159,7 +159,7 @@ public class TrashClasses extends Transformer
 	{
 		final StringBuilder sb = new StringBuilder("(");
 
-		for (int i = 0; i < RandomUtils.getRandomInt(7); i++)
+		for (int i = 0, j = RandomUtils.getRandomInt(7); i < j; i++)
 			sb.append(DESCRIPTORS.get(RandomUtils.getRandomInt(DESCRIPTORS.size())));
 
 		sb.append(")");

@@ -81,7 +81,7 @@ public class BitwiseObfuscator extends NumberObfuscation
 		final InsnList insns = new InsnList();
 		insns.add(ASMUtils.getNumberInsn(current));
 
-		for (int i = 0; i < RandomUtils.getRandomInt(2, 6); i++)
+		for (int i = 0, j = RandomUtils.getRandomInt(2, 6); i < j; i++)
 		{
 			final int operand;
 
@@ -153,7 +153,7 @@ public class BitwiseObfuscator extends NumberObfuscation
 		final InsnList insns = new InsnList();
 		insns.add(ASMUtils.getNumberInsn(current));
 
-		for (int i = 0; i < RandomUtils.getRandomInt(2, 6); i++)
+		for (int i = 0, j = RandomUtils.getRandomInt(2, 6); i < j; i++)
 		{
 			final long operand;
 

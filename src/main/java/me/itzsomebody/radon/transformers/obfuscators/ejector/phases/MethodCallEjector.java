@@ -94,7 +94,7 @@ public final class MethodCallEjector extends AbstractEjectPhase
 		final InsnList insnList = new InsnList();
 
 		int variable = 0;
-		for (int i = 0; i < arguments.size() - 1; i++)
+		for (int i = 0, j = arguments.size() - 1; i < j; i++)
 		{
 			final Type type = arguments.get(i);
 			insnList.add(new VarInsnNode(ASMUtils.getVarOpcode(type, false), variable));
@@ -119,7 +119,7 @@ public final class MethodCallEjector extends AbstractEjectPhase
 	{
 		final Map<Integer, InsnList> junkArguments = new HashMap<>();
 
-		for (int k = 0; k < getJunkArgumentCount(); k++)
+		for (int k = 0, l = getJunkArgumentCount(); k < l; k++)
 		{
 			final InsnList junkProxyArgumentFix = new InsnList();
 			int junkVariable = 0;
@@ -151,7 +151,7 @@ public final class MethodCallEjector extends AbstractEjectPhase
 		final Map<AbstractInsnNode, InsnList> patches = new HashMap<>();
 		methodCalls.forEach((key, value) ->
 		{
-			final MethodNode proxyMethod = createProxyMethod(getProxyMethodName(methodNode), key);
+			final MethodNode proxyMethod = createProxyMethod(getProxyMethodName(methodWrapper), key);
 			final int offset = key.opcode == INVOKESTATIC ? 0 : 1;
 
 			final Map<Integer, InsnList> proxyFixes = new HashMap<>();

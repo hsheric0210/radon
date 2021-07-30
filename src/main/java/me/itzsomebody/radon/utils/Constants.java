@@ -1,6 +1,7 @@
 package me.itzsomebody.radon.utils;
 
 import org.objectweb.asm.Attribute;
+import org.objectweb.asm.Type;
 
 import java.util.ArrayList;
 import java.util.regex.Pattern;
@@ -20,4 +21,5 @@ public interface Constants
 	String[] ZERO_LENGTH_STRING_ARRAY = new String[0];
 	Attribute[] ZERO_SIZE_ATTRIBUTE_ARRAY = new Attribute[0];
 	ArrayList[] ZERO_LENGTH_LIST_ARRAY = new ArrayList[0];
+	Type[] ZERO_SIZE_TYPE_ARRAY = new Type[0];
 }
