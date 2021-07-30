@@ -79,7 +79,7 @@ public class Watermarker extends Transformer
 			}
 		}
 
-		Main.info("Successfully embedded watermark.");
+		Main.info("+ Successfully embedded watermark.");
 	}
 
 	private static InsnList createInstructions(final Deque<Character> watermark, final int offset)

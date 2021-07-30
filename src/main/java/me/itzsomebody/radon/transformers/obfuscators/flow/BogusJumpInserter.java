@@ -30,6 +30,7 @@ import me.itzsomebody.radon.asm.StackHeightZeroFinder;
 import me.itzsomebody.radon.exceptions.RadonException;
 import me.itzsomebody.radon.exceptions.StackEmulationException;
 import me.itzsomebody.radon.utils.ASMUtils;
+import me.itzsomebody.radon.utils.BogusJumps;
 import me.itzsomebody.radon.utils.RandomUtils;
 
 /**
@@ -50,7 +51,12 @@ public class BogusJumpInserter extends FlowObfuscation
 		getClassWrappers().stream().filter(this::included).forEach(classWrapper ->
 		{
 			final AtomicBoolean shouldAdd = new AtomicBoolean();
-			final FieldNode predicate = new FieldNode(PRED_ACCESS, fieldDictionary.uniqueRandomString(), "Z", null, null);
+
+			final Type predicateType = ASMUtils.getRandomType();
+			final String predicateDescriptor = predicateType.getDescriptor();
+			final Object predicateInitialValue = RandomUtils.getRandomFloat() > 0.2F ? RandomUtils.getRandomValue(predicateType) : null;
+
+			final FieldNode predicate = new FieldNode(PRED_ACCESS, fieldDictionary.uniqueRandomString(), predicateDescriptor, null, predicateInitialValue);
 
 			classWrapper.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
 			{
@@ -61,7 +67,7 @@ public class BogusJumpInserter extends FlowObfuscation
 				mw.getMethodNode().maxLocals++; // Prevents breaking of other transformers which rely on this field.
 
 				final AbstractInsnNode[] untouchedList = insns.toArray();
-				final LabelNode labelNode = exitLabel(mw.getMethodNode());
+				final LabelNode jumpTo = createBogusJumpTarget(mw.getMethodNode());
 				boolean calledSuper = false;
 
 				final StackHeightZeroFinder shzf = new StackHeightZeroFinder(mw.getMethodNode(), insns.getLast());
@@ -89,10 +95,34 @@ public class BogusJumpInserter extends FlowObfuscation
 						if ("<init>".equals(mw.getName()) && !calledSuper)
 							continue;
 						if (emptyAt.contains(insn))
-						{ // We need to make sure stack is empty before making jumps
-							insns.insertBefore(insn, new VarInsnNode(ILOAD, varIndex));
-							insns.insertBefore(insn, new JumpInsnNode(IFNE, labelNode));
-							leeway -= 4;
+						{
+							// We need to make sure stack is empty before making jumps
+
+							// <TODO>
+							// while(true) [or for (;;)]
+							// {
+							// ... (original code)
+							//
+							// if (inverted fakepredicate)
+							// break;
+							// }
+							// which same as
+							// do {
+							// i++;
+							// } while (fakepredicate);
+							//
+							// and
+							//
+							// while(inverted fakepredicate) [or for(;inverted fakepredicate;)]
+							// {
+							// ... (original code)
+							// }
+							// </TODO>
+
+							final InsnList fakeJump = BogusJumps.createBogusJump(varIndex, predicateType, predicateInitialValue, jumpTo, false);
+							insns.insertBefore(insn, fakeJump);
+
+							leeway -= 16;
 							counter.incrementAndGet();
 							shouldAdd.set(true);
 						}
@@ -101,8 +131,23 @@ public class BogusJumpInserter extends FlowObfuscation
 
 				if (shouldAdd.get())
 				{
-					insns.insert(new VarInsnNode(ISTORE, varIndex));
-					insns.insert(new FieldInsnNode(GETSTATIC, classWrapper.getName(), predicate.name, "Z"));
+					switch (predicateType.getSort())
+					{
+						case Type.FLOAT:
+							insns.insert(new VarInsnNode(FSTORE, varIndex));
+							break;
+						case Type.LONG:
+							insns.insert(new VarInsnNode(LSTORE, varIndex));
+							break;
+						case Type.DOUBLE:
+							insns.insert(new VarInsnNode(DSTORE, varIndex));
+							break;
+						default:
+							insns.insert(new VarInsnNode(ISTORE, varIndex));
+							break;
+					}
+
+					insns.insert(new FieldInsnNode(GETSTATIC, classWrapper.getName(), predicate.name, predicateDescriptor));
 				}
 			});
 
@@ -110,7 +155,7 @@ public class BogusJumpInserter extends FlowObfuscation
 				classWrapper.addField(predicate);
 		});
 
-		Main.info("Inserted " + counter.get() + " bogus jumps");
+		Main.info(String.format("+ Inserted %d bogus jumps", counter.get()));
 	}
 
 	/**
@@ -118,64 +163,18 @@ public class BogusJumpInserter extends FlowObfuscation
 	 *
 	 * @param  methodNode
 	 *                    the {@link MethodNode} we are inserting into.
-	 *
 	 * @return            a {@link LabelNode} which "escapes" all other flow.
 	 */
-	private static LabelNode exitLabel(final MethodNode methodNode)
+	private static LabelNode createBogusJumpTarget(final MethodNode methodNode)
 	{
-		final LabelNode lb = new LabelNode();
+		final LabelNode label = new LabelNode();
 		final LabelNode escapeNode = new LabelNode();
-
-		final InsnList insns = methodNode.instructions;
-		final AbstractInsnNode target = insns.getFirst();
-
-		insns.insertBefore(target, new JumpInsnNode(GOTO, escapeNode));
-		insns.insertBefore(target, lb);
-
-		switch (Type.getReturnType(methodNode.desc).getSort())
-		{
-			case Type.VOID:
-				insns.insertBefore(target, new InsnNode(RETURN));
-				break;
-			case Type.BOOLEAN:
-				insns.insertBefore(target, ASMUtils.getNumberInsn(RandomUtils.getRandomInt(2)));
-				insns.insertBefore(target, new InsnNode(IRETURN));
-				break;
-			case Type.CHAR:
-				insns.insertBefore(target, ASMUtils.getNumberInsn(RandomUtils.getRandomInt(Character.MAX_VALUE + 1)));
-				insns.insertBefore(target, new InsnNode(IRETURN));
-				break;
-			case Type.BYTE:
-				insns.insertBefore(target, ASMUtils.getNumberInsn(RandomUtils.getRandomInt(Byte.MAX_VALUE + 1)));
-				insns.insertBefore(target, new InsnNode(IRETURN));
-				break;
-			case Type.SHORT:
-				insns.insertBefore(target, ASMUtils.getNumberInsn(RandomUtils.getRandomInt(Short.MAX_VALUE + 1)));
-				insns.insertBefore(target, new InsnNode(IRETURN));
-				break;
-			case Type.INT:
-				insns.insertBefore(target, ASMUtils.getNumberInsn(RandomUtils.getRandomInt()));
-				insns.insertBefore(target, new InsnNode(IRETURN));
-				break;
-			case Type.LONG:
-				insns.insertBefore(target, ASMUtils.getNumberInsn(RandomUtils.getRandomLong()));
-				insns.insertBefore(target, new InsnNode(LRETURN));
-				break;
-			case Type.FLOAT:
-				insns.insertBefore(target, ASMUtils.getNumberInsn(RandomUtils.getRandomFloat()));
-				insns.insertBefore(target, new InsnNode(FRETURN));
-				break;
-			case Type.DOUBLE:
-				insns.insertBefore(target, ASMUtils.getNumberInsn(RandomUtils.getRandomDouble()));
-				insns.insertBefore(target, new InsnNode(DRETURN));
-				break;
-			default:
-				insns.insertBefore(target, new InsnNode(ACONST_NULL));
-				insns.insertBefore(target, new InsnNode(ARETURN));
-				break;
-		}
-		insns.insertBefore(target, escapeNode);
-
-		return lb;
+		final InsnList insnList = methodNode.instructions;
+		final AbstractInsnNode target = insnList.getFirst();
+		insnList.insertBefore(target, new JumpInsnNode(GOTO, escapeNode));
+		insnList.insertBefore(target, label);
+		insnList.insertBefore(target, BogusJumps.createBogusExit(Type.getReturnType(methodNode.desc)));
+		insnList.insertBefore(target, escapeNode);
+		return label;
 	}
 }

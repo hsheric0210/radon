@@ -89,7 +89,7 @@ public final class FieldSetEjector extends AbstractEjectPhase
 		arguments.add(Type.getType(fieldSetInfo.desc));
 		arguments.add(Type.INT_TYPE);
 
-		final MethodNode methodNode = new MethodNode(getRandomAccess(), name, Type.getMethodDescriptor(Type.VOID_TYPE, arguments.toArray(Constants.ZERO_SIZE_TYPE_ARRAY)), null, null);
+		final MethodNode methodNode = new MethodNode(getRandomAccess(), name, Type.getMethodDescriptor(Type.VOID_TYPE, arguments.toArray(Constants.EMPTY_TYPE_ARRAY)), null, null);
 		methodNode.instructions = ASMUtils.singletonList(new InsnNode(Opcodes.RETURN));
 		return methodNode;
 	}

@@ -1,10 +1,11 @@
 package me.itzsomebody.radon.utils;
 
-import org.objectweb.asm.Attribute;
-import org.objectweb.asm.Type;
-
 import java.util.ArrayList;
 import java.util.regex.Pattern;
+
+import org.objectweb.asm.Attribute;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.LabelNode;
 
 public interface Constants
 {
@@ -19,7 +20,8 @@ public interface Constants
 
 	Class[] ZERO_LENGTH_CLASS_ARRAY = new Class[0];
 	String[] ZERO_LENGTH_STRING_ARRAY = new String[0];
-	Attribute[] ZERO_SIZE_ATTRIBUTE_ARRAY = new Attribute[0];
-	ArrayList[] ZERO_LENGTH_LIST_ARRAY = new ArrayList[0];
-	Type[] ZERO_SIZE_TYPE_ARRAY = new Type[0];
+	Attribute[] EMPTY_ATTRIBUTE_ARRAY = new Attribute[0];
+	ArrayList[] EMPTY_LIST_ARRAY = new ArrayList[0];
+	Type[] EMPTY_TYPE_ARRAY = new Type[0];
+	LabelNode[] EMPTY_LABEL_NODE_ARRAY = new LabelNode[0];
 }

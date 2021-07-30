@@ -57,7 +57,7 @@ public class Ejector extends Transformer
 
 		getClassWrappers().stream().filter(this::included).forEach(classWrapper -> processClass(classWrapper, counter));
 
-		Main.info(String.format("Ejected %d regions.", counter.get()));
+		Main.info(String.format("+ Ejected %d regions.", counter.get()));
 	}
 
 	private List<AbstractEjectPhase> getPhases(final EjectorContext ejectorContext)

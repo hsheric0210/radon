@@ -72,7 +72,7 @@ public class TrashClasses extends Transformer
 			getResources().put(classNode.name + ".class", cw.toByteArray());
 		}
 
-		Main.info(String.format("Generated %d trash classes.", radon.getConfig().getnTrashClasses()));
+		Main.info(String.format("+ Generated %d trash classes.", radon.getConfig().getnTrashClasses()));
 	}
 
 	private ClassNode generateClass()

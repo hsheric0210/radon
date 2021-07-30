@@ -19,12 +19,14 @@
 package me.itzsomebody.radon.transformers.obfuscators.flow;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import me.itzsomebody.radon.utils.Constants;
 import org.objectweb.asm.tree.*;
 
 import me.itzsomebody.radon.Main;
@@ -75,11 +77,11 @@ public class BogusSwitchJumpInserter extends FlowObfuscation
 
 				final int nTargets = emptyAt.size() / 2;
 
-				final ArrayList<LabelNode> targets = IntStream.range(0, nTargets).mapToObj(i -> new LabelNode()).collect(Collectors.toCollection(ArrayList::new));
+				final List<LabelNode> targets = IntStream.range(0, nTargets).mapToObj(i -> new LabelNode()).collect(Collectors.toList());
 
 				final LabelNode back = new LabelNode();
 				final LabelNode dflt = new LabelNode();
-				final TableSwitchInsnNode tsin = new TableSwitchInsnNode(0, targets.size() - 1, dflt, targets.toArray(new LabelNode[0]));
+				final TableSwitchInsnNode tsin = new TableSwitchInsnNode(0, targets.size() - 1, dflt, targets.toArray(Constants.EMPTY_LABEL_NODE_ARRAY));
 
 				final InsnList block = new InsnList();
 				block.add(new VarInsnNode(ILOAD, varIndex));
@@ -119,4 +121,5 @@ public class BogusSwitchJumpInserter extends FlowObfuscation
 
 		Main.info("Inserted " + counter.get() + " bogus switch jumps");
 	}
-}
+
+	}

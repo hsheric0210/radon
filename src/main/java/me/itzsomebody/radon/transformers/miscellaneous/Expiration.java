@@ -57,7 +57,7 @@ public class Expiration extends Transformer
 			counter.incrementAndGet();
 		}));
 
-		Main.info(String.format("Added %d expiration code blocks.", counter.get()));
+		Main.info(String.format("+ Added %d expiration code blocks.", counter.get()));
 	}
 
 	private InsnList createExpirationInstructions()
