@@ -42,11 +42,11 @@ public class StaticInitialization extends Transformer
 	{
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper ->
+		getClassWrappers().stream().filter(this::included).forEach(classWrapper ->
 		{
 			final MethodNode clinit = classWrapper.getOrCreateClinit();
 
-			classWrapper.getFields().stream().filter(fieldWrapper -> !excluded(fieldWrapper) && Modifier.isStatic(fieldWrapper.getFieldNode().access) && fieldWrapper.getFieldNode().value != null).forEach(fieldWrapper ->
+			classWrapper.getFields().stream().filter(fieldWrapper -> included(fieldWrapper) && Modifier.isStatic(fieldWrapper.getFieldNode().access) && fieldWrapper.getFieldNode().value != null).forEach(fieldWrapper ->
 			{
 				final FieldNode fieldNode = fieldWrapper.getFieldNode();
 				final Object val = fieldNode.value;

@@ -44,7 +44,7 @@ public class HideCode extends Transformer
 	{
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(cw -> !excluded(cw)).forEach(cw ->
+		getClassWrappers().stream().filter(this::included).forEach(cw ->
 		{
 			if (hideClassesEnabled)
 				if (!cw.getAccess().isSynthetic() && !ASMUtils.hasAnnotations(cw.getClassNode()))
@@ -53,7 +53,7 @@ public class HideCode extends Transformer
 					counter.incrementAndGet();
 				}
 			if (hideMethodsEnabled)
-				cw.getMethods().stream().filter(mw -> !excluded(mw) && !ASMUtils.hasAnnotations(mw.getMethodNode())).forEach(mw ->
+				cw.getMethods().stream().filter(mw -> included(mw) && !ASMUtils.hasAnnotations(mw.getMethodNode())).forEach(mw ->
 				{
 					boolean atLeastOnce = false;
 
@@ -72,7 +72,7 @@ public class HideCode extends Transformer
 						counter.incrementAndGet();
 				});
 			if (hideFieldsEnabled)
-				cw.getFields().stream().filter(fw -> !excluded(fw) && !ASMUtils.hasAnnotations(fw.getFieldNode())).filter(fw -> !fw.getAccess().isSynthetic()).forEach(fw ->
+				cw.getFields().stream().filter(fw -> included(fw) && !ASMUtils.hasAnnotations(fw.getFieldNode())).filter(fw -> !fw.getAccess().isSynthetic()).forEach(fw ->
 				{
 					fw.setAccessFlags(fw.getAccessFlags() | ACC_SYNTHETIC);
 					counter.incrementAndGet();

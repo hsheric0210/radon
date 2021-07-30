@@ -28,6 +28,7 @@ import java.util.zip.ZipFile;
 import me.itzsomebody.radon.cli.CommandArgumentsParser;
 import me.itzsomebody.radon.config.Configuration;
 import me.itzsomebody.radon.config.ObfuscationConfiguration;
+import me.itzsomebody.radon.utils.Constants;
 import me.itzsomebody.radon.utils.CustomOutputStream;
 import me.itzsomebody.radon.utils.IOUtils;
 import me.itzsomebody.radon.utils.WatermarkUtils;
@@ -45,15 +46,15 @@ public final class Main
 	public static final String VERSION = "2.0.0";
 	public static final String[] CONTRIBUTORS =
 	{
-			"ItzSomebody", "x0ark", "Col-E", "Artel", "kazigk", "Olexorus", "freeasbird", "CertainLach", "xxDark", "vovanre"
+			"ItzSomebody", "x0ark", "Col-E", "Artel", "kazigk", "Olexorus", "freeasbird", "CertainLach", "xxDark", "vovanre", "hsheric0210"
 	};
-	public static final String ATTRIBUTION = String.format("Radon is a free and open-source Java obfuscator " + "with contributions from %s.\nVersion: %s\nWebsite: https://github.com/ItzSomebody/Radon", formatContributorList(), VERSION);
+	public static final String ATTRIBUTION = String.format(String.join(Constants.LINE_SEPARATOR, "Radon is a free and open-source Java obfuscator with contributions from %s.", "Version: %s", "Website: https://github.com/ItzSomebody/Radon"), formatContributorList(), VERSION);
 
 	private static String formatContributorList()
 	{
 		final StringBuilder sb = new StringBuilder();
 
-		Arrays.stream(CONTRIBUTORS).forEach(s -> sb.append("\n* ").append(s));
+		Arrays.stream(CONTRIBUTORS).forEach(contributor -> sb.append(Constants.LINE_SEPARATOR).append("* ").append(contributor));
 
 		return sb.toString();
 	}
@@ -155,6 +156,11 @@ public final class Main
 	public static void info(final String msg)
 	{
 		LOGGER.info(msg);
+	}
+
+	public static void infoNewline()
+	{
+		info("");
 	}
 
 	public static void warning(final String msg)

@@ -44,7 +44,7 @@ public class ContextCheckObfuscator extends NumberObfuscation
 		final MemberNames memberNames = new MemberNames();
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper -> classWrapper.getMethods().stream().filter(methodWrapper -> !excluded(methodWrapper) && methodWrapper.hasInstructions()).forEach(methodWrapper ->
+		getClassWrappers().stream().filter(this::included).forEach(classWrapper -> classWrapper.getMethods().stream().filter(methodWrapper -> included(methodWrapper) && methodWrapper.hasInstructions()).forEach(methodWrapper ->
 		{
 			int leeway = methodWrapper.getLeewaySize();
 			final InsnList methodInstructions = methodWrapper.getInstructions();
@@ -583,14 +583,14 @@ public class ContextCheckObfuscator extends NumberObfuscation
 		MemberNames()
 		{
 			className = randomClassName();
-			constantFieldName = uniqueRandomString();
-			indicatorFieldName = uniqueRandomString();
-			elementFieldName = uniqueRandomString();
-			indexFieldName = uniqueRandomString();
-			threadStarterMethodName = uniqueRandomString();
-			decodeWordMethodName = uniqueRandomString();
-			decodeDwordMethodName = uniqueRandomString();
-			decodeConstantMethodName = uniqueRandomString();
+			constantFieldName = fieldDictionary.uniqueRandomString();
+			indicatorFieldName = fieldDictionary.uniqueRandomString();
+			elementFieldName = fieldDictionary.uniqueRandomString();
+			indexFieldName = fieldDictionary.uniqueRandomString();
+			threadStarterMethodName = methodDictionary.uniqueRandomString();
+			decodeWordMethodName = methodDictionary.uniqueRandomString();
+			decodeDwordMethodName = methodDictionary.uniqueRandomString();
+			decodeConstantMethodName = methodDictionary.uniqueRandomString();
 		}
 	}
 }

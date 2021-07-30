@@ -53,7 +53,7 @@ public class AntiDebug extends Transformer
 		final AtomicInteger counter = new AtomicInteger();
 		debugOptionIndex = new AtomicInteger();
 
-		getClassWrappers().stream().filter(cw -> !cw.getAccess().isInterface() && !excluded(cw)).map(ClassWrapper::getOrCreateClinit).forEach(clinit ->
+		getClassWrappers().stream().filter(cw -> !cw.getAccess().isInterface() && included(cw)).map(ClassWrapper::getOrCreateClinit).forEach(clinit ->
 		{
 			final int checkCount = RandomUtils.getRandomInt(1, DEBUG_OPTIONS.length);
 			for (int i = 0; i < checkCount; i++)
@@ -97,7 +97,7 @@ public class AntiDebug extends Transformer
 		{
 			String message = this.message;
 			if (message == null)
-				message = randomString();
+				message = genericDictionary.randomString();
 
 			insnList.add(new TypeInsnNode(NEW, "java/lang/RuntimeException"));
 			insnList.add(new InsnNode(DUP));

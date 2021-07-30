@@ -7,6 +7,8 @@ import java.util.regex.Pattern;
 
 public interface Constants
 {
+	String LINE_SEPARATOR = System.lineSeparator();
+
 	Pattern EMPTY_PATTERN = Pattern.compile("", Pattern.LITERAL);
 
 	Pattern OPENING_BRACE_PATTERN = Pattern.compile(String.valueOf('(') /* Workaround do not simplify */, Pattern.LITERAL);

@@ -38,14 +38,14 @@ public class NopRemover extends Optimizer
 		final AtomicInteger count = new AtomicInteger();
 		final long current = System.currentTimeMillis();
 
-		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper -> classWrapper.getMethods().stream().filter(methodWrapper -> !excluded(methodWrapper) && methodWrapper.hasInstructions()).forEach(methodWrapper ->
+		getClassWrappers().stream().filter(this::included).forEach(classWrapper -> classWrapper.getMethods().stream().filter(methodWrapper -> included(methodWrapper) && methodWrapper.hasInstructions()).forEach(methodWrapper ->
 		{
 			final MethodNode methodNode = methodWrapper.getMethodNode();
 
 			Stream.of(methodNode.instructions.toArray()).filter(insn -> insn.getOpcode() == NOP).forEach(insn -> methodNode.instructions.remove(insn));
 		}));
 
-		Main.info(String.format("Removed %d NOP instructions. [%dms]", count.get(), tookThisLong(current)));
+		Main.info(String.format("Removed %d NOP instructions. [%s]", count.get(), tookThisLong(current)));
 	}
 
 	@Override

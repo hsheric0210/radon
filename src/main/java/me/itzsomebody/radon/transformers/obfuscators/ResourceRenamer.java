@@ -46,7 +46,7 @@ public class ResourceRenamer extends Transformer
 		mappings = new HashMap<>();
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper -> classWrapper.getMethods().stream().filter(methodWrapper -> !excluded(methodWrapper) && methodWrapper.hasInstructions()).forEach(methodWrapper ->
+		getClassWrappers().stream().filter(this::included).forEach(classWrapper -> classWrapper.getMethods().stream().filter(methodWrapper -> included(methodWrapper) && methodWrapper.hasInstructions()).forEach(methodWrapper ->
 		{
 			final MethodNode methodNode = methodWrapper.getMethodNode();
 
@@ -65,7 +65,7 @@ public class ResourceRenamer extends Transformer
 						((LdcInsnNode) insn).cst = mappings.get(resourceName);
 					else
 					{
-						final String newName = '/' + uniqueRandomString();
+						final String newName = '/' + genericDictionary.uniqueRandomString();
 						((LdcInsnNode) insn).cst = newName;
 						mappings.put(resourceName, newName);
 					}

@@ -49,7 +49,7 @@ public class FastInvokedynamicTransformer extends ReferenceObfuscation
 
 		final Handle bootstrapHandle = new Handle(H_INVOKESTATIC, memberNames.className, memberNames.bootstrapMethodName, "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;", false);
 
-		getClassWrappers().stream().filter(cw -> !excluded(cw) && !"java/lang/Enum".equals(cw.getSuperName()) && cw.allowsIndy()).forEach(classWrapper -> classWrapper.getMethods().stream().filter(mw -> !excluded(mw) && mw.hasInstructions()).forEach(mw ->
+		getClassWrappers().stream().filter(cw -> included(cw) && !"java/lang/Enum".equals(cw.getSuperName()) && cw.allowsIndy()).forEach(classWrapper -> classWrapper.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
 		{
 			final InsnList insns = mw.getInstructions();
 
@@ -336,9 +336,9 @@ public class FastInvokedynamicTransformer extends ReferenceObfuscation
 	private class MemberNames
 	{
 		final String className = randomClassName();
-		final String decryptMethodName = uniqueRandomString();
-		final String getMethodHandleMethodName = uniqueRandomString();
-		final String bootstrapMethodName = uniqueRandomString();
+		final String decryptMethodName = methodDictionary.uniqueRandomString();
+		final String getMethodHandleMethodName = methodDictionary.uniqueRandomString();
+		final String bootstrapMethodName = methodDictionary.uniqueRandomString();
 
 		MemberNames()
 		{

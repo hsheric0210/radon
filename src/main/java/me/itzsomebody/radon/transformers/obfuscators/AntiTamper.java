@@ -20,7 +20,6 @@ package me.itzsomebody.radon.transformers.obfuscators;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
@@ -53,11 +52,11 @@ public class AntiTamper extends Transformer
 		final MemberNames memberNames = new MemberNames();
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(cw ->
+		getClassWrappers().stream().filter(this::included).forEach(cw ->
 		{
 			final Collection<MethodWrapper> toProcess = new HashSet<>();
 
-			cw.getMethods().stream().filter(mw -> !excluded(mw)).forEach(mw -> Stream.of(mw.getInstructions().toArray()).filter(insn -> insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof String).forEach(insn ->
+			cw.getMethods().stream().filter(this::included).forEach(mw -> Stream.of(mw.getInstructions().toArray()).filter(insn -> insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof String).forEach(insn ->
 			{
 				toProcess.add(mw);
 
@@ -69,7 +68,7 @@ public class AntiTamper extends Transformer
 			if (counter.get() > 0)
 			{
 				for (int i = 0; i < RandomUtils.getRandomInt(1, 120); i++)
-					cw.addStringConst(getDictionary().randomString(RandomUtils.getRandomInt(2, 32)));
+					cw.addStringConst(genericDictionary.randomString(RandomUtils.getRandomInt(2, 32)));
 
 				final int cpSize = cw.computeConstantPoolSize(radon);
 
@@ -454,7 +453,7 @@ public class AntiTamper extends Transformer
 	private class MemberNames
 	{
 		final String className = randomClassName();
-		final String decryptMethodName = uniqueRandomString();
+		final String decryptMethodName = methodDictionary.uniqueRandomString();
 
 		MemberNames()
 		{

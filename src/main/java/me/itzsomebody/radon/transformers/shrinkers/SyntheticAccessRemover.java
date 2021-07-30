@@ -34,7 +34,7 @@ public class SyntheticAccessRemover extends Shrinker
 	{
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(cw -> !excluded(cw)).forEach(cw ->
+		getClassWrappers().stream().filter(this::included).forEach(cw ->
 		{
 			if (cw.getAccess().isSynthetic())
 			{
@@ -42,13 +42,13 @@ public class SyntheticAccessRemover extends Shrinker
 				counter.incrementAndGet();
 			}
 
-			cw.getMethods().stream().filter(mw -> !excluded(mw)).filter(mw -> mw.getAccess().isSynthetic() || mw.getAccess().isBridge()).forEach(mw ->
+			cw.getMethods().stream().filter(this::included).filter(mw -> mw.getAccess().isSynthetic() || mw.getAccess().isBridge()).forEach(mw ->
 			{
 				mw.setAccessFlags(mw.getAccessFlags() & ~(ACC_SYNTHETIC | ACC_BRIDGE));
 				counter.incrementAndGet();
 			});
 
-			cw.getFields().stream().filter(fw -> !excluded(fw)).filter(fw -> fw.getAccess().isSynthetic()).forEach(fw ->
+			cw.getFields().stream().filter(this::included).filter(fw -> fw.getAccess().isSynthetic()).forEach(fw ->
 			{
 				fw.setAccessFlags(fw.getAccessFlags() & ~ACC_SYNTHETIC);
 				counter.incrementAndGet();

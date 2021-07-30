@@ -23,7 +23,6 @@ import java.util.stream.Stream;
 
 import me.itzsomebody.radon.asm.ClassWrapper;
 import org.objectweb.asm.Attribute;
-import org.objectweb.asm.tree.ClassNode;
 
 import me.itzsomebody.radon.Main;
 import me.itzsomebody.radon.utils.Constants;
@@ -40,7 +39,7 @@ public class UnknownAttributesRemover extends Shrinker
 	{
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(classWrapper -> excluded(classWrapper) && classWrapper.getClassNode().attrs != null).map(ClassWrapper::getClassNode).forEach(classNode -> Stream.of(classNode.attrs.toArray(Constants.ZERO_SIZE_ATTRIBUTE_ARRAY)).filter(Attribute::isUnknown).forEach(attr ->
+		getClassWrappers().stream().filter(classWrapper -> included(classWrapper) && classWrapper.getClassNode().attrs != null).map(ClassWrapper::getClassNode).forEach(classNode -> Stream.of(classNode.attrs.toArray(Constants.ZERO_SIZE_ATTRIBUTE_ARRAY)).filter(Attribute::isUnknown).forEach(attr ->
 		{
 			classNode.attrs.remove(attr);
 			counter.incrementAndGet();

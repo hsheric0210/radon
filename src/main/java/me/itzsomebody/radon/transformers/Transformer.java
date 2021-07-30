@@ -20,8 +20,11 @@ package me.itzsomebody.radon.transformers;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
+import me.itzsomebody.radon.config.ObfuscationConfiguration;
 import org.objectweb.asm.Opcodes;
 
 import me.itzsomebody.radon.Radon;
@@ -29,7 +32,7 @@ import me.itzsomebody.radon.asm.ClassWrapper;
 import me.itzsomebody.radon.asm.FieldWrapper;
 import me.itzsomebody.radon.asm.MethodWrapper;
 import me.itzsomebody.radon.config.Configuration;
-import me.itzsomebody.radon.dictionaries.Dictionary;
+import me.itzsomebody.radon.dictionaries.WrappedDictionary;
 import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.utils.RandomUtils;
 
@@ -41,71 +44,59 @@ import me.itzsomebody.radon.utils.RandomUtils;
 public abstract class Transformer implements Opcodes
 {
 	protected Radon radon;
+	protected WrappedDictionary genericDictionary;
+	protected WrappedDictionary packageDictionary;
+	protected WrappedDictionary classDictionary;
+	protected WrappedDictionary methodDictionary;
+	protected WrappedDictionary fieldDictionary;
 
 	public final void init(final Radon radon)
 	{
 		this.radon = radon;
+		final ObfuscationConfiguration config = radon.getConfig();
+		genericDictionary = new WrappedDictionary(config.getGenericDictionary(), config.getGenericMinRandomizedStringLength(), config.getGenericMaxRandomizedStringLength());
+		packageDictionary = new WrappedDictionary(config.getPackageDictionary(), config.getPackageMinRandomizedStringLength(), config.getPackageMaxRandomizedStringLength());
+		classDictionary = new WrappedDictionary(config.getClassDictionary(), config.getClassMinRandomizedStringLength(), config.getClassMaxRandomizedStringLength());
+		methodDictionary = new WrappedDictionary(config.getMethodDictionary(), config.getMethodMinRandomizedStringLength(), config.getMethodMaxRandomizedStringLength());
+		fieldDictionary = new WrappedDictionary(config.getFieldDictionary(), config.getFieldMinRandomizedStringLength(), config.getFieldMaxRandomizedStringLength());
 	}
 
-	protected final boolean excluded(final String str)
+	protected final boolean included(final String str)
 	{
-		return radon.getConfig().getExclusionManager().isExcluded(str, getExclusionType());
+		return !radon.getConfig().getExclusionManager().isExcluded(str, getExclusionType());
 	}
 
-	protected final boolean excluded(final ClassWrapper classWrapper)
+	protected final boolean included(final ClassWrapper classWrapper)
 	{
-		return excluded(classWrapper.getOriginalName());
+		return included(classWrapper.getOriginalName());
 	}
 
-	protected final boolean excluded(final MethodWrapper methodWrapper)
+	protected final boolean included(final MethodWrapper methodWrapper)
 	{
-		return excluded(methodWrapper.getOwner().getOriginalName() + '.' + methodWrapper.getOriginalName() + methodWrapper.getOriginalDescription());
+		return included(methodWrapper.getOwner().getOriginalName() + '.' + methodWrapper.getOriginalName() + methodWrapper.getOriginalDescription());
 	}
 
-	protected final boolean excluded(final FieldWrapper fieldWrapper)
+	protected final boolean included(final FieldWrapper fieldWrapper)
 	{
-		return excluded(fieldWrapper.getOwner().getOriginalName() + '.' + fieldWrapper.getOriginalName() + '.' + fieldWrapper.getOriginalDescription());
+		return included(fieldWrapper.getOwner().getOriginalName() + '.' + fieldWrapper.getOriginalName() + '.' + fieldWrapper.getOriginalDescription());
 	}
 
-	protected final long tookThisLong(final long from)
+	public static String tookThisLong(final long nanoTime)
 	{
-		return System.currentTimeMillis() - from;
-	}
-
-	protected Dictionary getDictionary()
-	{
-		return radon.getConfig().getDictionary();
-	}
-
-	protected String lastGeneratedString()
-	{
-		return getDictionary().lastUniqueString();
-	}
-
-	protected String nextUniqueString()
-	{
-		return getDictionary().nextUniqueString();
-	}
-
-	protected String randomString()
-	{
-		return getDictionary().randomString(radon.getConfig().getRandomizedStringLength());
-	}
-
-	protected String uniqueRandomString()
-	{
-		return getDictionary().uniqueRandomString(radon.getConfig().getRandomizedStringLength());
+		final long nanoSeconds = System.nanoTime() - nanoTime;
+		final long microSeconds = TimeUnit.NANOSECONDS.toMicros(nanoSeconds);
+		final long milliSeconds = TimeUnit.NANOSECONDS.toMillis(nanoSeconds);
+		return String.format("Took %dns, %sus, %dms", nanoSeconds, microSeconds, milliSeconds);
 	}
 
 	public String randomClassName()
 	{
-		final Collection<String> classNames = getClasses().keySet();
-		final ArrayList<String> list = new ArrayList<>(classNames);
+		final List<String> list = new ArrayList<>(getClasses().keySet());
 
-		final String first = list.get(RandomUtils.getRandomInt(classNames.size()));
-		final String second = list.get(RandomUtils.getRandomInt(classNames.size()));
+		final String first = RandomUtils.getRandomElement(list);
+		final String second = RandomUtils.getRandomElement(list);
 
-		return first + '$' + second.substring(second.lastIndexOf("/") + 1);
+		return first + '$' + second.substring(second.lastIndexOf('/') + 1);
 	}
 
 	protected final Map<String, ClassWrapper> getClasses()

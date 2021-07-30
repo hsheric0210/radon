@@ -76,19 +76,62 @@ public final class ObfuscationConfiguration
 
 		try
 		{
-			final String dictionaryName = config.getOrDefault(DICTIONARY, "alphanumeric");
-			obfConfig.dictionary = DictionaryFactory.get(dictionaryName);
+			final String dictionaryName = config.getOrDefault(GENERIC_DICTIONARY, "alphanumeric");
+			obfConfig.genericDictionary = DictionaryFactory.get(dictionaryName);
 		}
 		catch (final ClassCastException e)
 		{
 			// String array charset
-			final List<String> dictionaryCharset = config.getOrDefault(DICTIONARY, Collections.emptyList());
-			obfConfig.dictionary = DictionaryFactory.getCustom(dictionaryCharset);
+			final List<String> dictionaryCharset = config.getOrDefault(GENERIC_DICTIONARY, Collections.emptyList());
+			obfConfig.genericDictionary = DictionaryFactory.getCustom(dictionaryCharset);
 		}
+		obfConfig.genericMinRandomizedStringLength = config.getOrDefault(GENERIC_MIN_RANDOMIZED_STRING_LENGTH, 16);
+		obfConfig.genericMaxRandomizedStringLength = config.getOrDefault(GENERIC_MAX_RANDOMIZED_STRING_LENGTH, 16);
+
+		try
+		{
+			final String dictionaryName = config.getOrDefault(PACKAGE_DICTIONARY, "alphanumeric");
+			obfConfig.packageDictionary = DictionaryFactory.get(dictionaryName);
+		}
+		catch (final ClassCastException e)
+		{
+			// String array charset
+			final List<String> dictionaryCharset = config.getOrDefault(PACKAGE_DICTIONARY, Collections.emptyList());
+			obfConfig.packageDictionary = DictionaryFactory.getCustom(dictionaryCharset);
+		}
+		obfConfig.packageMinRandomizedStringLength = config.getOrDefault(PACKAGE_MIN_RANDOMIZED_STRING_LENGTH, 16);
+		obfConfig.packageMaxRandomizedStringLength = config.getOrDefault(PACKAGE_MAX_RANDOMIZED_STRING_LENGTH, 16);
+
+		try
+		{
+			final String dictionaryName = config.getOrDefault(CLASS_DICTIONARY, "alphanumeric");
+			obfConfig.classDictionary = DictionaryFactory.get(dictionaryName);
+		}
+		catch (final ClassCastException e)
+		{
+			// String array charset
+			final List<String> dictionaryCharset = config.getOrDefault(CLASS_DICTIONARY, Collections.emptyList());
+			obfConfig.classDictionary = DictionaryFactory.getCustom(dictionaryCharset);
+		}
+		obfConfig.classMinRandomizedStringLength = config.getOrDefault(CLASS_MIN_RANDOMIZED_STRING_LENGTH, 16);
+		obfConfig.classMaxRandomizedStringLength = config.getOrDefault(CLASS_MAX_RANDOMIZED_STRING_LENGTH, 16);
+
+		try
+		{
+			final String dictionaryName = config.getOrDefault(METHOD_DICTIONARY, "alphanumeric");
+			obfConfig.methodDictionary = DictionaryFactory.get(dictionaryName);
+		}
+		catch (final ClassCastException e)
+		{
+			// String array charset
+			final List<String> dictionaryCharset = config.getOrDefault(METHOD_DICTIONARY, Collections.emptyList());
+			obfConfig.methodDictionary = DictionaryFactory.getCustom(dictionaryCharset);
+		}
+		obfConfig.methodMinRandomizedStringLength = config.getOrDefault(METHOD_MIN_RANDOMIZED_STRING_LENGTH, 16);
+		obfConfig.methodMaxRandomizedStringLength = config.getOrDefault(METHOD_MAX_RANDOMIZED_STRING_LENGTH, 16);
 
 		// MISC.
 
-		obfConfig.randomizedStringLength = config.getOrDefault(RANDOMIZED_STRING_LENGTH, 1);
 		obfConfig.compressionLevel = config.getOrDefault(COMPRESSION_LEVEL, Deflater.BEST_COMPRESSION);
 		obfConfig.verify = config.getOrDefault(VERIFY, false);
 		obfConfig.corruptCrc = config.getOrDefault(CORRUPT_CRC, false);
@@ -104,7 +147,8 @@ public final class ObfuscationConfiguration
 			{
 				transformer.setConfiguration(config);
 				transformers.add(transformer);
-			} else if (config.get(setting) instanceof Boolean && (boolean) config.get(setting))
+			}
+			else if (config.get(setting) instanceof Boolean && (boolean) config.get(setting))
 				transformers.add(transformer);
 		});
 
@@ -117,13 +161,30 @@ public final class ObfuscationConfiguration
 	private File output;
 	private List<File> libraries;
 	private ExclusionManager exclusionManager;
-
-	private Dictionary dictionary;
-	private int randomizedStringLength;
 	private int compressionLevel;
 	private boolean verify;
 	private boolean corruptCrc;
 	private int nTrashClasses;
+
+	private Dictionary genericDictionary;
+	private int genericMinRandomizedStringLength;
+	private int genericMaxRandomizedStringLength;
+
+	private Dictionary packageDictionary;
+	private int packageMinRandomizedStringLength;
+	private int packageMaxRandomizedStringLength;
+
+	private Dictionary classDictionary;
+	private int classMinRandomizedStringLength;
+	private int classMaxRandomizedStringLength;
+
+	private Dictionary methodDictionary;
+	private int methodMinRandomizedStringLength;
+	private int methodMaxRandomizedStringLength;
+
+	private Dictionary fieldDictionary;
+	private int fieldMinRandomizedStringLength;
+	private int fieldMaxRandomizedStringLength;
 
 	private List<Transformer> transformers;
 
@@ -167,24 +228,154 @@ public final class ObfuscationConfiguration
 		this.exclusionManager = exclusionManager;
 	}
 
-	public Dictionary getDictionary()
+	public Dictionary getGenericDictionary()
 	{
-		return dictionary;
+		return genericDictionary;
 	}
 
-	public void setDictionary(final Dictionary dictionary)
+	public void setGenericDictionary(final Dictionary dictionary)
 	{
-		this.dictionary = dictionary;
+		genericDictionary = dictionary;
 	}
 
-	public int getRandomizedStringLength()
+	public Dictionary getPackageDictionary()
 	{
-		return randomizedStringLength;
+		return packageDictionary;
 	}
 
-	public void setRandomizedStringLength(final int randomizedStringLength)
+	public void setPackageDictionary(final Dictionary dictionary)
 	{
-		this.randomizedStringLength = randomizedStringLength;
+		packageDictionary = dictionary;
+	}
+
+	public Dictionary getClassDictionary()
+	{
+		return classDictionary;
+	}
+
+	public void setClassDictionary(final Dictionary dictionary)
+	{
+		classDictionary = dictionary;
+	}
+
+	public Dictionary getMethodDictionary()
+	{
+		return methodDictionary;
+	}
+
+	public void setMethodDictionary(final Dictionary dictionary)
+	{
+		methodDictionary = dictionary;
+	}
+
+	public Dictionary getFieldDictionary()
+	{
+		return fieldDictionary;
+	}
+
+	public void setFieldDictionary(final Dictionary dictionary)
+	{
+		fieldDictionary = dictionary;
+	}
+
+	public int getGenericMinRandomizedStringLength()
+	{
+		return genericMinRandomizedStringLength;
+	}
+
+	public void setGenericMinRandomizedStringLength(final int genericMinRandomizedStringLength)
+	{
+		this.genericMinRandomizedStringLength = genericMinRandomizedStringLength;
+	}
+
+	public int getGenericMaxRandomizedStringLength()
+	{
+		return genericMaxRandomizedStringLength;
+	}
+
+	public void setGenericMaxRandomizedStringLength(final int genericMaxRandomizedStringLength)
+	{
+		this.genericMaxRandomizedStringLength = genericMaxRandomizedStringLength;
+	}
+
+	public int getPackageMinRandomizedStringLength()
+	{
+		return packageMinRandomizedStringLength;
+	}
+
+	public void setPackageMinRandomizedStringLength(final int packageMinRandomizedStringLength)
+	{
+		this.packageMinRandomizedStringLength = packageMinRandomizedStringLength;
+	}
+
+	public int getPackageMaxRandomizedStringLength()
+	{
+		return packageMaxRandomizedStringLength;
+	}
+
+	public void setPackageMaxRandomizedStringLength(final int packageMaxRandomizedStringLength)
+	{
+		this.packageMaxRandomizedStringLength = packageMaxRandomizedStringLength;
+	}
+
+	public int getClassMinRandomizedStringLength()
+	{
+		return classMinRandomizedStringLength;
+	}
+
+	public void setClassMinRandomizedStringLength(final int classMinRandomizedStringLength)
+	{
+		this.classMinRandomizedStringLength = classMinRandomizedStringLength;
+	}
+
+	public int getClassMaxRandomizedStringLength()
+	{
+		return classMaxRandomizedStringLength;
+	}
+
+	public void setClassMaxRandomizedStringLength(final int classMaxRandomizedStringLength)
+	{
+		this.classMaxRandomizedStringLength = classMaxRandomizedStringLength;
+	}
+
+	public int getMethodMinRandomizedStringLength()
+	{
+		return methodMinRandomizedStringLength;
+	}
+
+	public void setMethodMinRandomizedStringLength(final int methodMinRandomizedStringLength)
+	{
+		this.methodMinRandomizedStringLength = methodMinRandomizedStringLength;
+	}
+
+	public int getMethodMaxRandomizedStringLength()
+	{
+		return methodMaxRandomizedStringLength;
+	}
+
+	public void setMethodMaxRandomizedStringLength(final int methodMaxRandomizedStringLength)
+	{
+		this.methodMaxRandomizedStringLength = methodMaxRandomizedStringLength;
+	}
+
+	public int getFieldMinRandomizedStringLength()
+	{
+		return fieldMinRandomizedStringLength;
+	}
+
+	public void setFieldMinRandomizedStringLength(final int fieldMinRandomizedStringLength)
+	{
+		this.fieldMinRandomizedStringLength = fieldMinRandomizedStringLength;
+	}
+
+	public int getFieldMaxRandomizedStringLength()
+	{
+		return fieldMaxRandomizedStringLength;
+	}
+
+	public void setFieldMaxRandomizedStringLength(final int fieldMaxRandomizedStringLength)
+	{
+		this.fieldMaxRandomizedStringLength = fieldMaxRandomizedStringLength;
 	}
 
 	public int getCompressionLevel()

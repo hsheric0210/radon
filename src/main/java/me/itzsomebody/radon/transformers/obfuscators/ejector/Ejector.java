@@ -55,7 +55,7 @@ public class Ejector extends Transformer
 	{
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper -> processClass(classWrapper, counter));
+		getClassWrappers().stream().filter(this::included).forEach(classWrapper -> processClass(classWrapper, counter));
 
 		Main.info(String.format("Ejected %d regions.", counter.get()));
 	}
@@ -72,7 +72,7 @@ public class Ejector extends Transformer
 
 	private void processClass(final ClassWrapper classWrapper, final AtomicInteger counter)
 	{
-		new ArrayList<>(classWrapper.getMethods()).stream().filter(methodWrapper -> !excluded(methodWrapper)).filter(methodWrapper -> !"<init>".equals(methodWrapper.getMethodNode().name)).forEach(methodWrapper ->
+		new ArrayList<>(classWrapper.getMethods()).stream().filter(this::included).filter(methodWrapper -> !"<init>".equals(methodWrapper.getMethodNode().name)).forEach(methodWrapper ->
 		{
 			final EjectorContext ejectorContext = new EjectorContext(counter, classWrapper, junkArguments, junkArgumentStrength);
 			getPhases(ejectorContext).forEach(ejectPhase ->

@@ -107,7 +107,7 @@ public class TrashClasses extends Transformer
 	private MethodNode methodGen()
 	{
 		final String randDesc = descGen();
-		final MethodNode method = new MethodNode(ACC_STATIC + ACC_PRIVATE, randomString(), randDesc, null, null);
+		final MethodNode method = new MethodNode(ACC_STATIC + ACC_PRIVATE, methodDictionary.randomString(), randDesc, null, null);
 		final int instructions = RandomUtils.getRandomInt(30) + 30;
 
 		final InsnList insns = new InsnList();
@@ -174,9 +174,9 @@ public class TrashClasses extends Transformer
 		switch (index)
 		{
 			case 0:
-				return new MethodInsnNode(INVOKESTATIC, randomString(), randomString(), "(Ljava/lang/String;)V", false);
+				return new MethodInsnNode(INVOKESTATIC, classDictionary.randomString(), methodDictionary.randomString(), "(Ljava/lang/String;)V", false);
 			case 1:
-				return new FieldInsnNode(GETFIELD, randomString(), randomString(), "I");
+				return new FieldInsnNode(GETFIELD, classDictionary.randomString(), fieldDictionary.randomString(), "I");
 			case 2:
 				return new InsnNode(RandomUtils.getRandomInt(16));
 			case 3:
@@ -190,22 +190,22 @@ public class TrashClasses extends Transformer
 			case 8:
 				return new InsnNode(RandomUtils.getRandomInt(5));
 			case 9:
-				return new LdcInsnNode(randomString());
+				return new LdcInsnNode(genericDictionary.randomString());
 			case 10:
 				return new IincInsnNode(RandomUtils.getRandomInt(16), RandomUtils.getRandomInt(16));
 			case 11:
-				return new MethodInsnNode(INVOKESPECIAL, randomString(), randomString(), "()V", false);
+				return new MethodInsnNode(INVOKESPECIAL, classDictionary.randomString(), methodDictionary.randomString(), "()V", false);
 			case 12:
-				return new MethodInsnNode(INVOKEVIRTUAL, randomString(), randomString(), "(Ljava/lang/Object;)Ljava/lang/Object;", false);
+				return new MethodInsnNode(INVOKEVIRTUAL, classDictionary.randomString(), methodDictionary.randomString(), "(Ljava/lang/Object;)Ljava/lang/Object;", false);
 			case 13:
 				return new VarInsnNode(ILOAD, RandomUtils.getRandomInt(30));
 			case 14:
 				return new InsnNode(ATHROW);
 			case 15:
-				return new MethodInsnNode(INVOKEINTERFACE, randomString(), randomString(), "(I)I", false);
+				return new MethodInsnNode(INVOKEINTERFACE, classDictionary.randomString(), methodDictionary.randomString(), "(I)I", false);
 			case 16:
-				final Handle handle = new Handle(6, randomString(), randomString(), randomString(), false);
-				return new InvokeDynamicInsnNode(randomString(), randomString(), handle, RandomUtils.getRandomInt(5), RandomUtils.getRandomInt(5), RandomUtils.getRandomInt(5), RandomUtils.getRandomInt(5), RandomUtils.getRandomInt(5));
+				final Handle handle = new Handle(6, classDictionary.randomString(), methodDictionary.randomString(), genericDictionary.randomString(), false);
+				return new InvokeDynamicInsnNode(methodDictionary.randomString(), genericDictionary.randomString(), handle, RandomUtils.getRandomInt(5), RandomUtils.getRandomInt(5), RandomUtils.getRandomInt(5), RandomUtils.getRandomInt(5), RandomUtils.getRandomInt(5));
 			case 17:
 				return new IntInsnNode(ANEWARRAY, RandomUtils.getRandomInt(30));
 			case 18:

@@ -22,10 +22,10 @@ import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
-import me.itzsomebody.radon.asm.MethodWrapper;
 import org.objectweb.asm.tree.*;
 
 import me.itzsomebody.radon.Main;
+import me.itzsomebody.radon.asm.MethodWrapper;
 import me.itzsomebody.radon.utils.ASMUtils;
 
 public class StringPooler extends StringEncryption
@@ -42,13 +42,13 @@ public class StringPooler extends StringEncryption
 	{
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(cw -> !excluded(cw)).forEach(cw ->
+		getClassWrappers().stream().filter(this::included).forEach(cw ->
 		{
 			final ArrayList<String> strList = new ArrayList<>();
-			final String methodName = uniqueRandomString();
-			final String fieldName = uniqueRandomString();
+			final String methodName = methodDictionary.uniqueRandomString();
+			final String fieldName = fieldDictionary.uniqueRandomString();
 
-			cw.getMethods().stream().filter(methodWrapper -> !excluded(methodWrapper) && methodWrapper.hasInstructions()).map(MethodWrapper::getInstructions).forEach(insns -> Stream.of(insns.toArray()).filter(insn -> insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof String).forEach(insn ->
+			cw.getMethods().stream().filter(methodWrapper -> included(methodWrapper) && methodWrapper.hasInstructions()).map(MethodWrapper::getInstructions).forEach(insns -> Stream.of(insns.toArray()).filter(insn -> insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof String).forEach(insn ->
 			{
 				final String str = (String) ((LdcInsnNode) insn).cst;
 

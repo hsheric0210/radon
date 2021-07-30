@@ -422,9 +422,9 @@ public class Packer extends Transformer
 
 	private class MemberNames
 	{
-		final String className = uniqueRandomString();
-		final String resourcesFieldName = uniqueRandomString();
-		final String stubName = '/' + uniqueRandomString();
+		final String className = classDictionary.uniqueRandomString();
+		final String resourcesFieldName = fieldDictionary.uniqueRandomString();
+		final String stubName = '/' + genericDictionary.uniqueRandomString();
 
 		MemberNames()
 		{

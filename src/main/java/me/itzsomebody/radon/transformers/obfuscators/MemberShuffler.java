@@ -43,7 +43,7 @@ public class MemberShuffler extends Transformer
 	{
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper ->
+		getClassWrappers().stream().filter(this::included).forEach(classWrapper ->
 		{
 			if (shuffleMethodsEnabled)
 			{

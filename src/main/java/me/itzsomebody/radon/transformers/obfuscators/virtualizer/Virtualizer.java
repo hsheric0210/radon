@@ -62,7 +62,7 @@ public class Virtualizer extends Transformer implements VMOpcodes
 		final AtomicInteger counter = new AtomicInteger();
 		final StubCreator stubCreator = new StubCreator();
 
-		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper -> classWrapper.getMethods().stream().filter(mw -> !"<init>".equals(mw.getOriginalName()) && !excluded(mw) && mw.hasInstructions()).forEach(methodWrapper ->
+		getClassWrappers().stream().filter(this::included).forEach(classWrapper -> classWrapper.getMethods().stream().filter(mw -> !"<init>".equals(mw.getOriginalName()) && included(mw) && mw.hasInstructions()).forEach(methodWrapper ->
 		{
 			final MethodNode methodNode = methodWrapper.getMethodNode();
 

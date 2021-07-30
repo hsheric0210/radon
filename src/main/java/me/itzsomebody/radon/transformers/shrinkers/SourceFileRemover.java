@@ -34,7 +34,7 @@ public class SourceFileRemover extends Shrinker
 	{
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper) && classWrapper.getClassNode().sourceFile != null).forEach(classWrapper ->
+		getClassWrappers().stream().filter(classWrapper -> included(classWrapper) && classWrapper.getClassNode().sourceFile != null).forEach(classWrapper ->
 		{
 			classWrapper.getClassNode().sourceFile = null;
 			counter.incrementAndGet();

@@ -34,7 +34,7 @@ public class DeprecatedAccessRemover extends Shrinker
 	{
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(cw -> !excluded(cw)).forEach(cw ->
+		getClassWrappers().stream().filter(this::included).forEach(cw ->
 		{
 			if (cw.getAccess().isDeprecated())
 			{
@@ -42,13 +42,13 @@ public class DeprecatedAccessRemover extends Shrinker
 				counter.incrementAndGet();
 			}
 
-			cw.getMethods().stream().filter(mw -> !excluded(mw) && mw.getAccess().isDeprecated()).forEach(mw ->
+			cw.getMethods().stream().filter(mw -> included(mw) && mw.getAccess().isDeprecated()).forEach(mw ->
 			{
 				mw.setAccessFlags(mw.getAccessFlags() & ~ACC_DEPRECATED);
 				counter.incrementAndGet();
 			});
 
-			cw.getFields().stream().filter(fw -> !excluded(fw) && fw.getAccess().isDeprecated()).forEach(fw ->
+			cw.getFields().stream().filter(fw -> included(fw) && fw.getAccess().isDeprecated()).forEach(fw ->
 			{
 				fw.setAccessFlags(fw.getAccessFlags() & ~ACC_DEPRECATED);
 				counter.incrementAndGet();

@@ -42,7 +42,7 @@ public class GotoReturnInliner extends Optimizer
 		final AtomicInteger count = new AtomicInteger();
 		final long current = System.currentTimeMillis();
 
-		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper -> classWrapper.getMethods().stream().filter(methodWrapper -> !excluded(methodWrapper) && methodWrapper.hasInstructions()).forEach(methodWrapper ->
+		getClassWrappers().stream().filter(this::included).forEach(classWrapper -> classWrapper.getMethods().stream().filter(methodWrapper -> included(methodWrapper) && methodWrapper.hasInstructions()).forEach(methodWrapper ->
 		{
 			final MethodNode methodNode = methodWrapper.getMethodNode();
 
@@ -59,7 +59,7 @@ public class GotoReturnInliner extends Optimizer
 			});
 		}));
 
-		Main.info(String.format("Inlined %d GOTO->RETURN sequences. [%dms]", count.get(), tookThisLong(current)));
+		Main.info(String.format("Inlined %d GOTO->RETURN sequences. [%s]", count.get(), tookThisLong(current)));
 	}
 
 	@Override

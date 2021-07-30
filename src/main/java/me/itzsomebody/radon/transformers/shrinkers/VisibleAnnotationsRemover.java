@@ -36,7 +36,7 @@ public class VisibleAnnotationsRemover extends Shrinker
 	{
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper ->
+		getClassWrappers().stream().filter(this::included).forEach(classWrapper ->
 		{
 			final ClassNode classNode = classWrapper.getClassNode();
 
@@ -46,13 +46,13 @@ public class VisibleAnnotationsRemover extends Shrinker
 				classNode.visibleAnnotations = null;
 			}
 
-			classWrapper.getFields().stream().filter(fieldWrapper -> !excluded(fieldWrapper) && fieldWrapper.getFieldNode().visibleAnnotations != null).forEach(fieldWrapper ->
+			classWrapper.getFields().stream().filter(fieldWrapper -> included(fieldWrapper) && fieldWrapper.getFieldNode().visibleAnnotations != null).forEach(fieldWrapper ->
 			{
 				counter.addAndGet(fieldWrapper.getFieldNode().visibleAnnotations.size());
 				fieldWrapper.getFieldNode().visibleAnnotations = null;
 			});
 
-			classWrapper.getMethods().stream().filter(methodWrapper -> !excluded(methodWrapper) && methodWrapper.getMethodNode().visibleAnnotations != null).forEach(methodWrapper ->
+			classWrapper.getMethods().stream().filter(methodWrapper -> included(methodWrapper) && methodWrapper.getMethodNode().visibleAnnotations != null).forEach(methodWrapper ->
 			{
 				counter.addAndGet(methodWrapper.getMethodNode().visibleAnnotations.size());
 				methodWrapper.getMethodNode().visibleAnnotations = null;

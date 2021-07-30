@@ -18,12 +18,10 @@
 
 package me.itzsomebody.radon;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.stream.IntStream;
 import java.util.zip.*;
 
 import org.objectweb.asm.ClassReader;
@@ -39,9 +37,7 @@ import me.itzsomebody.radon.exceptions.RadonException;
 import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.transformers.Transformer;
 import me.itzsomebody.radon.transformers.miscellaneous.TrashClasses;
-import me.itzsomebody.radon.utils.FileUtils;
-import me.itzsomebody.radon.utils.IOUtils;
-import me.itzsomebody.radon.utils.RandomUtils;
+import me.itzsomebody.radon.utils.*;
 
 /**
  * This class is how Radon processes the provided {@link ObfuscationConfiguration} to produce an obfuscated jar.
@@ -66,8 +62,20 @@ public class Radon
 	 */
 	public void run()
 	{
+		Main.info(Strings.START_LOAD_CP);
+		Main.infoNewline();
 		loadClassPath();
+		Main.infoNewline();
+		Main.info(Strings.END_LOAD_CP);
+		Main.infoNewline();
+
+		Main.infoNewline();
+		Main.info(Strings.START_LOAD_INPUT);
+		Main.infoNewline();
 		loadInput();
+		Main.infoNewline();
+		Main.info(Strings.END_LOAD_INPUT);
+		Main.infoNewline();
 
 		final List<Transformer> transformers = config.getTransformers();
 
@@ -82,67 +90,68 @@ public class Radon
 			final ExclusionType type2 = t2.getExclusionType();
 
 			// In the event I forget to add an exclusion type
-			if (type1 == null)
-				throw new RadonException(t1.getName() + " has a null exclusion type");
-			if (type2 == null)
-				throw new RadonException(t2.getName() + " has a null exclusion type");
+			Objects.requireNonNull(type1, () -> t1.getName() + " has a null exclusion type");
+			Objects.requireNonNull(type2, () -> t2.getName() + " has a null exclusion type");
 
 			return Integer.compare(type1.ordinal(), type2.ordinal());
 		});
 
-		Main.info("------------------------------------------------");
+		Main.infoNewline();
+		Main.info(Strings.START_EXECUTION);
+		Main.infoNewline();
 		transformers.stream().filter(Objects::nonNull).forEach(transformer ->
 		{
-			final long current = System.currentTimeMillis();
+			final long nanoTime = System.nanoTime();
 			Main.info(String.format("Running %s transformer.", transformer.getName()));
+			Main.infoNewline();
 			transformer.init(this);
 			transformer.transform();
-			Main.info(String.format("Finished running %s transformer. [%dms]", transformer.getName(), System.currentTimeMillis() - current));
-			Main.info("------------------------------------------------");
+			Main.infoNewline();
+			Main.info(String.format("Finished running %s transformer. [%s]", transformer.getName(), Transformer.tookThisLong(nanoTime)));
+			Main.infoNewline();
+			Main.info(Strings.EXECUTION_SEPARATOR);
+			Main.infoNewline();
 		});
+		Main.info(Strings.END_EXECUTION);
+		Main.infoNewline();
 
+		Main.infoNewline();
+		Main.info(Strings.START_WRITING);
+		Main.infoNewline();
 		writeOutput();
+		Main.infoNewline();
+		Main.info(Strings.END_WRITING);
+		Main.infoNewline();
 	}
 
 	private void writeOutput()
 	{
 		final File output = config.getOutput();
+		final long nanoTime = System.nanoTime();
 		Main.info(String.format("Writing output to \"%s\".", output.getAbsolutePath()));
 
 		if (output.exists())
-			Main.info(String.format("Output file already exists, renamed to %s.", FileUtils.renameExistingFile(output)));
+			Main.info(String.format("*** Output file already exists, renamed to %s.", FileUtils.renameExistingFile(output)));
 
 		try
 		{
 			final ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(output));
 			zos.setLevel(config.getCompressionLevel());
+			Main.info(String.format("+ Output jar compression level is %d.", config.getCompressionLevel()));
 
 			if (config.isCorruptCrc())
 				try
 				{
-					final Field field = ZipOutputStream.class.getDeclaredField("crc");
-					field.setAccessible(true);
-					field.set(zos, new CRC32()
-					{
-						@Override
-						public void update(final byte[] b, final int off, final int len)
-						{
-							// Don't update the CRC
-						}
+					final Field crcField = ZipOutputStream.class.getDeclaredField("crc");
+					crcField.setAccessible(true);
+					crcField.set(zos, new CRC32Corrupter());
 
-						@Override
-						public long getValue()
-						{
-							return RandomUtils.getRandomLong(0xFFFFFFFFL);
-						}
-					});
-
-					Main.info("Injected CRC corrupter.");
+					Main.info("+ Injected CRC corrupter.");
 				}
 				catch (final Exception e)
 				{
 					e.printStackTrace();
-					Main.severe("Failed to inject CRC field.");
+					Main.severe("*** Failed to inject CRC corrupter.");
 				}
 
 			classes.values().forEach(classWrapper ->
@@ -155,9 +164,9 @@ public class Radon
 					zos.write(classWrapper.toByteArray(this));
 					zos.closeEntry();
 				}
-				catch (final Throwable t)
+				catch (final IOException t)
 				{
-					Main.severe(String.format("Error writing class %s. Skipping.", classWrapper.getName() + ".class"));
+					Main.severe(String.format("*** Error writing class %s. Skipping.", classWrapper.getName() + ".class"));
 					t.printStackTrace();
 				}
 			});
@@ -174,7 +183,7 @@ public class Radon
 				}
 				catch (final IOException ioe)
 				{
-					Main.severe(String.format("Error writing resource %s. Skipping.", name));
+					Main.severe(String.format("*** Error writing resource %s. Skipping.", name));
 					ioe.printStackTrace();
 				}
 			});
@@ -184,9 +193,10 @@ public class Radon
 		}
 		catch (final IOException ioe)
 		{
-			ioe.printStackTrace();
-			throw new RadonException();
+			throw new RadonException(ioe);
 		}
+
+		Main.info(Transformer.tookThisLong(nanoTime));
 	}
 
 	private void loadClassPath()
@@ -195,9 +205,9 @@ public class Radon
 		{
 			if (file.exists())
 			{
-				Main.info(String.format("Loading library \"%s\".", file.getAbsolutePath()));
+				Main.info(String.format("+ Loading library \"%s\".", file.getAbsolutePath()));
 
-				try(final ZipFile zipFile = new ZipFile(file))
+				try (final ZipFile zipFile = new ZipFile(file))
 				{
 					final Enumeration<? extends ZipEntry> entries = zipFile.entries();
 
@@ -213,24 +223,24 @@ public class Radon
 							}
 							catch (final Throwable t)
 							{
-								Main.severe(String.format("Error while loading library class \"%s\".", entry.getName().replace(".class", "")));
+								Main.severe(String.format("*** Error while loading library class \"%s\".", entry.getName()));
 								t.printStackTrace();
 							}
 					}
 				}
 				catch (final ZipException e)
 				{
-					Main.severe(String.format("Library \"%s\" could not be opened as a zip file.", file.getAbsolutePath()));
+					Main.severe(String.format("*** Library \"%s\" could not be opened as a zip file.", file.getAbsolutePath()));
 					e.printStackTrace();
 				}
 				catch (final IOException e)
 				{
-					Main.severe(String.format("IOException happened while trying to load classes from \"%s\".", file.getAbsolutePath()));
+					Main.severe(String.format("*** IOException happened while trying to load classes from \"%s\".", file.getAbsolutePath()));
 					e.printStackTrace();
 				}
 			}
 			else
-				Main.warning(String.format("Library \"%s\" could not be found and will be ignored.", file.getAbsolutePath()));
+				Main.warning(String.format("*** Library \"%s\" could not be found and will be ignored.", file.getAbsolutePath()));
 		});
 	}
 
@@ -240,9 +250,9 @@ public class Radon
 
 		if (input.exists())
 		{
-			Main.info(String.format("Loading input \"%s\".", input.getAbsolutePath()));
+			Main.info(String.format("+ Loading input \"%s\".", input.getAbsolutePath()));
 
-			try(final ZipFile zipFile = new ZipFile(input))
+			try (final ZipFile zipFile = new ZipFile(input))
 			{
 				final Enumeration<? extends ZipEntry> entries = zipFile.entries();
 
@@ -258,13 +268,13 @@ public class Radon
 								final ClassWrapper cw = new ClassWrapper(new ClassReader(in), false);
 
 								if (cw.getVersion() <= Opcodes.V1_5)
-									for (int i = 0; i < cw.getMethods().size(); i++)
+									IntStream.range(0, cw.getMethods().size()).forEach(i ->
 									{
 										final MethodNode methodNode = cw.getMethods().get(i).getMethodNode();
 										final JSRInlinerAdapter adapter = new JSRInlinerAdapter(methodNode, methodNode.access, methodNode.name, methodNode.desc, methodNode.signature, methodNode.exceptions.toArray(new String[0]));
 										methodNode.accept(adapter);
 										cw.getMethods().get(i).setMethodNode(adapter);
-									}
+									});
 
 								classPath.put(cw.getName(), cw);
 								classes.put(cw.getName(), cw);
@@ -276,7 +286,7 @@ public class Radon
 							}
 							catch (final Throwable t)
 							{
-								Main.warning(String.format("Could not load %s as a class.", entry.getName()));
+								Main.warning(String.format("*** Could not load %s as a class and will be loaded as resource.", entry.getName()));
 								resources.put(entry.getName(), IOUtils.toByteArray(in));
 							}
 						else
@@ -285,21 +295,21 @@ public class Radon
 			}
 			catch (final ZipException e)
 			{
-				Main.severe(String.format("Input file \"%s\" could not be opened as a zip file.", input.getAbsolutePath()));
+				Main.severe(String.format("*** Input file \"%s\" could not be opened as a zip file.", input.getAbsolutePath()));
 				e.printStackTrace();
 				throw new RadonException(e);
 			}
 			catch (final IOException e)
 			{
-				Main.severe(String.format("IOException happened while trying to load classes from \"%s\".", input.getAbsolutePath()));
+				Main.severe(String.format("*** IOException happened while trying to load classes from \"%s\".", input.getAbsolutePath()));
 				e.printStackTrace();
 				throw new RadonException(e);
 			}
 		}
 		else
 		{
-			Main.severe(String.format("Unable to find \"%s\".", input.getAbsolutePath()));
-			throw new RadonException();
+			Main.severe(String.format("*** Unable to find file \"%s\".", input.getAbsolutePath()));
+			throw new RadonException(new FileNotFoundException(input.getAbsolutePath()));
 		}
 	}
 
@@ -406,5 +416,24 @@ public class Radon
 	public ObfuscationConfiguration getConfig()
 	{
 		return config;
+	}
+
+	private static class CRC32Corrupter extends CRC32
+	{
+		@Override
+		public void update(final byte[] b, final int off, final int len)
+		{
+			// Don't update the CRC
+		}
+
+		@Override
+		public final long getValue()
+		{
+			return RandomUtils.getRandomLong(0xFFFFFFFFL);
+		}
+
+		CRC32Corrupter()
+		{
+		}
 	}
 }

@@ -33,7 +33,7 @@ public class InstructionSetReducer extends Transformer
 	@Override
 	public void transform()
 	{
-		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(cw -> cw.getMethods().stream().filter(mw -> !excluded(mw)).forEach(mw ->
+		getClassWrappers().stream().filter(this::included).forEach(cw -> cw.getMethods().stream().filter(this::included).forEach(mw ->
 		{
 			final InsnList newInsns = new InsnList();
 			insn:

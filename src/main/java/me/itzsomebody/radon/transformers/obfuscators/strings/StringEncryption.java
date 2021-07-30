@@ -64,7 +64,7 @@ public class StringEncryption extends Transformer
 		final MemberNames memberNames = new MemberNames();
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(classWrapper -> !excluded(classWrapper)).forEach(classWrapper -> classWrapper.getMethods().stream().filter(methodWrapper -> !excluded(methodWrapper)).forEach(methodWrapper ->
+		getClassWrappers().stream().filter(this::included).forEach(classWrapper -> classWrapper.getMethods().stream().filter(this::included).forEach(methodWrapper ->
 		{
 			// TODO: leeway safeguard
 
@@ -1161,9 +1161,9 @@ public class StringEncryption extends Transformer
 	private class MemberNames
 	{
 		final String className = randomClassName();
-		final String cacheFieldName = uniqueRandomString();
-		final String bigBoizFieldName = uniqueRandomString();
-		final String decryptMethodName = uniqueRandomString();
+		final String cacheFieldName = fieldDictionary.uniqueRandomString();
+		final String bigBoizFieldName = fieldDictionary.uniqueRandomString();
+		final String decryptMethodName = methodDictionary.uniqueRandomString();
 
 		MemberNames()
 		{

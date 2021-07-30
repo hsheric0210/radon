@@ -48,13 +48,32 @@ public enum ConfigurationSetting
 	OUTPUT(String.class, null),
 	LIBRARIES(List.class, null),
 	EXCLUSIONS(List.class, null),
-
-	DICTIONARY(String.class, null),
-	RANDOMIZED_STRING_LENGTH(Integer.class, null),
 	COMPRESSION_LEVEL(Integer.class, null),
 	VERIFY(Boolean.class, null),
 	CORRUPT_CRC(Boolean.class, null),
 	TRASH_CLASSES(Integer.class, null),
+
+	// ============ random string generator
+
+	GENERIC_DICTIONARY(String.class, null),
+	GENERIC_MIN_RANDOMIZED_STRING_LENGTH(Integer.class, null),
+	GENERIC_MAX_RANDOMIZED_STRING_LENGTH(Integer.class, null),
+
+	PACKAGE_DICTIONARY(String.class, null),
+	PACKAGE_MIN_RANDOMIZED_STRING_LENGTH(Integer.class, null),
+	PACKAGE_MAX_RANDOMIZED_STRING_LENGTH(Integer.class, null),
+
+	CLASS_DICTIONARY(String.class, null),
+	CLASS_MIN_RANDOMIZED_STRING_LENGTH(Integer.class, null),
+	CLASS_MAX_RANDOMIZED_STRING_LENGTH(Integer.class, null),
+
+	METHOD_DICTIONARY(String.class, null),
+	METHOD_MIN_RANDOMIZED_STRING_LENGTH(Integer.class, null),
+	METHOD_MAX_RANDOMIZED_STRING_LENGTH(Integer.class, null),
+
+	FIELD_DICTIONARY(String.class, null),
+	FIELD_MIN_RANDOMIZED_STRING_LENGTH(Integer.class, null),
+	FIELD_MAX_RANDOMIZED_STRING_LENGTH(Integer.class, null),
 
 	// ============ transformers
 	STRING_ENCRYPTION(Map.class, new StringEncryption()),
@@ -78,10 +97,10 @@ public enum ConfigurationSetting
 	RENAMER(Map.class, new Renamer()),
 	BAD_ANNOTATION(Boolean.class, new BadAnnotation());
 
-	private final Class expectedType;
+	private final Class<?> expectedType;
 	private final Transformer transformer;
 
-	ConfigurationSetting(final Class expectedType, final Transformer transformer)
+	ConfigurationSetting(final Class<?> expectedType, final Transformer transformer)
 	{
 		this.expectedType = expectedType;
 		this.transformer = transformer;
@@ -92,7 +111,7 @@ public enum ConfigurationSetting
 	 *
 	 * @return expected class type of the key represented by this {@link ConfigurationSetting}.
 	 */
-	public Class getExpectedType()
+	public Class<?> getExpectedType()
 	{
 		return expectedType;
 	}

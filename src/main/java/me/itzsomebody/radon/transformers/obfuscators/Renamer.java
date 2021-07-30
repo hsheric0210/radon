@@ -69,10 +69,6 @@ public class Renamer extends Transformer
 		mappings = new HashMap<>();
 		final Map<String, String> packageMappings = new HashMap<>();
 
-		final Dictionary classDictionary = radon.getConfig().getDictionary().copy();
-		final Dictionary methodDictionary = classDictionary.copy();
-		final Dictionary fieldDictionary = classDictionary.copy();
-
 		Main.info("Generating mappings.");
 		long current = System.currentTimeMillis();
 
@@ -94,13 +90,13 @@ public class Renamer extends Transformer
 					genFieldMappings(fieldWrapper, fieldWrapper.getOwner().getOriginalName(), fieldDictionary.nextUniqueString());
 			});
 
-			if (!excluded(classWrapper))
+			if (included(classWrapper))
 			{
 				String newName;
 
 				if (repackageName == null)
 				{
-					final String mappedPackageName = randomString();
+					final String mappedPackageName = packageDictionary.randomString();
 
 					packageMappings.putIfAbsent(classWrapper.getPackageName(), mappedPackageName);
 					newName = packageMappings.get(classWrapper.getPackageName());
@@ -117,7 +113,7 @@ public class Renamer extends Transformer
 			}
 		});
 
-		Main.info(String.format("Finished generated mappings. [%dms]", tookThisLong(current)));
+		Main.info(String.format("Finished generated mappings. [%s]", tookThisLong(current)));
 		Main.info("Applying mappings.");
 		current = System.currentTimeMillis();
 
@@ -142,7 +138,7 @@ public class Renamer extends Transformer
 			getClassPath().put(classWrapper.getName(), classWrapper);
 		});
 
-		Main.info(String.format("Mapped %d members. [%dms]", mappings.size(), tookThisLong(current)));
+		Main.info(String.format("Mapped %d members. [%s]", mappings.size(), tookThisLong(current)));
 		current = System.currentTimeMillis();
 
 		// Now we gotta fix those resources because we probably screwed up random files.
@@ -176,7 +172,7 @@ public class Renamer extends Transformer
 			}
 		}));
 
-		Main.info(String.format("Mapped %d names in resources. [%dms]", fixed.get(), tookThisLong(current)));
+		Main.info(String.format("Mapped %d names in resources. [%s]", fixed.get(), tookThisLong(current)));
 
 		if (dumpMappings)
 			dumpMappings();
@@ -211,9 +207,9 @@ public class Renamer extends Transformer
 
 		visited.add(check);
 
-		// If excluded, we don't want to rename.
+		// If included, we don't want to rename.
 		// If we already mapped the tree, we don't want to waste time doing it again.
-		if (excluded(check) || mappings.containsKey(check))
+		if (!included(check) || mappings.containsKey(check))
 			return true;
 
 		// Methods which are static don't need to be checked for inheritance
@@ -252,9 +248,9 @@ public class Renamer extends Transformer
 
 		visited.add(check);
 
-		// If excluded, we don't want to rename.
+		// If included, we don't want to rename.
 		// If we already mapped the tree, we don't want to waste time doing it again.
-		return excluded(check) || mappings.containsKey(check) || !wrapper.getAccess().isStatic() && (tree.getClassWrapper() != wrapper.getOwner() && tree.getClassWrapper().isLibraryNode() && tree.getClassWrapper().getFields().stream().anyMatch(fw -> fw.getOriginalName().equals(wrapper.getOriginalName()) && fw.getOriginalDescription().equals(wrapper.getOriginalDescription())) || tree.getParentClasses().stream().anyMatch(parent -> cannotRenameField(radon.getTree(parent), wrapper, visited)) || tree.getSubClasses().stream().anyMatch(sub -> cannotRenameField(radon.getTree(sub), wrapper, visited)));
+		return !included(check) || mappings.containsKey(check) || !wrapper.getAccess().isStatic() && (tree.getClassWrapper() != wrapper.getOwner() && tree.getClassWrapper().isLibraryNode() && tree.getClassWrapper().getFields().stream().anyMatch(fw -> fw.getOriginalName().equals(wrapper.getOriginalName()) && fw.getOriginalDescription().equals(wrapper.getOriginalDescription())) || tree.getParentClasses().stream().anyMatch(parent -> cannotRenameField(radon.getTree(parent), wrapper, visited)) || tree.getSubClasses().stream().anyMatch(sub -> cannotRenameField(radon.getTree(sub), wrapper, visited)));
 
 		// Fields which are static don't need to be checked for inheritance
 		// We can't rename members which inherit methods from external libraries
@@ -287,7 +283,7 @@ public class Renamer extends Transformer
 			});
 
 			bw.close();
-			Main.info(String.format("Finished dumping mappings at %s. [%dms]", file.getAbsolutePath(), tookThisLong(current)));
+			Main.info(String.format("Finished dumping mappings at %s. [%s]", file.getAbsolutePath(), tookThisLong(current)));
 		}
 		catch (final Throwable t)
 		{
