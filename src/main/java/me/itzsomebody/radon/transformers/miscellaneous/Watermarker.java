@@ -125,8 +125,8 @@ public class Watermarker extends Transformer
 	@Override
 	public void setConfiguration(final Configuration config)
 	{
-		setMessage(config.getOrDefault(WATERMARK + ".message", "blah"));
-		setKey(config.getOrDefault(WATERMARK + ".key", "blah"));
+		message = config.getOrDefault(WATERMARK + ".message", "blah");
+		key = config.getOrDefault(WATERMARK + ".key", "blah");
 	}
 
 	@Override

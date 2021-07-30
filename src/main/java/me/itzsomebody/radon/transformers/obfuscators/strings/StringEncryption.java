@@ -115,9 +115,9 @@ public class StringEncryption extends Transformer
 	@Override
 	public void setConfiguration(final Configuration config)
 	{
-		setExemptedStrings(config.getOrDefault(STRING_ENCRYPTION + ".exempted_strings", Collections.emptyList()));
-		setStringPoolingEnabled(config.getOrDefault(STRING_ENCRYPTION + ".pool_strings", false));
-		setContextCheckingEnabled(config.getOrDefault(STRING_ENCRYPTION + ".check_context", false));
+		exemptedStrings = config.getOrDefault(STRING_ENCRYPTION + ".exempted_strings", Collections.emptyList());
+		stringPoolingEnabled = config.getOrDefault(STRING_ENCRYPTION + ".pool_strings", false);
+		contextCheckingEnabled = config.getOrDefault(STRING_ENCRYPTION + ".check_context", false);
 	}
 
 	protected boolean excludedString(final String str)

@@ -673,10 +673,7 @@ public class Virtualizer extends Transformer implements VMOpcodes
 
 					if (insn instanceof LabelNode)
 					{
-						nopInstruction.setOperands(new Object[]
-						{
-								instructions.size()
-						});
+						nopInstruction.setOperands(instructions.size());
 						targetMap.put((LabelNode) insn, nopInstruction);
 					}
 

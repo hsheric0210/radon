@@ -28,7 +28,7 @@ import me.itzsomebody.vm.datatypes.JWrapper;
 public class Ushr extends Handler
 {
 	@Override
-	public void handle(final VM vm, final Object[] operands)
+	public void handle(final VM vm, final Object... operands)
 	{
 		final JWrapper second = vm.pop();
 		final JWrapper first = vm.pop();

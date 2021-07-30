@@ -28,7 +28,7 @@ import me.itzsomebody.vm.datatypes.JWrapper;
 public class StaticSet extends Handler
 {
 	@Override
-	public void handle(final VM vm, final Object[] operands) throws Exception
+	public void handle(final VM vm, final Object... operands) throws Exception
 	{
 		final String ownerName = (String) operands[0];
 		final String name = (String) operands[1];

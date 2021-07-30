@@ -109,7 +109,7 @@ public final class FieldSetEjector extends AbstractEjectPhase
 		return junkArguments;
 	}
 
-	private InsnList processFieldSet(final MethodNode methodNode, final Frame<AbstractValue>[] frames, final Map<AbstractInsnNode, ? super InsnList> patches, final FieldInsnNode fieldInsnNode)
+	private InsnList processFieldSet(final MethodNode methodNode, final Frame<AbstractValue>[] frames, final Map<? super AbstractInsnNode, ? super InsnList> patches, final FieldInsnNode fieldInsnNode)
 	{
 		final InsnList proxyArgumentFix = new InsnList();
 		final Frame<AbstractValue> frame = frames[methodNode.instructions.indexOf(fieldInsnNode)];

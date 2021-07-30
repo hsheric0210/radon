@@ -80,10 +80,10 @@ public class NumberObfuscation extends Transformer
 			return false;
 		}).forEach(setting -> numberObfuscators.add(setting.getNumberObfuscation()));
 
-		setDoubleTamperingEnabled(config.getOrDefault(NUMBER_OBFUSCATION + ".double_tampering", false));
-		setFloatTamperingEnabled(config.getOrDefault(NUMBER_OBFUSCATION + ".float_tampering", false));
-		setIntegerTamperingEnabled(config.getOrDefault(NUMBER_OBFUSCATION + ".integer_tampering", false));
-		setLongTamperingEnabled(config.getOrDefault(NUMBER_OBFUSCATION + ".long_tampering", false));
+		doubleTamperingEnabled = config.getOrDefault(NUMBER_OBFUSCATION + ".double_tampering", false);
+		floatTamperingEnabled = config.getOrDefault(NUMBER_OBFUSCATION + ".float_tampering", false);
+		integerTamperingEnabled = config.getOrDefault(NUMBER_OBFUSCATION + ".integer_tampering", false);
+		longTamperingEnabled = config.getOrDefault(NUMBER_OBFUSCATION + ".long_tampering", false);
 	}
 
 	private void initMaster(final NumberObfuscation master)

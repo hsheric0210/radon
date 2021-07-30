@@ -23,7 +23,7 @@ import me.itzsomebody.vm.VM;
 public class Jnz extends Handler
 {
 	@Override
-	public void handle(final VM vm, final Object[] operands)
+	public void handle(final VM vm, final Object... operands)
 	{
 		final int jumpTo = vm.pop().asInt();
 

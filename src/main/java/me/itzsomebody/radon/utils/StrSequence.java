@@ -17,7 +17,7 @@ public class StrSequence
 
 	public StrSequence(final char[] sequence)
 	{
-		this(PredefinedPatterns.EMPTY.split(new String(sequence)), false);
+		this(Constants.EMPTY_PATTERN.split(new String(sequence)), false);
 	}
 
 	private StrSequence(final String[] sequence, final boolean generateOrdered)

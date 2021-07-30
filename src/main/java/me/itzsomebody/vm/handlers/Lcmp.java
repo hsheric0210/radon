@@ -24,7 +24,7 @@ import me.itzsomebody.vm.datatypes.JInteger;
 public class Lcmp extends Handler
 {
 	@Override
-	public void handle(final VM vm, final Object[] operands)
+	public void handle(final VM vm, final Object... operands)
 	{
 		vm.pop();
 		final long second = vm.pop().asLong();

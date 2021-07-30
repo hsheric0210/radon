@@ -145,7 +145,7 @@ public class AntiDebug extends Transformer
 	@Override
 	public void setConfiguration(final Configuration config)
 	{
-		setMessage(config.getOrDefault(ANTI_DEBUG + ".message", "Debugger properties detected"));
+		message = config.getOrDefault(ANTI_DEBUG + ".message", "Debugger properties detected");
 	}
 
 	private void setMessage(final String message)

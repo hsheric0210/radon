@@ -95,4 +95,8 @@ public final class WatermarkUtils
 
 		return sb.toString();
 	}
+
+	private WatermarkUtils()
+	{
+	}
 }

@@ -24,7 +24,7 @@ import me.itzsomebody.vm.datatypes.JInteger;
 public class Dcmpl extends Handler
 {
 	@Override
-	public void handle(final VM vm, final Object[] operands)
+	public void handle(final VM vm, final Object... operands)
 	{
 		vm.pop();
 		final double second = vm.pop().asDouble();

@@ -27,7 +27,7 @@ import me.itzsomebody.vm.datatypes.JWrapper;
 public class Load extends Handler
 {
 	@Override
-	public void handle(final VM vm, final Object[] operands)
+	public void handle(final VM vm, final Object... operands)
 	{
 		final JWrapper wrapper = vm.loadRegister((Integer) operands[0]);
 

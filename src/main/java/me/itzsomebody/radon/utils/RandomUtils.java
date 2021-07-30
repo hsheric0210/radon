@@ -139,4 +139,8 @@ public final class RandomUtils
 				return getRandomInt();
 		}
 	}
+
+	private RandomUtils()
+	{
+	}
 }

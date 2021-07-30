@@ -99,7 +99,7 @@ public class CreeperDictionary implements Dictionary
 		if (index >= LYRICS.length)
 			index = 0;
 
-		String loopStr = loop + "";
+		String loopStr = String.valueOf(loop);
 
 		while (loopStr.length() < 4)
 			loopStr = "0" + loopStr;

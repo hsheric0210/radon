@@ -28,7 +28,7 @@ import me.itzsomebody.vm.datatypes.JWrapper;
 public class Xor extends Handler
 {
 	@Override
-	public void handle(final VM vm, final Object[] operands)
+	public void handle(final VM vm, final Object... operands)
 	{
 		JWrapper wrapper = vm.pop();
 		if (wrapper instanceof JTop)

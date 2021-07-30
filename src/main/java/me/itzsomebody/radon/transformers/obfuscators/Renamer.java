@@ -254,17 +254,10 @@ public class Renamer extends Transformer
 
 		// If excluded, we don't want to rename.
 		// If we already mapped the tree, we don't want to waste time doing it again.
-		if (excluded(check) || mappings.containsKey(check))
-			return true;
+		return excluded(check) || mappings.containsKey(check) || !wrapper.getAccess().isStatic() && (tree.getClassWrapper() != wrapper.getOwner() && tree.getClassWrapper().isLibraryNode() && tree.getClassWrapper().getFields().stream().anyMatch(fw -> fw.getOriginalName().equals(wrapper.getOriginalName()) && fw.getOriginalDescription().equals(wrapper.getOriginalDescription())) || tree.getParentClasses().stream().anyMatch(parent -> cannotRenameField(radon.getTree(parent), wrapper, visited)) || tree.getSubClasses().stream().anyMatch(sub -> cannotRenameField(radon.getTree(sub), wrapper, visited)));
 
 		// Fields which are static don't need to be checked for inheritance
-		if (!wrapper.getAccess().isStatic())
-		{
-			// We can't rename members which inherit methods from external libraries
-			return tree.getClassWrapper() != wrapper.getOwner() && tree.getClassWrapper().isLibraryNode() && tree.getClassWrapper().getFields().stream().anyMatch(fw -> fw.getOriginalName().equals(wrapper.getOriginalName()) && fw.getOriginalDescription().equals(wrapper.getOriginalDescription())) || tree.getParentClasses().stream().anyMatch(parent -> cannotRenameField(radon.getTree(parent), wrapper, visited)) || tree.getSubClasses().stream().anyMatch(sub -> cannotRenameField(radon.getTree(sub), wrapper, visited));
-		}
-
-		return false;
+		// We can't rename members which inherit methods from external libraries
 	}
 
 	private void dumpMappings()
@@ -318,9 +311,9 @@ public class Renamer extends Transformer
 	@Override
 	public void setConfiguration(final Configuration config)
 	{
-		setAdaptTheseResources(config.getOrDefault(RENAMER + ".adapt_these_resources", Collections.emptyList()));
-		setDumpMappings(config.getOrDefault(RENAMER + ".dump_mappings", false));
-		setRepackageName(config.getOrDefault(RENAMER + ".repackage_name", null));
+		adaptTheseResources = config.getOrDefault(RENAMER + ".adapt_these_resources", Collections.emptyList());
+		dumpMappings = config.getOrDefault(RENAMER + ".dump_mappings", false);
+		repackageName = config.getOrDefault(RENAMER + ".repackage_name", null);
 	}
 
 	public List<String> getAdaptTheseResources()

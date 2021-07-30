@@ -18,7 +18,7 @@
 
 package me.itzsomebody.vm.datatypes;
 
-public class JTop extends JWrapper
+public final class JTop extends JWrapper
 {
 	private static JTop top;
 

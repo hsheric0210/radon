@@ -27,7 +27,7 @@ import me.itzsomebody.vm.datatypes.*;
 public class StaticGet extends Handler
 {
 	@Override
-	public void handle(final VM vm, final Object[] operands) throws Exception
+	public void handle(final VM vm, final Object... operands) throws Exception
 	{
 		final String ownerName = (String) operands[0];
 		final String name = (String) operands[1];
@@ -40,29 +40,37 @@ public class StaticGet extends Handler
 		if (field == null)
 			throw new VMException();
 
-		if ("int".equals(type.getName()))
-			vm.push(new JInteger(field.getInt(null)));
-		else if ("long".equals(type.getName()))
+		switch (type.getName())
 		{
-			vm.push(new JLong(field.getLong(null)));
-			vm.push(JTop.getTop());
+			case "int":
+				vm.push(new JInteger(field.getInt(null)));
+				break;
+			case "long":
+				vm.push(new JLong(field.getLong(null)));
+				vm.push(JTop.getTop());
+				break;
+			case "float":
+				vm.push(new JFloat(field.getFloat(null)));
+				break;
+			case "double":
+				vm.push(new JDouble(field.getDouble(null)));
+				vm.push(JTop.getTop());
+				break;
+			case "byte":
+				vm.push(new JInteger(field.getByte(null)));
+				break;
+			case "short":
+				vm.push(new JInteger(field.getShort(null)));
+				break;
+			case "char":
+				vm.push(new JInteger(field.getChar(null)));
+				break;
+			case "boolean":
+				vm.push(new JInteger(field.getBoolean(null)));
+				break;
+			default:
+				vm.push(new JObject(field.get(null)));
+				break;
 		}
-		else if ("float".equals(type.getName()))
-			vm.push(new JFloat(field.getFloat(null)));
-		else if ("double".equals(type.getName()))
-		{
-			vm.push(new JDouble(field.getDouble(null)));
-			vm.push(JTop.getTop());
-		}
-		else if ("byte".equals(type.getName()))
-			vm.push(new JInteger(field.getByte(null)));
-		else if ("short".equals(type.getName()))
-			vm.push(new JInteger(field.getShort(null)));
-		else if ("char".equals(type.getName()))
-			vm.push(new JInteger(field.getChar(null)));
-		else if ("boolean".equals(type.getName()))
-			vm.push(new JInteger(field.getBoolean(null)));
-		else
-			vm.push(new JObject(field.get(null)));
 	}
 }

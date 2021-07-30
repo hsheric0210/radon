@@ -26,7 +26,7 @@ import me.itzsomebody.vm.datatypes.JObject;
 public class NewArr extends Handler
 {
 	@Override
-	public void handle(final VM vm, final Object[] operands) throws Exception
+	public void handle(final VM vm, final Object... operands) throws Exception
 	{
 		final int size = vm.pop().asInt();
 		final Class clazz = VM.getClazz((String) operands[0]);

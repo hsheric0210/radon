@@ -34,7 +34,7 @@ public class VMContext
 		this.offset = offset;
 	}
 
-	public VMContext(final int maxStack, final int nRegisters, final int offset, final VMTryCatch[] catches)
+	public VMContext(final int maxStack, final int nRegisters, final int offset, final VMTryCatch... catches)
 	{
 		this(maxStack, nRegisters, offset);
 		this.catches = catches;

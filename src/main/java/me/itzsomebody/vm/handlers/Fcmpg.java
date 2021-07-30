@@ -24,7 +24,7 @@ import me.itzsomebody.vm.datatypes.JInteger;
 public class Fcmpg extends Handler
 {
 	@Override
-	public void handle(final VM vm, final Object[] operands)
+	public void handle(final VM vm, final Object... operands)
 	{
 		final float second = vm.pop().asFloat();
 		final float first = vm.pop().asFloat();

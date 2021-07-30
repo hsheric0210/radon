@@ -25,7 +25,7 @@ import me.itzsomebody.vm.datatypes.JWrapper;
 public class Dup extends Handler
 {
 	@Override
-	public void handle(final VM vm, final Object[] operands)
+	public void handle(final VM vm, final Object... operands)
 	{
 		switch ((Integer) operands[0])
 		{

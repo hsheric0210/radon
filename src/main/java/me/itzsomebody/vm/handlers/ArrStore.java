@@ -25,7 +25,7 @@ import me.itzsomebody.vm.datatypes.JWrapper;
 public class ArrStore extends Handler
 {
 	@Override
-	public void handle(final VM vm, final Object[] operands)
+	public void handle(final VM vm, final Object... operands)
 	{
 		JWrapper value = vm.pop();
 

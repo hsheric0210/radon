@@ -25,7 +25,7 @@ import me.itzsomebody.vm.datatypes.JTop;
 public class DoublePush extends Handler
 {
 	@Override
-	public void handle(final VM vm, final Object[] operands)
+	public void handle(final VM vm, final Object... operands)
 	{
 		vm.push(new JDouble((Double) operands[0]));
 		vm.push(JTop.getTop());

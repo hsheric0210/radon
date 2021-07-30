@@ -100,9 +100,9 @@ public class HideCode extends Transformer
 	@Override
 	public void setConfiguration(final Configuration config)
 	{
-		setHideClassesEnabled(config.getOrDefault(HIDE_CODE + ".hide_classes", false));
-		setHideFieldsEnabled(config.getOrDefault(HIDE_CODE + ".hide_fields", false));
-		setHideMethodsEnabled(config.getOrDefault(HIDE_CODE + ".hide_methods", false));
+		hideClassesEnabled = config.getOrDefault(HIDE_CODE + ".hide_classes", false);
+		hideFieldsEnabled = config.getOrDefault(HIDE_CODE + ".hide_fields", false);
+		hideMethodsEnabled = config.getOrDefault(HIDE_CODE + ".hide_methods", false);
 	}
 
 	private boolean isHideClassesEnabled()

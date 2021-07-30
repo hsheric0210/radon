@@ -24,7 +24,7 @@ import me.itzsomebody.vm.datatypes.JInteger;
 public class Instanceof extends Handler
 {
 	@Override
-	public void handle(final VM vm, final Object[] operands) throws Throwable
+	public void handle(final VM vm, final Object... operands) throws Throwable
 	{
 		final Class clazz = VM.getClazz((String) operands[0]);
 

@@ -76,8 +76,8 @@ public class MemberShuffler extends Transformer
 	@Override
 	public void setConfiguration(final Configuration config)
 	{
-		setShuffleFieldsEnabled(config.getOrDefault(MEMBER_SHUFFLER + ".shuffle_fields", false));
-		setShuffleMethodsEnabled(config.getOrDefault(MEMBER_SHUFFLER + ".shuffle_methods", false));
+		shuffleFieldsEnabled = config.getOrDefault(MEMBER_SHUFFLER + ".shuffle_fields", false);
+		shuffleMethodsEnabled = config.getOrDefault(MEMBER_SHUFFLER + ".shuffle_methods", false);
 	}
 
 	private boolean isShuffleMethodsEnabled()

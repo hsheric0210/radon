@@ -23,7 +23,7 @@ public class Instruction
 	private final int opcode;
 	private Object[] operands;
 
-	public Instruction(final int opcode, final Object[] operands)
+	public Instruction(final int opcode, final Object... operands)
 	{
 		this.opcode = opcode;
 		this.operands = operands;
@@ -34,7 +34,7 @@ public class Instruction
 		return opcode;
 	}
 
-	public void setOperands(final Object[] operands)
+	public void setOperands(final Object... operands)
 	{
 		this.operands = operands;
 	}

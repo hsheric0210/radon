@@ -27,7 +27,7 @@ import me.itzsomebody.vm.datatypes.*;
 public class VirtGet extends Handler
 {
 	@Override
-	public void handle(final VM vm, final Object[] operands) throws Exception
+	public void handle(final VM vm, final Object... operands) throws Exception
 	{
 		final String ownerName = (String) operands[0];
 		final String name = (String) operands[1];
@@ -42,29 +42,37 @@ public class VirtGet extends Handler
 
 		final Object ref = vm.pop().asObj();
 
-		if ("int".equals(type.getName()))
-			vm.push(new JInteger(field.getInt(ref)));
-		else if ("long".equals(type.getName()))
+		switch (type.getName())
 		{
-			vm.push(new JLong(field.getLong(ref)));
-			vm.push(JTop.getTop());
+			case "int":
+				vm.push(new JInteger(field.getInt(ref)));
+				break;
+			case "long":
+				vm.push(new JLong(field.getLong(ref)));
+				vm.push(JTop.getTop());
+				break;
+			case "float":
+				vm.push(new JFloat(field.getFloat(ref)));
+				break;
+			case "double":
+				vm.push(new JDouble(field.getDouble(ref)));
+				vm.push(JTop.getTop());
+				break;
+			case "byte":
+				vm.push(new JInteger(field.getByte(ref)));
+				break;
+			case "short":
+				vm.push(new JInteger(field.getShort(ref)));
+				break;
+			case "char":
+				vm.push(new JInteger(field.getChar(ref)));
+				break;
+			case "boolean":
+				vm.push(new JInteger(field.getBoolean(ref)));
+				break;
+			default:
+				vm.push(new JObject(field.get(ref)));
+				break;
 		}
-		else if ("float".equals(type.getName()))
-			vm.push(new JFloat(field.getFloat(ref)));
-		else if ("double".equals(type.getName()))
-		{
-			vm.push(new JDouble(field.getDouble(ref)));
-			vm.push(JTop.getTop());
-		}
-		else if ("byte".equals(type.getName()))
-			vm.push(new JInteger(field.getByte(ref)));
-		else if ("short".equals(type.getName()))
-			vm.push(new JInteger(field.getShort(ref)));
-		else if ("char".equals(type.getName()))
-			vm.push(new JInteger(field.getChar(ref)));
-		else if ("boolean".equals(type.getName()))
-			vm.push(new JInteger(field.getBoolean(ref)));
-		else
-			vm.push(new JObject(field.get(ref)));
 	}
 }

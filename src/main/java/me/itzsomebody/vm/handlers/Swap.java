@@ -24,7 +24,7 @@ import me.itzsomebody.vm.datatypes.JWrapper;
 public class Swap extends Handler
 {
 	@Override
-	public void handle(final VM vm, final Object[] operands)
+	public void handle(final VM vm, final Object... operands)
 	{
 		final JWrapper first = vm.pop();
 		final JWrapper second = vm.pop();

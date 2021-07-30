@@ -23,7 +23,7 @@ import me.itzsomebody.vm.VM;
 public class Throw extends Handler
 {
 	@Override
-	public void handle(final VM vm, final Object[] operands) throws Throwable
+	public void handle(final VM vm, final Object... operands) throws Throwable
 	{
 		throw (Throwable) vm.pop().asObj();
 	}

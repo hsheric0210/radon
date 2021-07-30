@@ -24,7 +24,7 @@ import me.itzsomebody.vm.datatypes.JWrapper;
 public class Checkcast extends Handler
 {
 	@Override
-	public void handle(final VM vm, final Object[] operands) throws Throwable
+	public void handle(final VM vm, final Object... operands) throws Throwable
 	{
 		final Class clazz = VM.getClazz((String) operands[0]);
 		final JWrapper wrapper = vm.pop();

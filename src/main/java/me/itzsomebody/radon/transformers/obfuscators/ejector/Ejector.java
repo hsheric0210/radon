@@ -109,9 +109,9 @@ public class Ejector extends Transformer
 	@Override
 	public void setConfiguration(final Configuration config)
 	{
-		setEjectMethodCalls(config.getOrDefault(EJECTOR + ".eject_call", false));
-		setEjectFieldSet(config.getOrDefault(EJECTOR + ".eject_field_set", false));
-		setJunkArguments(config.getOrDefault(EJECTOR + ".junk_arguments", false));
+		ejectMethodCalls = config.getOrDefault(EJECTOR + ".eject_call", false);
+		ejectFieldSet = config.getOrDefault(EJECTOR + ".eject_field_set", false);
+		junkArguments = config.getOrDefault(EJECTOR + ".junk_arguments", false);
 		setJunkArgumentStrength(config.getOrDefault(EJECTOR + ".junk_argument_strength", 5));
 	}
 

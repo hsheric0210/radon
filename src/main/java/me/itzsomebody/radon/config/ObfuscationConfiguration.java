@@ -49,8 +49,8 @@ public final class ObfuscationConfiguration
 		if (!config.contains(OUTPUT))
 			throw new RadonException("No output file was specified in the config");
 
-		obfConfig.setInput(new File((String) config.get(INPUT)));
-		obfConfig.setOutput(new File((String) config.get(OUTPUT)));
+		obfConfig.input = new File((String) config.get(INPUT));
+		obfConfig.output = new File((String) config.get(OUTPUT));
 
 		// LIBRARIES
 
@@ -65,36 +65,36 @@ public final class ObfuscationConfiguration
 			else
 				libraries.add(f);
 		});
-		obfConfig.setLibraries(libraries);
+		obfConfig.libraries = libraries;
 
 		// EXCLUSIONS
 
 		final ExclusionManager manager = new ExclusionManager();
 		final List<String> exclusionPatterns = config.getOrDefault(EXCLUSIONS, Collections.emptyList());
 		exclusionPatterns.forEach(s -> manager.addExclusion(new Exclusion(s)));
-		obfConfig.setExclusionManager(manager);
+		obfConfig.exclusionManager = manager;
 
 		// DICTIONARY
 
 		try
 		{
 			final String dictionaryName = config.getOrDefault(DICTIONARY, "alphanumeric");
-			obfConfig.setDictionary(DictionaryFactory.get(dictionaryName));
+			obfConfig.dictionary = DictionaryFactory.get(dictionaryName);
 		}
 		catch (final ClassCastException e)
 		{
 			// String array charset
 			final List<String> dictionaryCharset = config.getOrDefault(DICTIONARY, Collections.emptyList());
-			obfConfig.setDictionary(DictionaryFactory.getCustom(dictionaryCharset));
+			obfConfig.dictionary = DictionaryFactory.getCustom(dictionaryCharset);
 		}
 
 		// MISC.
 
-		obfConfig.setRandomizedStringLength(config.getOrDefault(RANDOMIZED_STRING_LENGTH, 1));
-		obfConfig.setCompressionLevel(config.getOrDefault(COMPRESSION_LEVEL, Deflater.BEST_COMPRESSION));
-		obfConfig.setVerify(config.getOrDefault(VERIFY, false));
-		obfConfig.setCorruptCrc(config.getOrDefault(CORRUPT_CRC, false));
-		obfConfig.setnTrashClasses(config.getOrDefault(TRASH_CLASSES, 0));
+		obfConfig.randomizedStringLength = config.getOrDefault(RANDOMIZED_STRING_LENGTH, 1);
+		obfConfig.compressionLevel = config.getOrDefault(COMPRESSION_LEVEL, Deflater.BEST_COMPRESSION);
+		obfConfig.verify = config.getOrDefault(VERIFY, false);
+		obfConfig.corruptCrc = config.getOrDefault(CORRUPT_CRC, false);
+		obfConfig.nTrashClasses = config.getOrDefault(TRASH_CLASSES, 0);
 
 		// TRANSFORMERS
 
@@ -115,7 +115,7 @@ public final class ObfuscationConfiguration
 			}
 		});
 
-		obfConfig.setTransformers(transformers);
+		obfConfig.transformers = transformers;
 
 		return obfConfig;
 	}

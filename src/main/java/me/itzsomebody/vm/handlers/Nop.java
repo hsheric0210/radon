@@ -23,7 +23,7 @@ import me.itzsomebody.vm.VM;
 public class Nop extends Handler
 {
 	@Override
-	public void handle(final VM vm, final Object[] operands)
+	public void handle(final VM vm, final Object... operands)
 	{
 		// do nothing
 	}

@@ -27,7 +27,7 @@ import me.itzsomebody.vm.datatypes.JWrapper;
 public class ArrLoad extends Handler
 {
 	@Override
-	public void handle(final VM vm, final Object[] operands)
+	public void handle(final VM vm, final Object... operands)
 	{
 		final int index = vm.pop().asInt();
 		final JWrapper ref = vm.pop();

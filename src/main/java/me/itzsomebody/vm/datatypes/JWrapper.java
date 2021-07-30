@@ -97,7 +97,7 @@ public class JWrapper
 		throw new VMException(getClass().getName());
 	}
 
-	public JWrapper fromPrimitive(final Object o)
+	public static JWrapper fromPrimitive(final Object o)
 	{
 		if (o instanceof Integer)
 			return new JInteger((Integer) o);

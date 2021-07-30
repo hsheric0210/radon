@@ -26,7 +26,7 @@ import me.itzsomebody.vm.datatypes.JInteger;
 public class ArrLength extends Handler
 {
 	@Override
-	public void handle(final VM vm, final Object[] operands)
+	public void handle(final VM vm, final Object... operands)
 	{
 		vm.push(new JInteger(Array.getLength(vm.pop().asObj())));
 	}

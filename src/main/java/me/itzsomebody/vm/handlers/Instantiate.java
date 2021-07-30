@@ -20,7 +20,9 @@ package me.itzsomebody.vm.handlers;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.regex.Pattern;
 
+import me.itzsomebody.radon.utils.Constants;
 import me.itzsomebody.vm.VM;
 import me.itzsomebody.vm.VMException;
 import me.itzsomebody.vm.datatypes.JTop;
@@ -29,13 +31,13 @@ import me.itzsomebody.vm.datatypes.JWrapper;
 public class Instantiate extends Handler
 {
 	@Override
-	public void handle(final VM vm, final Object[] operands) throws Throwable
+	public void handle(final VM vm, final Object... operands) throws Throwable
 	{
 		final String ownerName = (String) operands[0];
-		final String[] paramsAsStrings = ((String) operands[1]).split("\u0001\u0001");
+		final String[] paramsAsStrings = PTRN.split(((String) operands[1]));
 		final Class[] params;
 		if ("\u0000\u0000\u0000".equals(paramsAsStrings[0]))
-			params = new Class[0];
+			params = Constants.ZERO_LENGTH_CLASS_ARRAY;
 		else
 			params = stringsToParams(paramsAsStrings);
 		final Object[] args = new Object[params.length];
@@ -77,7 +79,7 @@ public class Instantiate extends Handler
 		}
 	}
 
-	private static Class[] stringsToParams(final String[] s) throws ClassNotFoundException
+	private static Class[] stringsToParams(final String... s) throws ClassNotFoundException
 	{
 		final Class[] classes = new Class[s.length];
 		for (int i = 0, j = s.length; i < j; i++)
@@ -85,4 +87,6 @@ public class Instantiate extends Handler
 
 		return classes;
 	}
+
+	private static final Pattern PTRN = Pattern.compile("\u0001\u0001");
 }

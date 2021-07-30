@@ -24,7 +24,7 @@ import me.itzsomebody.vm.datatypes.JInteger;
 public class IntPush extends Handler
 {
 	@Override
-	public void handle(final VM vm, final Object[] operands)
+	public void handle(final VM vm, final Object... operands)
 	{
 		vm.push(new JInteger((Integer) operands[0]));
 	}
