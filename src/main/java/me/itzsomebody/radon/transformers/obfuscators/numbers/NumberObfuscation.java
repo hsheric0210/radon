@@ -18,16 +18,16 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.numbers;
 
-import static me.itzsomebody.radon.config.ConfigurationSetting.NUMBER_OBFUSCATION;
+import me.itzsomebody.radon.config.Configuration;
+import me.itzsomebody.radon.exclusions.ExclusionType;
+import me.itzsomebody.radon.transformers.Transformer;
+import me.itzsomebody.radon.utils.RandomUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
-import me.itzsomebody.radon.config.Configuration;
-import me.itzsomebody.radon.exclusions.ExclusionType;
-import me.itzsomebody.radon.transformers.Transformer;
-import me.itzsomebody.radon.utils.RandomUtils;
+import static me.itzsomebody.radon.config.ConfigurationSetting.NUMBER_OBFUSCATION;
 
 /**
  * Abstract class for number obfuscation transformers.
@@ -41,6 +41,13 @@ public class NumberObfuscation extends Transformer
 	private boolean longTamperingEnabled;
 	private boolean floatTamperingEnabled;
 	private boolean doubleTamperingEnabled;
+	private int minIteration;
+	private int maxIteration;
+	private boolean numberPooler_randomOrder;
+	private boolean numberPooler_poolInteger;
+	private boolean numberPooler_poolLong;
+	private boolean numberPooler_poolFloat;
+	private boolean numberPooler_poolDouble;
 
 	protected NumberObfuscation master;
 
@@ -84,6 +91,16 @@ public class NumberObfuscation extends Transformer
 		floatTamperingEnabled = config.getOrDefault(NUMBER_OBFUSCATION + ".float_tampering", false);
 		integerTamperingEnabled = config.getOrDefault(NUMBER_OBFUSCATION + ".integer_tampering", false);
 		longTamperingEnabled = config.getOrDefault(NUMBER_OBFUSCATION + ".long_tampering", false);
+
+		numberPooler_randomOrder = config.getOrDefault(NUMBER_OBFUSCATION + ".number_pooler_randomorder", false);
+
+		numberPooler_poolInteger = config.getOrDefault(NUMBER_OBFUSCATION + ".pool_integer", false);
+		numberPooler_poolLong = config.getOrDefault(NUMBER_OBFUSCATION + ".pool_long", false);
+		numberPooler_poolFloat = config.getOrDefault(NUMBER_OBFUSCATION + ".pool_float", false);
+		numberPooler_poolDouble = config.getOrDefault(NUMBER_OBFUSCATION + ".pool_double", false);
+
+		minIteration = config.getOrDefault(NUMBER_OBFUSCATION + ".min_iteration", 2);
+		maxIteration = config.getOrDefault(NUMBER_OBFUSCATION + ".max_iteration", 6);
 	}
 
 	private void initMaster(final NumberObfuscation master)
@@ -161,5 +178,45 @@ public class NumberObfuscation extends Transformer
 	protected void setDoubleTamperingEnabled(final boolean doubleTamperingEnabled)
 	{
 		this.doubleTamperingEnabled = doubleTamperingEnabled;
+	}
+
+	final int getIterationCount()
+	{
+		return RandomUtils.getRandomInt(master.minIteration, master.maxIteration);
+	}
+
+	final int getMinIteration()
+	{
+		return minIteration;
+	}
+
+	final int getMaxIteration()
+	{
+		return maxIteration;
+	}
+
+	final boolean isNumberPoolerRandomOrder()
+	{
+		return numberPooler_randomOrder;
+	}
+
+	final boolean canPoolInteger()
+	{
+		return numberPooler_poolInteger;
+	}
+
+	final boolean canPoolLong()
+	{
+		return numberPooler_poolLong;
+	}
+
+	final boolean canPoolFloat()
+	{
+		return numberPooler_poolFloat;
+	}
+
+	final boolean canPoolDouble()
+	{
+		return numberPooler_poolDouble;
 	}
 }

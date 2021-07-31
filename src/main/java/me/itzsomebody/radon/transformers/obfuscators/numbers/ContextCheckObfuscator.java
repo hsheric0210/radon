@@ -133,14 +133,14 @@ public class ContextCheckObfuscator extends NumberObfuscation
 		final ClassNode decoder = createConstantDecoder(memberNames);
 		getClasses().put(decoder.name, new ClassWrapper(decoder, false));
 
-		Main.info("Enabled " + counter.get() + " number context checks");
+		Main.info("+ Enabled " + counter.get() + " number context checks");
 	}
 
 	private static int encodeInt(final int n, final int hashCode)
 	{
 		final int xorVal = n ^ hashCode;
-		final int[] arr = IntStream.range(0, 4).map(i -> xorVal >>> i * 8 & 0xFF).toArray();
-		return IntStream.range(0, arr.length).map(i -> arr[i] << i * 8).reduce(0, (a, b) -> a | b);
+		final int[] arr = IntStream.range(0, 4).map(i -> xorVal >>> (i << 3) & 0xFF).toArray();
+		return IntStream.range(0, arr.length).map(i -> arr[i] << (i << 3)).reduce(0, (a, b) -> a | b);
 	}
 
 	private static int encodeFloat(final float f, final int hashCode)
@@ -151,8 +151,8 @@ public class ContextCheckObfuscator extends NumberObfuscation
 	private static long encodeLong(final long n, final int hashCode)
 	{
 		final long xorVal = n ^ hashCode;
-		final long[] arr = IntStream.range(0, 8).mapToLong(i -> xorVal >>> i * 8 & 0xFF).toArray();
-		return IntStream.range(0, arr.length).mapToLong(i -> arr[i] << i * 8).reduce(0, (a, b) -> a | b);
+		final long[] arr = IntStream.range(0, 8).mapToLong(i -> xorVal >>> (i << 3) & 0xFF).toArray();
+		return IntStream.range(0, arr.length).mapToLong(i -> arr[i] << (i << 3)).reduce(0, (a, b) -> a | b);
 	}
 
 	private static long encodeDouble(final double d, final int hashCode)

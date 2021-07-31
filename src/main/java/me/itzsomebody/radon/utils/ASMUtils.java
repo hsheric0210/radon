@@ -22,6 +22,7 @@ import java.util.Arrays;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.CodeSizeEvaluator;
 import org.objectweb.asm.tree.*;
 
 import me.itzsomebody.radon.exceptions.RadonException;
@@ -379,6 +380,13 @@ public final class ASMUtils implements Opcodes
 		insnList.add(new MethodInsnNode(methodOpcode, methodOwner, methodName, methodDescriptor, false));
 
 		return insnList;
+	}
+
+	public static int evaluateMaxSize(final InsnList insns)
+	{
+		final CodeSizeEvaluator cse = new CodeSizeEvaluator(null);
+		insns.accept(cse);
+		return cse.getMaxSize();
 	}
 
 	private ASMUtils()

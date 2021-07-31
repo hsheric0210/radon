@@ -123,7 +123,7 @@ public class BogusJumpInserter extends FlowObfuscation
 							final InsnList fakeJump = BogusJumps.createBogusJump(varIndex, predicateType, predicateInitialValue, jumpTo, false);
 							insns.insertBefore(insn, fakeJump);
 
-							leeway -= 16;
+							leeway -= ASMUtils.evaluateMaxSize(insns);
 							counter.incrementAndGet();
 							shouldAdd.set(true);
 						}

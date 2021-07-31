@@ -20,9 +20,11 @@ package me.itzsomebody.radon.transformers.obfuscators.numbers;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
+import org.objectweb.asm.tree.LdcInsnNode;
 
 import me.itzsomebody.radon.Main;
 import me.itzsomebody.radon.utils.ASMUtils;
@@ -42,7 +44,7 @@ public class BitwiseObfuscator extends NumberObfuscation
 
 		getClassWrappers().stream().filter(this::included).forEach(classWrapper -> classWrapper.getMethods().stream().filter(methodWrapper -> included(methodWrapper) && methodWrapper.hasInstructions()).forEach(methodWrapper ->
 		{
-			final int leeway = methodWrapper.getLeewaySize();
+			int leeway = methodWrapper.getLeewaySize();
 			final InsnList methodInstructions = methodWrapper.getInstructions();
 
 			for (final AbstractInsnNode insn : methodInstructions.toArray())
@@ -52,168 +54,330 @@ public class BitwiseObfuscator extends NumberObfuscation
 
 				if (ASMUtils.isIntInsn(insn) && master.isIntegerTamperingEnabled())
 				{
-					final InsnList insns = obfuscateNumber(ASMUtils.getIntegerFromInsn(insn));
+					final int originalNum = ASMUtils.getIntegerFromInsn(insn);
+					final InsnList insns = obfuscateNumber(originalNum);
 
 					methodInstructions.insert(insn, insns);
 					methodInstructions.remove(insn);
 
 					counter.incrementAndGet();
+					leeway -= ASMUtils.evaluateMaxSize(insns);
 				}
 				else if (ASMUtils.isLongInsn(insn) && master.isLongTamperingEnabled())
 				{
-					final InsnList insns = obfuscateNumber(ASMUtils.getLongFromInsn(insn));
+					final long originalNum = ASMUtils.getLongFromInsn(insn);
+					final InsnList insns = obfuscateNumber(originalNum);
 
 					methodInstructions.insert(insn, insns);
 					methodInstructions.remove(insn);
 
 					counter.incrementAndGet();
+					leeway -= ASMUtils.evaluateMaxSize(insns);
 				}
 			}
 		}));
 
-		Main.info("Split " + counter.get() + " number constants into bitwise instructions");
+		Main.info("+ Split " + counter.get() + " number constants into bitwise instructions (minIteration: " + master.getMinIteration() + ", maxIteration: " + master.getMaxIteration() + ")");
 	}
 
 	private InsnList obfuscateNumber(final int originalNum)
 	{
+
 		int current = randomInt(originalNum);
+		int verifySum = current;
 
 		final InsnList insns = new InsnList();
 		insns.add(ASMUtils.getNumberInsn(current));
 
-		for (int i = 0, j = RandomUtils.getRandomInt(2, 6); i < j; i++)
+		final StringBuilder builder = new StringBuilder("*** [BitwiseObfuscator] Tampering int " + originalNum + " => ");
+		builder.append(current);
+
+		for (int i = 0, iterations = getIterationCount(); i < iterations; i++)
 		{
 			final int operand;
 
-			switch (RandomUtils.getRandomInt(6))
+			switch (RandomUtils.getRandomInt(Math.abs(current) <= 1L ? 4 : 7))
 			{
 				case 0:
+				{
+					// And
 					operand = randomInt(current);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
-					insns.add(new InsnNode(IAND));
+					insns.add(new InsnNode(Opcodes.IAND));
 
 					current &= operand;
+					builder.append(" & ").append(operand);
+					verifySum &= operand;
 					break;
+				}
 				case 1:
+				{
+					// Or
 					operand = randomInt(current);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
-					insns.add(new InsnNode(IOR));
+					insns.add(new InsnNode(Opcodes.IOR));
 
 					current |= operand;
+					builder.append(" | ").append(operand);
+					verifySum |= operand;
 					break;
+				}
 				case 2:
+				{
+					// XOR
 					operand = randomInt(current);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
-					insns.add(new InsnNode(IXOR));
+					insns.add(new InsnNode(Opcodes.IXOR));
 
 					current ^= operand;
+					builder.append(" ^ ").append(operand);
+					verifySum ^= operand;
 					break;
+				}
 				case 3:
-					operand = RandomUtils.getRandomInt(1, 5);
+				{
+					// Bitwise NOT 'y = ~(x)'
+
+					//
+					// long x = 1234L;
+					// long y = ~x;
+					//
+					// LDC 1234
+					// LSTORE 1
+					// LLOAD 1: x
+					// LDC -1
+					// LXOR
+					// LSTORE 3
+					//
+
+					insns.add(new InsnNode(Opcodes.ICONST_M1));
+					insns.add(new InsnNode(Opcodes.IXOR));
+
+					current = ~current;
+					builder.append(" ^ ").append(-1);
+					verifySum = ~verifySum; // Exceptionally
+					break;
+				}
+				case 4:
+				{
+					// Shift-left
+					int j = 0x1F;
+					while (j > 0 && (current << j == 0 || current << j <= Integer.MIN_VALUE || current << j >= Integer.MAX_VALUE))
+						j--;
+
+					operand = RandomUtils.getRandomInt(1, j > 0 ? j : 0x1E);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
-					insns.add(new InsnNode(ISHL));
+					insns.add(new InsnNode(Opcodes.ISHL));
 
 					current <<= operand;
+					builder.append(" << ").append(operand);
+					verifySum <<= operand;
 					break;
-				case 4:
-					operand = RandomUtils.getRandomInt(1, 5);
+				}
+				case 5:
+				{
+					// Shift-right
+					int j = 0x1E;
+					while (j > 0 && (current >> j == 0 || current >> j <= Integer.MIN_VALUE || current >> j >= Integer.MAX_VALUE))
+						j--;
+
+					operand = RandomUtils.getRandomInt(1, j > 0 ? j : 0x1E);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
-					insns.add(new InsnNode(ISHR));
+					insns.add(new InsnNode(Opcodes.ISHR));
 
 					current >>= operand;
+					builder.append(" >> ").append(operand);
+					verifySum >>= operand;
 					break;
-				case 5:
-				default:
-					operand = RandomUtils.getRandomInt(1, 5);
+				}
+				case 6:
+				{
+					// Logical shift-right
+					int j = 0x1E;
+					while (j > 0 && (current >>> j == 0 || current >>> j <= Integer.MIN_VALUE || current >>> j >= Integer.MAX_VALUE))
+						j--;
+
+					operand = RandomUtils.getRandomInt(1, j > 0 ? j : 0x1E);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
-					insns.add(new InsnNode(IUSHR));
+					insns.add(new InsnNode(Opcodes.IUSHR));
 
 					current >>>= operand;
+					builder.append(" >>> ").append(operand);
+					verifySum >>>= operand;
 					break;
+				}
 			}
 		}
 
 		final int correctionOperand = originalNum ^ current;
 		insns.add(ASMUtils.getNumberInsn(correctionOperand));
-		insns.add(new InsnNode(IXOR));
+		insns.add(new InsnNode(Opcodes.IXOR));
+
+		builder.append(" ^ ").append(correctionOperand);
+
+		verifySum ^= correctionOperand;
+
+		final int verifyOpcode = new NumberObfuscationVerifier(insns, originalNum).checkInt();
+		builder.append(" [verifySum: ").append(verifySum).append(", verifyOpcode: ").append(verifyOpcode).append("]");
+		if (originalNum != verifySum || originalNum != verifyOpcode)
+		{
+			builder.append(" => !!~~ FAILED TO VERIFY ~~!! Skipping...");
+			Main.info(builder.toString());
+			return ASMUtils.singletonList(ASMUtils.getNumberInsn(originalNum));
+		}
 
 		return insns;
 	}
 
 	private InsnList obfuscateNumber(final long originalNum)
 	{
+
 		long current = randomLong(originalNum);
+		long verifySum = current;
 
 		final InsnList insns = new InsnList();
 		insns.add(ASMUtils.getNumberInsn(current));
 
-		for (int i = 0, j = RandomUtils.getRandomInt(2, 6); i < j; i++)
+		final StringBuilder builder = new StringBuilder("*** [BitwiseObfuscator] Tampering long " + originalNum + " => ");
+		builder.append(current);
+
+		for (int i = 0, iterations = getIterationCount(); i < iterations; i++)
 		{
 			final long operand;
 
-			switch (RandomUtils.getRandomInt(6))
+			switch (RandomUtils.getRandomInt(Math.abs(current) <= 1L ? 4 : 7))
 			{
 				case 0:
+				{
 					operand = randomLong(current);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
-					insns.add(new InsnNode(LAND));
+					insns.add(new InsnNode(Opcodes.LAND));
 
 					current &= operand;
+					builder.append(" & ").append(operand);
+					verifySum &= operand;
 					break;
+				}
 				case 1:
+				{
 					operand = randomLong(current);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
-					insns.add(new InsnNode(LOR));
+					insns.add(new InsnNode(Opcodes.LOR));
 
 					current |= operand;
+					builder.append(" | ").append(operand);
+					verifySum |= operand;
 					break;
+				}
 				case 2:
+				{
 					operand = randomLong(current);
-
 					insns.add(ASMUtils.getNumberInsn(operand));
-					insns.add(new InsnNode(LXOR));
+					insns.add(new InsnNode(Opcodes.LXOR));
 
 					current ^= operand;
+					builder.append(" ^ ").append(operand);
+					verifySum ^= operand;
 					break;
+				}
 				case 3:
-					operand = RandomUtils.getRandomInt(1, 32);
+				{
+					// Bitwise NOT 'y = ~(x)'
+
+					//
+					// long x = 1234L;
+					// long y = ~x;
+					//
+					// LDC 1234
+					// LSTORE 1
+					// LLOAD 1: x
+					// LDC -1
+					// LXOR
+					// LSTORE 3
+
+					insns.add(new LdcInsnNode(-1L));
+					insns.add(new InsnNode(Opcodes.LXOR));
+
+					current = ~current;
+					builder.append(" ^ ").append(-1);
+					verifySum = ~verifySum; // Exceptionally
+					break;
+				}
+				case 4:
+				{
+					int j = 0x3F;
+					while (j > 0 && (current << j == 0 || current << j <= Long.MIN_VALUE || current << j >= Long.MAX_VALUE))
+						j--;
+
+					operand = RandomUtils.getRandomInt(1, j > 0 ? j : 0x3F);
 
 					insns.add(ASMUtils.getNumberInsn((int) operand));
-					insns.add(new InsnNode(LSHL));
+					insns.add(new InsnNode(Opcodes.LSHL));
 
 					current <<= operand;
+					builder.append(" << ").append(operand);
+					verifySum <<= operand;
 					break;
-				case 4:
-					operand = RandomUtils.getRandomInt(1, 32);
+				}
+				case 5:
+				{
+					int j = 0x3F;
+					while (j > 0 && (current >> j == 0 || current >> j <= Long.MIN_VALUE || current >> j >= Long.MAX_VALUE))
+						j--;
+
+					operand = RandomUtils.getRandomInt(1, j > 0 ? j : 0x3F);
 
 					insns.add(ASMUtils.getNumberInsn((int) operand));
-					insns.add(new InsnNode(LSHR));
+					insns.add(new InsnNode(Opcodes.LSHR));
 
 					current >>= operand;
+					builder.append(" >> ").append(operand);
+					verifySum >>= operand;
 					break;
-				case 5:
-				default:
-					operand = RandomUtils.getRandomInt(1, 32);
+				}
+				case 6:
+				{
+					int j = 0x3F;
+					while (j > 0 && (current >>> j == 0 || current >>> j <= Long.MIN_VALUE || current >>> j >= Long.MAX_VALUE))
+						j--;
+
+					operand = RandomUtils.getRandomInt(1, j > 0 ? j : 0x3F);
 
 					insns.add(ASMUtils.getNumberInsn((int) operand));
-					insns.add(new InsnNode(LUSHR));
+					insns.add(new InsnNode(Opcodes.LUSHR));
 
 					current >>>= operand;
+					builder.append(" >>> ").append(operand);
+					verifySum >>>= operand;
 					break;
+				}
 			}
 		}
 
 		final long correctionOperand = originalNum ^ current;
 		insns.add(ASMUtils.getNumberInsn(correctionOperand));
-		insns.add(new InsnNode(LXOR));
+		insns.add(new InsnNode(Opcodes.LXOR));
+
+		builder.append(" ^ ").append(correctionOperand);
+
+		verifySum ^= correctionOperand;
+
+		final long verifyOpcode = new NumberObfuscationVerifier(insns, originalNum).checkLong();
+		builder.append(" [verifySum: ").append(verifySum).append(", verifyOpcode: ").append(verifyOpcode).append("]");
+		if (originalNum != verifySum || originalNum != verifyOpcode)
+		{
+			builder.append(" => !!~~ FAILED TO VERIFY ~~!! Skipping...");
+			Main.info(builder.toString());
+			return ASMUtils.singletonList(ASMUtils.getNumberInsn(originalNum));
+		}
 
 		return insns;
 	}

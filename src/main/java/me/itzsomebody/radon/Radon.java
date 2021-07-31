@@ -164,7 +164,7 @@ public class Radon
 					zos.write(classWrapper.toByteArray(this));
 					zos.closeEntry();
 				}
-				catch (final IOException t)
+				catch (final Exception t)
 				{
 					Main.severe(String.format("*** Error writing class %s. Skipping.", classWrapper.getName() + ".class"));
 					t.printStackTrace();

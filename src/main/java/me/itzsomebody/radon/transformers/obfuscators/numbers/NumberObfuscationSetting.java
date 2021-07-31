@@ -22,6 +22,7 @@ import java.util.Locale;
 
 public enum NumberObfuscationSetting
 {
+	NUMBER_POOLER(new NumberPooler()),
 	CONTEXT_CHECKING(new ContextCheckObfuscator()),
 	ARITHMETIC_OPERATIONS(new ArithmeticObfuscator()),
 	BITWISE_OPERATIONS(new BitwiseObfuscator());
