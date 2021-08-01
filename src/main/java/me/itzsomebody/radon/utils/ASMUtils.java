@@ -18,14 +18,15 @@
 
 package me.itzsomebody.radon.utils;
 
-import java.util.Arrays;
-
+import me.itzsomebody.radon.exceptions.RadonException;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.CodeSizeEvaluator;
 import org.objectweb.asm.tree.*;
 
-import me.itzsomebody.radon.exceptions.RadonException;
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Bytecode utilities for bytecode instructions.
@@ -387,6 +388,19 @@ public final class ASMUtils implements Opcodes
 		final CodeSizeEvaluator cse = new CodeSizeEvaluator(null);
 		insns.accept(cse);
 		return cse.getMaxSize();
+	}
+
+	public static int evaluateMaxSize(final MethodNode methodNode)
+	{
+		final CodeSizeEvaluator cse = new CodeSizeEvaluator(null);
+		methodNode.accept(cse);
+		return cse.getMaxSize();
+	}
+
+	public static Optional<MethodNode> findMethod(final ClassNode classNode, final String methodName, final String methodDescriptor)
+	{
+		Objects.requireNonNull(methodName, "methodName");
+		return Objects.requireNonNull(classNode, "classNode").methods.stream().filter(methodNode -> methodName.equals(methodNode.name) && methodDescriptor.equals(methodNode.desc)).findFirst();
 	}
 
 	private ASMUtils()

@@ -20,6 +20,7 @@ package me.itzsomebody.radon.asm;
 
 import java.util.List;
 
+import me.itzsomebody.radon.utils.Constants;
 import org.objectweb.asm.commons.CodeSizeEvaluator;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodNode;
@@ -35,8 +36,6 @@ import me.itzsomebody.radon.asm.accesses.MethodAccess;
  */
 public class MethodWrapper
 {
-	// https://docs.oracle.com/javase/specs/jvms/se12/html/jvms-4.html#jvms-4.7.3
-	private static final int MAX_CODE_SIZE = 65535;
 
 	private MethodNode methodNode;
 	private final String originalName;
@@ -197,6 +196,6 @@ public class MethodWrapper
 	 */
 	public int getLeewaySize()
 	{
-		return MAX_CODE_SIZE - getCodeSize();
+		return Constants.MAX_CODE_SIZE - getCodeSize();
 	}
 }

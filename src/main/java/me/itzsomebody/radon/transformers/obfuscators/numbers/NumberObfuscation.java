@@ -43,11 +43,13 @@ public class NumberObfuscation extends Transformer
 	private boolean doubleTamperingEnabled;
 	private int minIteration;
 	private int maxIteration;
-	private boolean numberPooler_randomOrder;
-	private boolean numberPooler_poolInteger;
-	private boolean numberPooler_poolLong;
-	private boolean numberPooler_poolFloat;
-	private boolean numberPooler_poolDouble;
+	private boolean poolInteger;
+	private boolean poolLong;
+	private boolean poolFloat;
+	private boolean poolDouble;
+	private boolean numberPoolerRandomOrder;
+	private boolean numberPoolerGlobal;
+	private boolean numberPoolerInjectGlobalPool;
 
 	protected NumberObfuscation master;
 
@@ -92,15 +94,17 @@ public class NumberObfuscation extends Transformer
 		integerTamperingEnabled = config.getOrDefault(NUMBER_OBFUSCATION + ".integer_tampering", false);
 		longTamperingEnabled = config.getOrDefault(NUMBER_OBFUSCATION + ".long_tampering", false);
 
-		numberPooler_randomOrder = config.getOrDefault(NUMBER_OBFUSCATION + ".number_pooler_randomorder", false);
+		poolInteger = config.getOrDefault(NUMBER_OBFUSCATION + ".pool_integer", false);
+		poolLong = config.getOrDefault(NUMBER_OBFUSCATION + ".pool_long", false);
+		poolFloat = config.getOrDefault(NUMBER_OBFUSCATION + ".pool_float", false);
+		poolDouble = config.getOrDefault(NUMBER_OBFUSCATION + ".pool_double", false);
 
-		numberPooler_poolInteger = config.getOrDefault(NUMBER_OBFUSCATION + ".pool_integer", false);
-		numberPooler_poolLong = config.getOrDefault(NUMBER_OBFUSCATION + ".pool_long", false);
-		numberPooler_poolFloat = config.getOrDefault(NUMBER_OBFUSCATION + ".pool_float", false);
-		numberPooler_poolDouble = config.getOrDefault(NUMBER_OBFUSCATION + ".pool_double", false);
+		numberPoolerRandomOrder = config.getOrDefault(NUMBER_OBFUSCATION + ".numberpooler_randomorder", false);
+		numberPoolerGlobal = config.getOrDefault(NUMBER_OBFUSCATION + ".numberpooler_global", false);
+		numberPoolerInjectGlobalPool = config.getOrDefault(NUMBER_OBFUSCATION + ".numberpooler_globalinject", false);
 
 		minIteration = config.getOrDefault(NUMBER_OBFUSCATION + ".min_iteration", 2);
-		maxIteration = config.getOrDefault(NUMBER_OBFUSCATION + ".max_iteration", 6);
+		maxIteration = config.getOrDefault(NUMBER_OBFUSCATION + ".max_iteration", 3);
 	}
 
 	private void initMaster(final NumberObfuscation master)
@@ -185,38 +189,58 @@ public class NumberObfuscation extends Transformer
 		return RandomUtils.getRandomInt(master.minIteration, master.maxIteration);
 	}
 
-	final int getMinIteration()
+	protected int getMinIteration()
 	{
 		return minIteration;
 	}
 
-	final int getMaxIteration()
+	protected int getMaxIteration()
 	{
 		return maxIteration;
 	}
 
-	final boolean isNumberPoolerRandomOrder()
+	protected boolean isNumberPoolerRandomOrder()
 	{
-		return numberPooler_randomOrder;
+		return numberPoolerRandomOrder;
 	}
 
-	final boolean canPoolInteger()
+	protected boolean canPoolInteger()
 	{
-		return numberPooler_poolInteger;
+		return poolInteger;
 	}
 
-	final boolean canPoolLong()
+	protected boolean canPoolLong()
 	{
-		return numberPooler_poolLong;
+		return poolLong;
 	}
 
-	final boolean canPoolFloat()
+	protected boolean canPoolFloat()
 	{
-		return numberPooler_poolFloat;
+		return poolFloat;
 	}
 
-	final boolean canPoolDouble()
+	protected boolean canPoolDouble()
 	{
-		return numberPooler_poolDouble;
+		return poolDouble;
+	}
+
+	protected boolean canNumberPoolerGlobal()
+	{
+		return numberPoolerGlobal;
+	}
+
+	protected void setNumberPoolerGlobal(final boolean numberPoolerGlobal)
+	{
+		this.numberPoolerGlobal = numberPoolerGlobal;
+	}
+
+	protected boolean canNumberPoolerInjectGlobalPool()
+	{
+		return numberPoolerInjectGlobalPool;
+	}
+
+	protected void setNumberPoolerInjectGlobalPool(final boolean numberPoolerInjectGlobalPool)
+	{
+		this.numberPoolerInjectGlobalPool = numberPoolerInjectGlobalPool;
 	}
 }

@@ -18,18 +18,17 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.numbers;
 
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.IntStream;
-
+import me.itzsomebody.radon.Main;
+import me.itzsomebody.radon.asm.ClassWrapper;
+import me.itzsomebody.radon.utils.ASMUtils;
+import me.itzsomebody.radon.utils.RandomUtils;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.tree.*;
 
-import me.itzsomebody.radon.Main;
-import me.itzsomebody.radon.asm.ClassWrapper;
-import me.itzsomebody.radon.utils.ASMUtils;
-import me.itzsomebody.radon.utils.RandomUtils;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
 
 /**
  * XORs number constants using stacktrace variables as keys. Be super careful with this because it WILL SLOW STUFF DOWN BY A LOT.
@@ -95,18 +94,18 @@ public class ContextCheckObfuscator extends NumberObfuscation
 					final float originalNum = ASMUtils.getFloatFromInsn(insn);
 					final int encodedFloat = encodeFloat(originalNum, methodWrapper.getName().hashCode());
 
-					final InsnList insnList = new InsnList();
-					insnList.add(ASMUtils.getNumberInsn(encodedFloat));
-					insnList.add(new MethodInsnNode(INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false));
-					insnList.add(ASMUtils.getNumberInsn(RandomUtils.getRandomInt()));
-					insnList.add(new MethodInsnNode(INVOKESTATIC, memberNames.className, memberNames.decodeConstantMethodName, "(Ljava/lang/Object;I)Ljava/lang/Object;", false));
-					insnList.add(new TypeInsnNode(CHECKCAST, "java/lang/Float"));
-					insnList.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Float", "floatValue", "()F", false));
+					final InsnList insns = new InsnList();
+					insns.add(ASMUtils.getNumberInsn(encodedFloat));
+					insns.add(new MethodInsnNode(INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false));
+					insns.add(ASMUtils.getNumberInsn(RandomUtils.getRandomInt()));
+					insns.add(new MethodInsnNode(INVOKESTATIC, memberNames.className, memberNames.decodeConstantMethodName, "(Ljava/lang/Object;I)Ljava/lang/Object;", false));
+					insns.add(new TypeInsnNode(CHECKCAST, "java/lang/Float"));
+					insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Float", "floatValue", "()F", false));
 
-					methodInstructions.insertBefore(insn, insnList);
+					methodInstructions.insertBefore(insn, insns);
 					methodInstructions.remove(insn);
 
-					leeway -= 20;
+					leeway -= ASMUtils.evaluateMaxSize(insns);
 					counter.incrementAndGet();
 				}
 				else if (ASMUtils.isDoubleInsn(insn) && master.isDoubleTamperingEnabled())
@@ -114,17 +113,17 @@ public class ContextCheckObfuscator extends NumberObfuscation
 					final double originalNum = ASMUtils.getDoubleFromInsn(insn);
 					final long encodedLong = encodeDouble(originalNum, methodWrapper.getName().hashCode());
 
-					final InsnList insnList = new InsnList();
-					insnList.add(ASMUtils.getNumberInsn(encodedLong));
-					insnList.add(new MethodInsnNode(INVOKESTATIC, "java/lang/Long", "valueOf", "(J)Ljava/lang/Long;", false));
-					insnList.add(ASMUtils.getNumberInsn(RandomUtils.getRandomInt()));
-					insnList.add(new MethodInsnNode(INVOKESTATIC, memberNames.className, memberNames.decodeConstantMethodName, "(Ljava/lang/Object;I)Ljava/lang/Object;", false));
-					insnList.add(new TypeInsnNode(CHECKCAST, "java/lang/Double"));
-					insnList.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Double", "doubleValue", "()D", false));
+					final InsnList insns = new InsnList();
+					insns.add(ASMUtils.getNumberInsn(encodedLong));
+					insns.add(new MethodInsnNode(INVOKESTATIC, "java/lang/Long", "valueOf", "(J)Ljava/lang/Long;", false));
+					insns.add(ASMUtils.getNumberInsn(RandomUtils.getRandomInt()));
+					insns.add(new MethodInsnNode(INVOKESTATIC, memberNames.className, memberNames.decodeConstantMethodName, "(Ljava/lang/Object;I)Ljava/lang/Object;", false));
+					insns.add(new TypeInsnNode(CHECKCAST, "java/lang/Double"));
+					insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Double", "doubleValue", "()D", false));
 
-					methodInstructions.insertBefore(insn, insnList);
+					methodInstructions.insertBefore(insn, insns);
 					methodInstructions.remove(insn);
-					leeway -= 25;
+					leeway -= ASMUtils.evaluateMaxSize(insns);
 					counter.incrementAndGet();
 				}
 			}
@@ -165,11 +164,10 @@ public class ContextCheckObfuscator extends NumberObfuscation
 	{
 		final ClassNode cw = new ClassNode();
 		MethodVisitor mv;
-		FieldVisitor fv;
 
 		cw.visit(V1_5, ACC_PUBLIC + ACC_SUPER, memberNames.className, null, "java/lang/Thread", null);
 
-		fv = cw.visitField(ACC_PRIVATE + ACC_STATIC + ACC_VOLATILE, memberNames.constantFieldName, "Ljava/lang/Object;", null, null);
+		FieldVisitor fv = cw.visitField(ACC_PRIVATE + ACC_STATIC + ACC_VOLATILE, memberNames.constantFieldName, "Ljava/lang/Object;", null, null);
 		fv.visitEnd();
 		fv = cw.visitField(ACC_PRIVATE + ACC_STATIC + ACC_VOLATILE, memberNames.indicatorFieldName, "Ljava/lang/Object;", null, null);
 		fv.visitEnd();

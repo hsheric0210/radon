@@ -1,14 +1,11 @@
 package me.itzsomebody.radon.utils;
 
-import java.io.IOError;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.regex.Pattern;
-
 import org.objectweb.asm.Attribute;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.LabelNode;
+
+import java.util.ArrayList;
+import java.util.regex.Pattern;
 
 public interface Constants
 {
@@ -27,4 +24,6 @@ public interface Constants
 	ArrayList[] EMPTY_LIST_ARRAY = new ArrayList[0];
 	Type[] EMPTY_TYPE_ARRAY = new Type[0];
 	LabelNode[] EMPTY_LABEL_NODE_ARRAY = new LabelNode[0];
+	// https://docs.oracle.com/javase/specs/jvms/se12/html/jvms-4.html#jvms-4.7.3
+	int MAX_CODE_SIZE = 65535;
 }

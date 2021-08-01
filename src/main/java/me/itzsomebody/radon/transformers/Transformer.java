@@ -18,23 +18,22 @@
 
 package me.itzsomebody.radon.transformers;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
-import me.itzsomebody.radon.config.ObfuscationConfiguration;
-import org.objectweb.asm.Opcodes;
-
 import me.itzsomebody.radon.Radon;
 import me.itzsomebody.radon.asm.ClassWrapper;
 import me.itzsomebody.radon.asm.FieldWrapper;
 import me.itzsomebody.radon.asm.MethodWrapper;
 import me.itzsomebody.radon.config.Configuration;
+import me.itzsomebody.radon.config.ObfuscationConfiguration;
 import me.itzsomebody.radon.dictionaries.WrappedDictionary;
 import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.utils.RandomUtils;
+import org.objectweb.asm.Opcodes;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Abstract transformer for all the transformers. \o/
@@ -91,6 +90,7 @@ public abstract class Transformer implements Opcodes
 
 	public String randomClassName()
 	{
+		// TODO: Better class name generation algorithm
 		final List<String> list = new ArrayList<>(getClasses().keySet());
 
 		final String first = RandomUtils.getRandomElement(list);

@@ -18,16 +18,15 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.numbers;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
+import me.itzsomebody.radon.Main;
+import me.itzsomebody.radon.utils.ASMUtils;
+import me.itzsomebody.radon.utils.RandomUtils;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 
-import me.itzsomebody.radon.Main;
-import me.itzsomebody.radon.utils.ASMUtils;
-import me.itzsomebody.radon.utils.RandomUtils;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Splits number constants into arithmetic operations.
@@ -107,10 +106,9 @@ public class ArithmeticObfuscator extends NumberObfuscation
 
 	private InsnList obfuscateNumber(final int originalNum)
 	{
-		final StringBuilder builder = new StringBuilder("*** [ArithmeticObfuscator] Tampering original int '" + originalNum + "' to '");
+		final StringBuilder builder = new StringBuilder("*** [ArithmeticObfuscator] Verify failed: Obfuscate int '" + originalNum + "' to '");
 
 		int current = randomInt(originalNum);
-		int verifySum = current;
 
 		final InsnList insns = new InsnList();
 		insns.add(ASMUtils.getNumberInsn(current));
@@ -124,67 +122,52 @@ public class ArithmeticObfuscator extends NumberObfuscation
 			{
 				case 0:
 				{
-					// Add
 					operand = randomInt(current);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
 					insns.add(new InsnNode(Opcodes.IADD));
-
 					current += operand;
 					builder.append(" + ").append(operand);
-					verifySum += operand;
 					break;
 				}
 				case 1:
 				{
-					// Subtract
 					operand = randomInt(current);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
 					insns.add(new InsnNode(Opcodes.ISUB));
-
 					current -= operand;
 					builder.append(" - ").append(operand);
-					verifySum -= operand;
 					break;
 				}
 				case 2:
 				{
-					// Multiply
 					operand = RandomUtils.getRandomInt(1, 255);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
 					insns.add(new InsnNode(Opcodes.IMUL));
-
 					current *= operand;
 					builder.append(" * ").append(operand);
-					verifySum *= operand;
 					break;
 				}
 				case 3:
 				{
-					// Divide
 					operand = RandomUtils.getRandomInt(1, 255);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
 					insns.add(new InsnNode(Opcodes.IDIV));
-
 					current /= operand;
 					builder.append(" / ").append(operand);
-					verifySum /= operand;
 					break;
 				}
 				case 4:
 				{
-					// Remainder
 					operand = RandomUtils.getRandomInt(1, 255);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
 					insns.add(new InsnNode(Opcodes.IREM));
-
 					current %= operand;
 					builder.append(" % ").append(operand);
-					verifySum %= operand;
 					break;
 				}
 			}
@@ -195,32 +178,27 @@ public class ArithmeticObfuscator extends NumberObfuscation
 		{
 			insns.add(ASMUtils.getNumberInsn(correctionOperand));
 			insns.add(new InsnNode(Opcodes.IADD));
-			builder.append(" + ").append(correctionOperand).append("'");
+			builder.append(" + ").append(correctionOperand).append('\'');
 		}
 		else
 		{
-			// Subtract the correction operand
-
 			if (RandomUtils.getRandomBoolean())
 				insns.add(ASMUtils.getNumberInsn(-correctionOperand)); // Negate manually
 			else
 			{
-				// Negate by opcode INEG
 				insns.add(ASMUtils.getNumberInsn(correctionOperand));
 				insns.add(new InsnNode(Opcodes.INEG)); // Negate by the opcode
 			}
+
 			insns.add(new InsnNode(Opcodes.ISUB));
-
-			builder.append(" - ").append(-correctionOperand).append("'");
+			builder.append(" - ").append(-correctionOperand).append('\'');
 		}
-		verifySum += correctionOperand;
+		current += correctionOperand;
 
-		final int verifyOpcode = new NumberObfuscationVerifier(insns, originalNum).checkInt();
-		builder.append(" [verifySum: ").append(verifySum).append(", verifyOpcode: ").append(verifyOpcode).append("]");
+		builder.append(" [current: ").append(current).append(", delta: ").append(current - originalNum).append(']');
 
-		if (originalNum != verifySum || originalNum != verifyOpcode)
+		if (originalNum != current)
 		{
-			builder.append(" => !!~~MISMATCHED~~!! Skipping...");
 			Main.info(builder.toString());
 			return ASMUtils.singletonList(ASMUtils.getNumberInsn(originalNum));
 		}
@@ -230,10 +208,9 @@ public class ArithmeticObfuscator extends NumberObfuscation
 
 	private InsnList obfuscateNumber(final long originalNum)
 	{
-		final StringBuilder builder = new StringBuilder("*** [ArithmeticObfuscator] Tampering original long '" + originalNum + "' to '");
+		final StringBuilder builder = new StringBuilder("*** [ArithmeticObfuscator] Verify failed: Obfuscate long '" + originalNum + "' to '");
 
 		long current = randomLong(originalNum);
-		long verifySum = current;
 
 		final InsnList insns = new InsnList();
 		insns.add(ASMUtils.getNumberInsn(current));
@@ -247,72 +224,52 @@ public class ArithmeticObfuscator extends NumberObfuscation
 			{
 				case 0:
 				{
-					// Add
 					operand = randomLong(current);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
 					insns.add(new InsnNode(Opcodes.LADD));
-
 					current += operand;
-
 					builder.append(" + ").append(operand);
-					verifySum += operand;
 					break;
 				}
 				case 1:
 				{
-					// Subtract
 					operand = randomLong(current);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
 					insns.add(new InsnNode(Opcodes.LSUB));
-
 					current -= operand;
-
 					builder.append(" - ").append(operand);
-					verifySum -= operand;
 					break;
 				}
 				case 2:
 				{
-					// Multiply
 					operand = RandomUtils.getRandomInt(1, 65535);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
 					insns.add(new InsnNode(Opcodes.LMUL));
-
 					current *= operand;
-
 					builder.append(" * ").append(operand);
-					verifySum *= operand;
 					break;
 				}
 				case 3:
 				{
-					// Divide
 					operand = RandomUtils.getRandomInt(1, 65535);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
 					insns.add(new InsnNode(Opcodes.LDIV));
-
 					current /= operand;
-
 					builder.append(" / ").append(operand);
-					verifySum /= operand;
 					break;
 				}
 				case 4:
 				{
-					// Remainder
 					operand = RandomUtils.getRandomInt(1, 255);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
 					insns.add(new InsnNode(Opcodes.LREM));
-
 					current %= operand;
-
 					builder.append(" % ").append(operand);
-					verifySum %= operand;
 					break;
 				}
 			}
@@ -321,37 +278,29 @@ public class ArithmeticObfuscator extends NumberObfuscation
 		final long correctionOperand = originalNum - current;
 		if (RandomUtils.getRandomBoolean())
 		{
-			// Add the correction operand
-
 			insns.add(ASMUtils.getNumberInsn(correctionOperand));
 			insns.add(new InsnNode(Opcodes.LADD));
-			builder.append(" + ").append(correctionOperand).append("'");
+			builder.append(" + ").append(correctionOperand).append('\'');
 		}
 		else
 		{
-			// Subtract the correction operand
-
 			if (RandomUtils.getRandomBoolean())
-				insns.add(ASMUtils.getNumberInsn(-correctionOperand)); // Negate manually
+				insns.add(ASMUtils.getNumberInsn(-correctionOperand));
 			else
 			{
-				// Negate by opcode LNEG
 				insns.add(ASMUtils.getNumberInsn(correctionOperand));
-				insns.add(new InsnNode(Opcodes.LNEG)); // Negate by the opcode
+				insns.add(new InsnNode(Opcodes.LNEG));
 			}
 			insns.add(new InsnNode(Opcodes.LSUB));
 
-			builder.append(" - ").append(-correctionOperand).append("'");
+			builder.append(" - ").append(-correctionOperand).append('\'');
 		}
-		verifySum += correctionOperand;
+		current += correctionOperand;
 
-		final long verifyOpcode = new NumberObfuscationVerifier(insns, originalNum).checkLong();
+		builder.append(" [current: ").append(current).append(", delta: ").append(current - originalNum).append(']');
 
-		builder.append(" [verifySum: ").append(verifySum).append(", verifyOpcode: ").append(verifyOpcode).append("]");
-
-		if (originalNum != verifySum || originalNum != verifyOpcode)
+		if (originalNum != current)
 		{
-			builder.append(" => !!~~MISMATCHED~~!! Skipping...");
 			Main.info(builder.toString());
 			return ASMUtils.singletonList(ASMUtils.getNumberInsn(originalNum));
 		}
@@ -361,7 +310,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 
 	private InsnList obfuscateNumber(final float originalNum) // TODO: Overflow protection
 	{
-		final StringBuilder builder = new StringBuilder("*** [ArithmeticObfuscator] Tampering original float '" + originalNum + "' to '");
+		final StringBuilder builder = new StringBuilder("*** [ArithmeticObfuscator] Verify failed: Obfuscate float '" + originalNum + "' to '");
 
 		float current = originalNum == 0 ? randomFloat(Integer.MAX_VALUE) : randomFloat(originalNum);
 
@@ -377,33 +326,26 @@ public class ArithmeticObfuscator extends NumberObfuscation
 			{
 				case 0:
 				{
-					// Add
 					operand = Float.isInfinite(current * 2) || current + (current - 1.0F) >= Float.MAX_VALUE ? randomFloat(Float.MAX_VALUE - current - 1.0F) : randomFloat(current);
 
 					insnList.add(ASMUtils.getNumberInsn(operand));
 					insnList.add(new InsnNode(Opcodes.FADD));
-
 					current += operand;
-
 					builder.append(" + ").append(operand);
 					break;
 				}
 				case 1:
 				{
-					// Subtract
 					operand = Float.isInfinite(current - (current - 1.0F)) || current + (current - 1.0F) <= Float.MIN_VALUE ? randomFloat(Float.MIN_VALUE + current + 1.0F) : randomFloat(current);
 
 					insnList.add(ASMUtils.getNumberInsn(operand));
 					insnList.add(new InsnNode(Opcodes.FSUB));
-
 					current -= operand;
-
 					builder.append(" - ").append(operand);
 					break;
 				}
 				case 2:
 				{
-					// Multiply
 					int operandLimit = 65535;
 
 					while (operandLimit > 0 && (Float.isInfinite(current * operandLimit) || current * operandLimit >= Integer.MAX_VALUE))
@@ -420,35 +362,27 @@ public class ArithmeticObfuscator extends NumberObfuscation
 
 					insnList.add(ASMUtils.getNumberInsn(operand));
 					insnList.add(new InsnNode(Opcodes.FMUL));
-
 					current *= operand;
-
 					builder.append(" * ").append(operand);
 					break;
 				}
 				case 3:
 				{
-					// Divide
 					operand = RandomUtils.getRandomInt(2, 65535);
 
 					insnList.add(ASMUtils.getNumberInsn(operand));
 					insnList.add(new InsnNode(Opcodes.FDIV));
-
 					current /= operand;
-
 					builder.append(" / ").append(operand);
 					break;
 				}
 				case 4:
 				{
-					// Remainder
 					operand = RandomUtils.getRandomInt(1, 255);
 
 					insnList.add(ASMUtils.getNumberInsn(operand));
 					insnList.add(new InsnNode(Opcodes.FREM));
-
 					current %= operand;
-
 					builder.append(" % ").append(operand);
 					break;
 				}
@@ -458,34 +392,30 @@ public class ArithmeticObfuscator extends NumberObfuscation
 		final float correctionOperand = originalNum - current;
 		if (RandomUtils.getRandomBoolean())
 		{
-			// Add correction operand
 			insnList.add(ASMUtils.getNumberInsn(correctionOperand));
 			insnList.add(new InsnNode(Opcodes.FADD));
-			builder.append(" + ").append(correctionOperand).append("'");
+			builder.append(" + ").append(correctionOperand).append('\'');
 		}
 		else
 		{
-			// Subtract correction operand
 			if (RandomUtils.getRandomBoolean())
-				insnList.add(ASMUtils.getNumberInsn(-correctionOperand)); // Negate manually
+				insnList.add(ASMUtils.getNumberInsn(-correctionOperand));
 			else
 			{
 				// Negate by opcode FNEG
 				insnList.add(ASMUtils.getNumberInsn(correctionOperand));
-				insnList.add(new InsnNode(Opcodes.FNEG)); // Negate by the opcode
+				insnList.add(new InsnNode(Opcodes.FNEG));
 			}
-			insnList.add(new InsnNode(Opcodes.FSUB));
 
-			builder.append(" - ").append(-correctionOperand).append("'");
+			insnList.add(new InsnNode(Opcodes.FSUB));
+			builder.append(" - ").append(-correctionOperand).append('\'');
 		}
 		current += correctionOperand;
 
-		final float verifyOpcode = new NumberObfuscationVerifier(insnList, originalNum).checkFloat();
-		builder.append(" [current: ").append(current).append(", current-original delta: ").append(originalNum - current).append(", verifyOpcode: ").append(verifyOpcode).append("]");
+		builder.append(" [current: ").append(current).append(", delta: ").append(current - originalNum).append(']');
 
-		if (!(Float.isNaN(originalNum) && Float.isNaN(verifyOpcode)) && originalNum - verifyOpcode > 0.000001F)
+		if (!(Float.isNaN(originalNum) && Float.isNaN(current)) && originalNum - current > 0.000001F)
 		{
-			builder.append(" => !!~~MISMATCHED~~!! Skipping...");
 			Main.info(builder.toString());
 			return ASMUtils.singletonList(ASMUtils.getNumberInsn(originalNum));
 		}
@@ -495,10 +425,9 @@ public class ArithmeticObfuscator extends NumberObfuscation
 
 	private InsnList obfuscateNumber(final double originalNum) // TODO: Overflow protection
 	{
-		final StringBuilder builder = new StringBuilder("*** [ArithmeticObfuscator] Tampering original double '" + originalNum + "' to '");
+		final StringBuilder builder = new StringBuilder("*** [ArithmeticObfuscator] Verify failed: Obfuscate double '" + originalNum + "' to '");
 
 		double current = originalNum == 0 ? randomDouble(Integer.MAX_VALUE) : randomDouble(originalNum);
-		double verifySum = current;
 
 		final InsnList insnList = new InsnList();
 		insnList.add(ASMUtils.getNumberInsn(current));
@@ -512,35 +441,26 @@ public class ArithmeticObfuscator extends NumberObfuscation
 			{
 				case 0:
 				{
-					// Add
 					operand = Double.isInfinite(current + (current - 1.0)) || current + (current - 1.0) >= Double.MAX_VALUE ? randomDouble(Double.MAX_VALUE - current - 1.0) : randomDouble(current);
 
 					insnList.add(ASMUtils.getNumberInsn(operand));
 					insnList.add(new InsnNode(Opcodes.DADD));
-
 					current += operand;
-
 					builder.append(" + ").append(operand);
-					verifySum += operand;
 					break;
 				}
 				case 1:
 				{
-					// Subtract
 					operand = Double.isInfinite(current - (current - 1.0)) || current + (current - 1) <= Double.MIN_VALUE ? randomDouble(Double.MIN_VALUE + current + 1.0) : randomDouble(current);
 
 					insnList.add(ASMUtils.getNumberInsn(operand));
 					insnList.add(new InsnNode(Opcodes.DSUB));
-
 					current -= operand;
-
 					builder.append(" - ").append(operand);
-					verifySum -= operand;
 					break;
 				}
 				case 2:
 				{
-					// Multiply
 					int operandLimit = 65535;
 
 					while (operandLimit > 0 && (Double.isInfinite(current * operandLimit) || current * operandLimit >= Integer.MAX_VALUE))
@@ -557,39 +477,28 @@ public class ArithmeticObfuscator extends NumberObfuscation
 
 					insnList.add(ASMUtils.getNumberInsn(operand));
 					insnList.add(new InsnNode(Opcodes.DMUL));
-
 					current *= operand;
-
 					builder.append(" * ").append(operand);
-					verifySum *= operand;
 					break;
 				}
 				case 3:
 				{
-					// Divide
 					operand = RandomUtils.getRandomInt(2, 65535);
 
 					insnList.add(ASMUtils.getNumberInsn(operand));
 					insnList.add(new InsnNode(Opcodes.DDIV));
-
 					current /= operand;
-
 					builder.append(" / ").append(operand);
-					verifySum /= operand;
 					break;
 				}
 				case 4:
 				{
-					// Remainder
 					operand = RandomUtils.getRandomInt(1, 255);
 
 					insnList.add(ASMUtils.getNumberInsn(operand));
 					insnList.add(new InsnNode(Opcodes.DREM));
-
 					current %= operand;
-
 					builder.append(" % ").append(operand);
-					verifySum %= operand;
 					break;
 				}
 			}
@@ -598,37 +507,29 @@ public class ArithmeticObfuscator extends NumberObfuscation
 		final double correctionOperand = originalNum - current;
 		if (RandomUtils.getRandomBoolean())
 		{
-			// Add correction operand
 			insnList.add(ASMUtils.getNumberInsn(correctionOperand));
 			insnList.add(new InsnNode(Opcodes.DADD));
-			builder.append(" + ").append(correctionOperand).append("'");
+			builder.append(" + ").append(correctionOperand).append('\'');
 		}
 		else
 		{
-			// Subtract correction operand
 			if (RandomUtils.getRandomBoolean())
-				insnList.add(ASMUtils.getNumberInsn(-correctionOperand)); // Negate manually
+				insnList.add(ASMUtils.getNumberInsn(-correctionOperand));
 			else
 			{
-				// Negate by opcode DNEG
 				insnList.add(ASMUtils.getNumberInsn(correctionOperand));
-				insnList.add(new InsnNode(Opcodes.DNEG)); // Negate by the opcode
+				insnList.add(new InsnNode(Opcodes.DNEG));
 			}
-			insnList.add(new InsnNode(Opcodes.DSUB));
 
-			builder.append(" - ").append(-correctionOperand).append("'");
+			insnList.add(new InsnNode(Opcodes.DSUB));
+			builder.append(" - ").append(-correctionOperand).append('\'');
 		}
 		current += correctionOperand;
-		verifySum += correctionOperand;
 
-		final double verifyOpcode = new NumberObfuscationVerifier(insnList, originalNum).checkDouble();
-		builder.append(" [current: ").append(current).append(", current-original delta: ").append(originalNum - current).append(", verifySum: ").append(verifySum).append(", verifyOpcode: ").append(verifyOpcode).append("]");
+		builder.append(" [current: ").append(current).append(", delta: ").append(current - originalNum).append(']');
 
-		final boolean verifySumFail = !(Double.isNaN(originalNum) && Double.isNaN(verifySum)) /* Both NaN check */ && originalNum - verifySum > 0.00000001;
-		final boolean verifyOpcodeFail = !(Double.isNaN(originalNum) && Double.isNaN(verifyOpcode)) /* Both NaN check */ && originalNum - verifyOpcode > 0.00000001;
-		if (verifySumFail || verifyOpcodeFail)
+		if (!(Double.isNaN(originalNum) && Double.isNaN(current)) && originalNum - current > 0.00000001)
 		{
-			builder.append(" => !!~~MISMATCHED~~!! Skipping...");
 			Main.info(builder.toString());
 			return ASMUtils.singletonList(ASMUtils.getNumberInsn(originalNum));
 		}

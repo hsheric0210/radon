@@ -40,7 +40,7 @@ public class ExclusionManager
 		exclusions.add(exclusion);
 	}
 
-	public boolean isExcluded(final String pattern, final ExclusionType type)
+	public boolean isExcluded(final CharSequence pattern, final ExclusionType type)
 	{
 		return exclusions.stream().anyMatch(exclusion -> (exclusion.getExclusionType() == type || exclusion.getExclusionType() == ExclusionType.GLOBAL) && exclusion.matches(pattern));
 	}

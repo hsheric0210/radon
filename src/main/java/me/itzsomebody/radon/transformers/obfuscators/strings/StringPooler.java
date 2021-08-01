@@ -18,16 +18,22 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.strings;
 
-import java.util.ArrayList;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
-
+import me.itzsomebody.radon.Main;
+import me.itzsomebody.radon.asm.ClassWrapper;
+import me.itzsomebody.radon.asm.MethodWrapper;
+import me.itzsomebody.radon.dictionaries.WrappedDictionary;
+import me.itzsomebody.radon.utils.ASMUtils;
+import me.itzsomebody.radon.utils.Constants;
+import me.itzsomebody.radon.utils.RandomUtils;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
 
-import me.itzsomebody.radon.Main;
-import me.itzsomebody.radon.asm.MethodWrapper;
-import me.itzsomebody.radon.utils.ASMUtils;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+// TODO: Make more customizable(configurable)
 public class StringPooler extends StringEncryption
 {
 	private final StringEncryption master;
@@ -41,92 +47,219 @@ public class StringPooler extends StringEncryption
 	public void transform()
 	{
 		final AtomicInteger counter = new AtomicInteger();
+		final boolean randomOrder = master.isStringPoolerRandomOrder();
 
-		getClassWrappers().stream().filter(this::included).forEach(cw ->
+		if (master.isStringPoolerGlobal())
 		{
-			final ArrayList<String> strList = new ArrayList<>();
-			final String methodName = methodDictionary.uniqueRandomString();
-			final String fieldName = fieldDictionary.uniqueRandomString();
+			final List<String> totalStrings = getClassWrappers().parallelStream().filter(this::included).flatMap(classWrapper -> classWrapper.getMethods().parallelStream().filter(methodWrapper -> included(methodWrapper) && methodWrapper.hasInstructions()).map(MethodWrapper::getMethodNode).flatMap(methodNode -> Arrays.stream(methodNode.instructions.toArray()).filter(insn -> insn instanceof LdcInsnNode).map(insn -> ((LdcInsnNode) insn).cst).filter(cst -> cst instanceof String).map(cst -> (String) cst).filter(str -> !master.excludedString(str)))).distinct().collect(Collectors.toList());
+			final int totalStringsCount = totalStrings.size();
 
-			cw.getMethods().stream().filter(methodWrapper -> included(methodWrapper) && methodWrapper.hasInstructions()).map(MethodWrapper::getInstructions).forEach(insns -> Stream.of(insns.toArray()).filter(insn -> insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof String).forEach(insn ->
+			final Map<String, Integer> mappings = new HashMap<>(totalStringsCount);
+			final List<String> reverseMappings;
+
+			if (randomOrder)
 			{
-				final String str = (String) ((LdcInsnNode) insn).cst;
+				Collections.shuffle(totalStrings);
 
-				if (!master.excludedString(str))
+				reverseMappings = new ArrayList<>(totalStringsCount);
+				for (int i = 0; i < totalStringsCount; i++)
 				{
-					strList.add(str);
+					final String string = totalStrings.get(i);
+					mappings.put(string, i);
+					reverseMappings.add(string);
+				}
+			}
+			else
+			{
+				reverseMappings = totalStrings;
+				for (int i = 0; i < totalStringsCount; i++)
+					mappings.put(totalStrings.get(i), i);
+			}
 
-					final int indexNumber = strList.size() - 1;
+			final boolean inject = master.isStringPoolerInjectGlobalPool();
+			final ClassWrapper classWrapper;
+			final String classPath;
+			if (inject)
+			{
+				classWrapper = RandomUtils.getRandomElement(getClassWrappers().stream().filter(this::included).collect(Collectors.toList())); // TODO: Constant-pool leeway safeguard
+				classPath = classWrapper.getName();
+			}
+			else
+			{
+				final ClassNode fakeNode = new ClassNode();
+				classPath = randomClassName();
+				fakeNode.name = classPath;
+				classWrapper = new ClassWrapper(fakeNode, false);
+			}
 
-					insns.insertBefore(insn, new FieldInsnNode(GETSTATIC, cw.getName(), fieldName, "[Ljava/lang/String;"));
-					insns.insertBefore(insn, ASMUtils.getNumberInsn(indexNumber));
-					insns.set(insn, new InsnNode(AALOAD));
+			// Update usages
+			final String fieldName = fieldDictionary.uniqueRandomString();
+			getClassWrappers().stream().filter(this::included).forEach(cw -> cw.getMethods().stream().filter(methodWrapper -> included(methodWrapper) && methodWrapper.hasInstructions()).map(MethodWrapper::getMethodNode).forEach(methodNode -> Stream.of(methodNode.instructions.toArray()).filter(insn -> insn instanceof LdcInsnNode).map(insn -> (LdcInsnNode) insn).filter(ldc -> ldc.cst instanceof String && !master.excludedString((String) ldc.cst)).forEach(ldc ->
+			{
+				if (mappings.containsKey((String) ldc.cst))
+				{
+					methodNode.instructions.insertBefore(ldc, new FieldInsnNode(GETSTATIC, classPath, fieldName, "[Ljava/lang/String;"));
+					methodNode.instructions.insertBefore(ldc, ASMUtils.getNumberInsn(mappings.get((String) ldc.cst)));
+					methodNode.instructions.set(ldc, new InsnNode(AALOAD));
 					counter.incrementAndGet();
 				}
-			}));
+				else
+					Main.warning(String.format("*** String %s not registered in reverseMappings! This can't be happened!!!", ldc.cst));
+			})));
 
-			if (strList.size() != 0)
+			if (!reverseMappings.isEmpty())
 			{
-				cw.addMethod(stringPool(cw.getName(), methodName, fieldName, strList));
+				if (!inject)
+					classWrapper.getClassNode().visit(V1_5, ACC_PUBLIC + ACC_SUPER + ACC_SYNTHETIC, classPath, null, "java/lang/Object", null);
+				createInitializer(reverseMappings, classWrapper, methodDictionary, fieldName);
+				if (!inject)
+					getClasses().put(classWrapper.getName(), classWrapper);
 
-				MethodNode clinit = cw.getClassNode().methods.stream().filter(methodNode -> "<clinit>".equals(methodNode.name)).findFirst().orElse(null);
-				if (clinit == null)
+				Main.info(String.format("*** Global string pool injected into class '%s'", classPath));
+			}
+		}
+		else
+			getClassWrappers().stream().filter(classWrapper -> included(classWrapper) && (classWrapper.getAccessFlags() & ACC_INTERFACE) == 0
+			// *** Interfaces are excluded from pooling for following problem:
+			// Exception in thread "main" java.lang.IncompatibleClassChangeError: Method 'void me.itzsomebody.radon.utils.Constants.vUa0ibitmil4UMsz3Tf2pqwav7CrzmHx()' must be InterfaceMethodref constant
+			// - at me.itzsomebody.radon.utils.Constants.<clinit>(Unknown Source)
+			// - at me.itzsomebody.radon.Main.<clinit>(Unknown Source)
+			).forEach(cw ->
+			{
+
+				final List<String> totalStrings = cw.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions()).map(MethodWrapper::getInstructions).flatMap(insns -> Stream.of(insns.toArray()).filter(insn -> insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof String).map(insn -> (String) ((LdcInsnNode) insn).cst).filter(string -> !master.excludedString(string)).distinct()).collect(Collectors.toList());
+				final int totalStringsCount = totalStrings.size();
+
+				final Map<String, Integer> mappings = new HashMap<>(totalStringsCount);
+				final List<String> reverseMappings;
+
+				if (randomOrder)
 				{
-					clinit = new MethodNode(ACC_PRIVATE | ACC_STATIC | ACC_SYNTHETIC, "<clinit>", "()V", null, null);
-					final InsnList insns = new InsnList();
-					insns.add(new MethodInsnNode(INVOKESTATIC, cw.getName(), methodName, "()V", false));
-					insns.add(new InsnNode(RETURN));
-					clinit.instructions = insns;
-					cw.getClassNode().methods.add(clinit);
+					Collections.shuffle(totalStrings);
+
+					reverseMappings = new ArrayList<>(totalStringsCount);
+					for (int i = 0; i < totalStringsCount; i++)
+					{
+						final String string = totalStrings.get(i);
+						mappings.put(string, i);
+						reverseMappings.add(string);
+					}
 				}
 				else
-					clinit.instructions.insertBefore(clinit.instructions.getFirst(), new MethodInsnNode(INVOKESTATIC, cw.getName(), methodName, "()V", false));
-				final FieldNode fieldNode = new FieldNode((cw.getClassNode().access & ACC_INTERFACE) != 0 ? ACC_PUBLIC | ACC_STATIC | ACC_FINAL : ACC_PRIVATE | ACC_STATIC | ACC_SYNTHETIC, fieldName, "[Ljava/lang/String;", null, null);
-				cw.addField(fieldNode);
-			}
-		});
+				{
+					reverseMappings = totalStrings;
+					for (int i = 0; i < totalStringsCount; i++)
+						mappings.put(totalStrings.get(i), i);
+				}
 
-		Main.info(String.format("Pooled %d strings.", counter.get()));
+				final String fieldName = fieldDictionary.uniqueRandomString();
+				cw.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions()).map(MethodWrapper::getInstructions).forEach(insnList -> Stream.of(insnList.toArray()).filter(insn -> insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof String).forEach(insn ->
+				{
+					final String stringToPool = (String) ((LdcInsnNode) insn).cst;
+
+					if (mappings.containsKey(stringToPool))
+					{
+						insnList.insertBefore(insn, new FieldInsnNode(Opcodes.GETSTATIC, cw.getName(), fieldName, "[Ljava/lang/String;"));
+						insnList.insertBefore(insn, ASMUtils.getNumberInsn(mappings.get(stringToPool)));
+						insnList.set(insn, new InsnNode(Opcodes.AALOAD));
+						counter.incrementAndGet();
+					}
+				}));
+
+				if (!totalStrings.isEmpty())
+					createInitializer(reverseMappings, cw, methodDictionary, fieldName);
+			});
+
+		Main.info(String.format("+ Pooled %d strings.", counter.get()));
 	}
 
-	private MethodNode stringPool(final String className, final String methodName, final String fieldName, final ArrayList<String> strings)
+	private void createInitializer(final List<String> mappings, final ClassWrapper classWrapper, final WrappedDictionary methodDictionary, final String fieldName)
 	{
-		final MethodNode method = new MethodNode(ACC_PRIVATE | ACC_STATIC | ACC_SYNTHETIC | ACC_BRIDGE, methodName, "()V", null, null);
+		final List<MethodNode> poolInits = createStringPoolMethod(classWrapper.getName(), methodDictionary, fieldName, mappings);
+		for (final MethodNode mn : poolInits)
+			classWrapper.addMethod(mn);
 
-		method.visitCode();
-		final int numberOfStrings = strings.size();
-		if (numberOfStrings <= 5)
-			method.visitInsn(numberOfStrings + 3);
-		else if (numberOfStrings <= 127)
-			method.visitIntInsn(BIPUSH, strings.size());
-		else if (numberOfStrings <= 32767)
-			method.visitIntInsn(SIPUSH, strings.size());
-		else
-			method.visitLdcInsn(strings.size());
-
-		method.visitTypeInsn(ANEWARRAY, "java/lang/String");
-
-		for (int i = 0, j = strings.size(); i < j; i++)
+		final Optional<MethodNode> staticBlock = ASMUtils.findMethod(classWrapper.getClassNode(), "<clinit>", "()V");
+		if (staticBlock.isPresent())
 		{
-			method.visitInsn(DUP);
-
-			if (i <= 5)
-				method.visitInsn(i + 3);
-			else if (i <= 127)
-				method.visitIntInsn(BIPUSH, i);
-			else if (i <= 32767)
-				method.visitIntInsn(SIPUSH, i);
-			else
-				method.visitLdcInsn(i);
-
-			method.visitLdcInsn(strings.get(i));
-			method.visitInsn(AASTORE);
+			final InsnList insns = staticBlock.get().instructions;
+			final InsnList init = new InsnList();
+			for (final MethodNode mn : poolInits)
+				init.add(new MethodInsnNode(Opcodes.INVOKESTATIC, classWrapper.getName(), mn.name, "()V", false));
+			insns.insertBefore(insns.getFirst(), init);
 		}
-		method.visitFieldInsn(PUTSTATIC, className, fieldName, "[Ljava/lang/String;");
-		method.visitInsn(RETURN);
-		method.visitMaxs(3, 0);
-		method.visitEnd();
+		else
+		{
+			final MethodNode newStaticBlock = new MethodNode(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC, "<clinit>", "()V", null, null);
+			final InsnList insnList = new InsnList();
+			for (final MethodNode mn : poolInits)
+				insnList.add(new MethodInsnNode(Opcodes.INVOKESTATIC, classWrapper.getName(), mn.name, "()V", false));
+			insnList.add(new InsnNode(Opcodes.RETURN));
+			newStaticBlock.instructions = insnList;
+			classWrapper.addMethod(newStaticBlock);
+		}
 
-		return method;
+		final FieldNode stringPoolField = new FieldNode(ACC_PUBLIC | ACC_STATIC | ACC_FINAL | ACC_SYNTHETIC, fieldName, "[Ljava/lang/String;", null, null);
+		classWrapper.addField(stringPoolField);
 	}
+
+	private static List<MethodNode> createStringPoolMethod(final String className, final WrappedDictionary methodDictionary, final String fieldName, final List<String> mappings)
+	{
+		final List<MethodNode> pools = new ArrayList<>();
+		int flags = 0;
+		Set<Integer> rngExclusions = null;
+
+		while (true)
+		{
+			final MethodNode mv = new MethodNode(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC | Opcodes.ACC_BRIDGE, methodDictionary.uniqueRandomString(), "()V", null, null);
+
+			mv.visitCode();
+
+			long leeway = Constants.MAX_CODE_SIZE;
+			final int numberOfStrings = mappings.size();
+
+			if ((flags & INITIALIZED) == 0)
+			{
+				rngExclusions = new HashSet<>(numberOfStrings);
+
+				ASMUtils.getNumberInsn(numberOfStrings).accept(mv);
+				mv.visitTypeInsn(Opcodes.ANEWARRAY, "java/lang/String");
+
+				flags |= INITIALIZED;
+			}
+			else
+				mv.visitFieldInsn(Opcodes.GETSTATIC, className, fieldName, "[Ljava/lang/String;");
+
+			while (rngExclusions.size() < numberOfStrings)
+			{
+				final int i = RandomUtils.getRandomIntWithExclusion(0, numberOfStrings, rngExclusions);
+
+				mv.visitInsn(Opcodes.DUP);
+				ASMUtils.getNumberInsn(i).accept(mv);
+				mv.visitLdcInsn(mappings.get(i));
+				mv.visitInsn(Opcodes.AASTORE);
+
+				rngExclusions.add(i);
+				leeway -= ASMUtils.evaluateMaxSize(mv);
+				if (leeway < 30000)
+				{
+					flags |= LOOP_REQUIRED;
+					break;
+				}
+			}
+			mv.visitFieldInsn(Opcodes.PUTSTATIC, className, fieldName, "[Ljava/lang/String;");
+			mv.visitInsn(Opcodes.RETURN);
+			mv.visitMaxs(3, 0);
+			mv.visitEnd();
+
+			pools.add(mv);
+
+			if ((flags & LOOP_REQUIRED) == 0)
+				return pools;
+			flags &= ~LOOP_REQUIRED;
+		}
+	}
+
+	public static final int INITIALIZED = 0b0000000000001;
+	public static final int LOOP_REQUIRED = 0b0000000000010;
 }

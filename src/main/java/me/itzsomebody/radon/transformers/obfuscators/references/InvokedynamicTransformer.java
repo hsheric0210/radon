@@ -18,15 +18,17 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.references;
 
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
-
-import org.objectweb.asm.*;
-import org.objectweb.asm.tree.*;
-
 import me.itzsomebody.radon.Main;
 import me.itzsomebody.radon.asm.ClassWrapper;
 import me.itzsomebody.radon.utils.ASMUtils;
+import me.itzsomebody.radon.utils.Constants;
+import org.objectweb.asm.*;
+import org.objectweb.asm.tree.*;
+
+import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.stream.Stream;
 
 /**
  * Hides method invocations and field accesses by swapping them out with an invokedynamic instruction.
@@ -36,7 +38,7 @@ import me.itzsomebody.radon.utils.ASMUtils;
 public class InvokedynamicTransformer extends ReferenceObfuscation
 {
 	@Override
-	public void transform()
+	public final void transform()
 	{
 		final MemberNames memberNames = new MemberNames();
 		final AtomicInteger counter = new AtomicInteger();
@@ -56,17 +58,18 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 					if (!m.name.isEmpty() && m.name.charAt(0) == '<')
 						return;
 
-					String newDesc = m.desc.replace(")", "Ljava/lang/String;J)");
+					String newDesc = Constants.CLOSING_BRACE_PATTERN.matcher(m.desc).replaceAll(Matcher.quoteReplacement("Ljava/lang/String;J)"));
 					if (m.getOpcode() != INVOKESTATIC)
-						newDesc = newDesc.replace("(", "(Ljava/lang/Object;");
+						newDesc = Constants.OPENING_BRACE_PATTERN.matcher(newDesc).replaceAll(Matcher.quoteReplacement("(Ljava/lang/Object;"));
 
 					newDesc = ASMUtils.getGenericMethodDesc(newDesc);
 					final String name = insn.getOpcode() == INVOKESTATIC ? "a" : "b";
+					// TODO: Randomize the unique identifiers if can.
 
 					final InvokeDynamicInsnNode indy = new InvokeDynamicInsnNode(name, newDesc, bootstrapHandle);
 
-					insns.insertBefore(m, new LdcInsnNode(m.owner.replace("/", ".")));
-					insns.insertBefore(m, ASMUtils.getNumberInsn((long) hash(m.desc) & 0xffffffffL | (long) m.name.hashCode() << 32));
+					insns.insertBefore(m, new LdcInsnNode(m.owner.replace('/', '.')));
+					insns.insertBefore(m, ASMUtils.getNumberInsn(hash(m.desc) & 0xffffffffL | (long) m.name.hashCode() << 32));
 					insns.set(m, indy);
 
 					counter.incrementAndGet();
@@ -80,7 +83,7 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 
 					String newDesc = isSetter ? "(" + f.desc + "Ljava/lang/String;J)V" : "(Ljava/lang/String;J)" + f.desc;
 					if (!isStatic)
-						newDesc = newDesc.replace("(", "(Ljava/lang/Object;");
+						newDesc = Constants.OPENING_BRACE_PATTERN.matcher(newDesc).replaceAll(Matcher.quoteReplacement("(Ljava/lang/Object;"));
 
 					final String name;
 
@@ -102,8 +105,8 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 
 					final InvokeDynamicInsnNode indy = new InvokeDynamicInsnNode(name, newDesc, bootstrapHandle);
 
-					insns.insertBefore(f, new LdcInsnNode(f.owner.replace("/", ".")));
-					insns.insertBefore(f, ASMUtils.getNumberInsn((long) hashType(f.desc) & 0xffffffffL | (long) f.name.hashCode() << 32));
+					insns.insertBefore(f, new LdcInsnNode(f.owner.replace('/', '.')));
+					insns.insertBefore(f, ASMUtils.getNumberInsn(hashType(f.desc) & 0xffffffffL | (long) f.name.hashCode() << 32));
 					insns.set(f, indy);
 
 					counter.incrementAndGet();
@@ -114,35 +117,25 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 		final ClassNode decryptor = createBootstrapClass(memberNames);
 		getClasses().put(decryptor.name, new ClassWrapper(decryptor, false));
 
-		Main.info("Hid API " + counter.get() + " references using invokedynamic");
+		Main.info("+ Hid API " + counter.get() + " references using invokedynamic");
 	}
 
-	private int hashType(final String sType)
+	private static int hashType(final String sType)
 	{
 		final Type type = Type.getType(sType);
 
-		if (type.getSort() == Type.ARRAY)
-			return type.getInternalName().replace('/', '.').hashCode();
-		return type.getClassName().hashCode();
+		return (type.getSort() == Type.ARRAY ? type.getInternalName().replace('/', '.') : type.getClassName()).hashCode();
 	}
 
-	private int hash(final String methodDescriptor)
+	private static int hash(final String methodDescriptor)
 	{
-		int hash = 0;
 
 		final Type[] types = Type.getArgumentTypes(methodDescriptor);
 
-		for (final Type type : types)
-			if (type.getSort() == Type.ARRAY)
-				hash ^= type.getInternalName().replace('/', '.').hashCode();
-			else
-				hash ^= type.getClassName().hashCode();
+		int hash = Arrays.stream(types).mapToInt(type -> (type.getSort() == Type.ARRAY ? type.getInternalName().replace('/', '.') : type.getClassName()).hashCode()).reduce(0, (a, b) -> a ^ b);
 
 		final Type returnType = Type.getReturnType(methodDescriptor);
-		if (returnType.getSort() == Type.ARRAY)
-			hash ^= returnType.getInternalName().replace('/', '.').hashCode();
-		else
-			hash ^= returnType.getClassName().hashCode();
+		hash ^= (returnType.getSort() == Type.ARRAY ? returnType.getInternalName().replace('/', '.') : returnType.getClassName()).hashCode();
 
 		return hash;
 	}
@@ -152,13 +145,12 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 	{
 		final ClassNode cw = new ClassNode();
 		MethodVisitor mv;
-		FieldVisitor fv;
 
-		cw.visit(V1_7, ACC_PUBLIC + ACC_SUPER, memberNames.className, null, "java/lang/Object", null);
+		cw.visit(V1_7, ACC_PUBLIC | ACC_SUPER, memberNames.className, null, "java/lang/Object", null);
 
-		fv = cw.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC, memberNames.methodCacheFieldName, "Ljava/util/Map;", null, null);
+		FieldVisitor fv = cw.visitField(ACC_PRIVATE | ACC_FINAL | ACC_STATIC, memberNames.methodCacheFieldName, "Ljava/util/Map;", null, null);
 		fv.visitEnd();
-		fv = cw.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC, memberNames.fieldCacheFieldName, "Ljava/util/Map;", null, null);
+		fv = cw.visitField(ACC_PRIVATE | ACC_FINAL | ACC_STATIC, memberNames.fieldCacheFieldName, "Ljava/util/Map;", null, null);
 		fv.visitEnd();
 		{
 			mv = cw.visitMethod(ACC_PUBLIC, "<init>", "()V", null, null);
@@ -174,7 +166,7 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 			mv.visitEnd();
 		}
 		{
-			mv = cw.visitMethod(ACC_PRIVATE + ACC_STATIC, memberNames.hashMethodName, "(Ljava/lang/reflect/Method;)I", null, null);
+			mv = cw.visitMethod(ACC_PRIVATE | ACC_STATIC, memberNames.hashMethodName, "(Ljava/lang/reflect/Method;)I", null, null);
 			mv.visitCode();
 			final Label l0 = new Label();
 			mv.visitLabel(l0);
@@ -224,7 +216,7 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 			mv.visitEnd();
 		}
 		{
-			mv = cw.visitMethod(ACC_PRIVATE + ACC_STATIC, memberNames.findMethodMethodName, "(Ljava/lang/Class;II)Ljava/lang/reflect/Method;", null, null);
+			mv = cw.visitMethod(ACC_PRIVATE | ACC_STATIC, memberNames.findMethodMethodName, "(Ljava/lang/Class;II)Ljava/lang/reflect/Method;", null, null);
 			mv.visitCode();
 			final Label l0 = new Label();
 			mv.visitLabel(l0);

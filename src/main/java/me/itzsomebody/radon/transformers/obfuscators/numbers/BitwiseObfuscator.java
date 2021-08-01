@@ -18,17 +18,13 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.numbers;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.InsnNode;
-import org.objectweb.asm.tree.LdcInsnNode;
-
 import me.itzsomebody.radon.Main;
 import me.itzsomebody.radon.utils.ASMUtils;
 import me.itzsomebody.radon.utils.RandomUtils;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.*;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Splits integer and long constants into random bitwise operations.
@@ -74,6 +70,36 @@ public class BitwiseObfuscator extends NumberObfuscation
 					counter.incrementAndGet();
 					leeway -= ASMUtils.evaluateMaxSize(insns);
 				}
+				else if (ASMUtils.isFloatInsn(insn) && master.isFloatTamperingEnabled())
+				{
+					final float originalNum = ASMUtils.getFloatFromInsn(insn);
+					if (Float.isNaN(originalNum))
+						continue;
+
+					final InsnList insns = obfuscateNumber(Float.floatToIntBits(originalNum));
+					insns.add(new MethodInsnNode(INVOKESTATIC, "java/lang/Float", "intBitsToFloat", "(I)F", false));
+
+					methodInstructions.insert(insn, insns);
+					methodInstructions.remove(insn);
+
+					counter.incrementAndGet();
+					leeway -= ASMUtils.evaluateMaxSize(insns);
+				}
+				else if (ASMUtils.isDoubleInsn(insn) && master.isDoubleTamperingEnabled())
+				{
+					final double originalNum = ASMUtils.getDoubleFromInsn(insn);
+					if (Double.isNaN(originalNum))
+						continue;
+
+					final InsnList insns = obfuscateNumber(Double.doubleToLongBits(originalNum));
+					insns.add(new MethodInsnNode(INVOKESTATIC, "java/lang/Double", "longBitsToDouble", "(J)D", false));
+
+					methodInstructions.insert(insn, insns);
+					methodInstructions.remove(insn);
+
+					counter.incrementAndGet();
+					leeway -= ASMUtils.evaluateMaxSize(insns);
+				}
 			}
 		}));
 
@@ -82,14 +108,12 @@ public class BitwiseObfuscator extends NumberObfuscation
 
 	private InsnList obfuscateNumber(final int originalNum)
 	{
-
 		int current = randomInt(originalNum);
-		int verifySum = current;
 
 		final InsnList insns = new InsnList();
 		insns.add(ASMUtils.getNumberInsn(current));
 
-		final StringBuilder builder = new StringBuilder("*** [BitwiseObfuscator] Tampering int " + originalNum + " => ");
+		final StringBuilder builder = new StringBuilder("*** [BitwiseObfuscator] Verify failed: Obfuscate int '" + originalNum + "' to '");
 		builder.append(current);
 
 		for (int i = 0, iterations = getIterationCount(); i < iterations; i++)
@@ -100,70 +124,45 @@ public class BitwiseObfuscator extends NumberObfuscation
 			{
 				case 0:
 				{
-					// And
 					operand = randomInt(current);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
 					insns.add(new InsnNode(Opcodes.IAND));
-
 					current &= operand;
 					builder.append(" & ").append(operand);
-					verifySum &= operand;
 					break;
 				}
 				case 1:
 				{
-					// Or
 					operand = randomInt(current);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
 					insns.add(new InsnNode(Opcodes.IOR));
-
 					current |= operand;
 					builder.append(" | ").append(operand);
-					verifySum |= operand;
 					break;
 				}
 				case 2:
 				{
-					// XOR
 					operand = randomInt(current);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
 					insns.add(new InsnNode(Opcodes.IXOR));
-
 					current ^= operand;
 					builder.append(" ^ ").append(operand);
-					verifySum ^= operand;
 					break;
 				}
 				case 3:
 				{
-					// Bitwise NOT 'y = ~(x)'
-
-					//
-					// long x = 1234L;
-					// long y = ~x;
-					//
-					// LDC 1234
-					// LSTORE 1
-					// LLOAD 1: x
-					// LDC -1
-					// LXOR
-					// LSTORE 3
-					//
-
 					insns.add(new InsnNode(Opcodes.ICONST_M1));
 					insns.add(new InsnNode(Opcodes.IXOR));
 
 					current = ~current;
 					builder.append(" ^ ").append(-1);
-					verifySum = ~verifySum; // Exceptionally
 					break;
 				}
 				case 4:
 				{
-					// Shift-left
 					int j = 0x1F;
 					while (j > 0 && (current << j == 0 || current << j <= Integer.MIN_VALUE || current << j >= Integer.MAX_VALUE))
 						j--;
@@ -172,15 +171,12 @@ public class BitwiseObfuscator extends NumberObfuscation
 
 					insns.add(ASMUtils.getNumberInsn(operand));
 					insns.add(new InsnNode(Opcodes.ISHL));
-
 					current <<= operand;
 					builder.append(" << ").append(operand);
-					verifySum <<= operand;
 					break;
 				}
 				case 5:
 				{
-					// Shift-right
 					int j = 0x1E;
 					while (j > 0 && (current >> j == 0 || current >> j <= Integer.MIN_VALUE || current >> j >= Integer.MAX_VALUE))
 						j--;
@@ -189,15 +185,12 @@ public class BitwiseObfuscator extends NumberObfuscation
 
 					insns.add(ASMUtils.getNumberInsn(operand));
 					insns.add(new InsnNode(Opcodes.ISHR));
-
 					current >>= operand;
 					builder.append(" >> ").append(operand);
-					verifySum >>= operand;
 					break;
 				}
 				case 6:
 				{
-					// Logical shift-right
 					int j = 0x1E;
 					while (j > 0 && (current >>> j == 0 || current >>> j <= Integer.MIN_VALUE || current >>> j >= Integer.MAX_VALUE))
 						j--;
@@ -206,10 +199,8 @@ public class BitwiseObfuscator extends NumberObfuscation
 
 					insns.add(ASMUtils.getNumberInsn(operand));
 					insns.add(new InsnNode(Opcodes.IUSHR));
-
 					current >>>= operand;
 					builder.append(" >>> ").append(operand);
-					verifySum >>>= operand;
 					break;
 				}
 			}
@@ -219,15 +210,13 @@ public class BitwiseObfuscator extends NumberObfuscation
 		insns.add(ASMUtils.getNumberInsn(correctionOperand));
 		insns.add(new InsnNode(Opcodes.IXOR));
 
-		builder.append(" ^ ").append(correctionOperand);
+		builder.append(" ^ ").append(correctionOperand).append('\'');
 
-		verifySum ^= correctionOperand;
+		current ^= correctionOperand;
 
-		final int verifyOpcode = new NumberObfuscationVerifier(insns, originalNum).checkInt();
-		builder.append(" [verifySum: ").append(verifySum).append(", verifyOpcode: ").append(verifyOpcode).append("]");
-		if (originalNum != verifySum || originalNum != verifyOpcode)
+		builder.append(" [current: ").append(current).append(", delta: ").append(current - originalNum).append(']');
+		if (originalNum != current)
 		{
-			builder.append(" => !!~~ FAILED TO VERIFY ~~!! Skipping...");
 			Main.info(builder.toString());
 			return ASMUtils.singletonList(ASMUtils.getNumberInsn(originalNum));
 		}
@@ -237,14 +226,12 @@ public class BitwiseObfuscator extends NumberObfuscation
 
 	private InsnList obfuscateNumber(final long originalNum)
 	{
-
 		long current = randomLong(originalNum);
-		long verifySum = current;
 
 		final InsnList insns = new InsnList();
 		insns.add(ASMUtils.getNumberInsn(current));
 
-		final StringBuilder builder = new StringBuilder("*** [BitwiseObfuscator] Tampering long " + originalNum + " => ");
+		final StringBuilder builder = new StringBuilder("*** [BitwiseObfuscator] Verify failed: Obfuscate long '" + originalNum + "' to '");
 		builder.append(current);
 
 		for (int i = 0, iterations = getIterationCount(); i < iterations; i++)
@@ -259,10 +246,8 @@ public class BitwiseObfuscator extends NumberObfuscation
 
 					insns.add(ASMUtils.getNumberInsn(operand));
 					insns.add(new InsnNode(Opcodes.LAND));
-
 					current &= operand;
 					builder.append(" & ").append(operand);
-					verifySum &= operand;
 					break;
 				}
 				case 1:
@@ -271,10 +256,8 @@ public class BitwiseObfuscator extends NumberObfuscation
 
 					insns.add(ASMUtils.getNumberInsn(operand));
 					insns.add(new InsnNode(Opcodes.LOR));
-
 					current |= operand;
 					builder.append(" | ").append(operand);
-					verifySum |= operand;
 					break;
 				}
 				case 2:
@@ -282,33 +265,16 @@ public class BitwiseObfuscator extends NumberObfuscation
 					operand = randomLong(current);
 					insns.add(ASMUtils.getNumberInsn(operand));
 					insns.add(new InsnNode(Opcodes.LXOR));
-
 					current ^= operand;
 					builder.append(" ^ ").append(operand);
-					verifySum ^= operand;
 					break;
 				}
 				case 3:
 				{
-					// Bitwise NOT 'y = ~(x)'
-
-					//
-					// long x = 1234L;
-					// long y = ~x;
-					//
-					// LDC 1234
-					// LSTORE 1
-					// LLOAD 1: x
-					// LDC -1
-					// LXOR
-					// LSTORE 3
-
 					insns.add(new LdcInsnNode(-1L));
 					insns.add(new InsnNode(Opcodes.LXOR));
-
 					current = ~current;
 					builder.append(" ^ ").append(-1);
-					verifySum = ~verifySum; // Exceptionally
 					break;
 				}
 				case 4:
@@ -321,10 +287,8 @@ public class BitwiseObfuscator extends NumberObfuscation
 
 					insns.add(ASMUtils.getNumberInsn((int) operand));
 					insns.add(new InsnNode(Opcodes.LSHL));
-
 					current <<= operand;
 					builder.append(" << ").append(operand);
-					verifySum <<= operand;
 					break;
 				}
 				case 5:
@@ -337,10 +301,8 @@ public class BitwiseObfuscator extends NumberObfuscation
 
 					insns.add(ASMUtils.getNumberInsn((int) operand));
 					insns.add(new InsnNode(Opcodes.LSHR));
-
 					current >>= operand;
 					builder.append(" >> ").append(operand);
-					verifySum >>= operand;
 					break;
 				}
 				case 6:
@@ -353,10 +315,8 @@ public class BitwiseObfuscator extends NumberObfuscation
 
 					insns.add(ASMUtils.getNumberInsn((int) operand));
 					insns.add(new InsnNode(Opcodes.LUSHR));
-
 					current >>>= operand;
 					builder.append(" >>> ").append(operand);
-					verifySum >>>= operand;
 					break;
 				}
 			}
@@ -366,15 +326,13 @@ public class BitwiseObfuscator extends NumberObfuscation
 		insns.add(ASMUtils.getNumberInsn(correctionOperand));
 		insns.add(new InsnNode(Opcodes.LXOR));
 
-		builder.append(" ^ ").append(correctionOperand);
+		builder.append(" ^ ").append(correctionOperand).append('\'');
 
-		verifySum ^= correctionOperand;
+		current ^= correctionOperand;
 
-		final long verifyOpcode = new NumberObfuscationVerifier(insns, originalNum).checkLong();
-		builder.append(" [verifySum: ").append(verifySum).append(", verifyOpcode: ").append(verifyOpcode).append("]");
-		if (originalNum != verifySum || originalNum != verifyOpcode)
+		builder.append(" [current: ").append(current).append(", delta: ").append(current - originalNum).append(']');
+		if (originalNum != current)
 		{
-			builder.append(" => !!~~ FAILED TO VERIFY ~~!! Skipping...");
 			Main.info(builder.toString());
 			return ASMUtils.singletonList(ASMUtils.getNumberInsn(originalNum));
 		}

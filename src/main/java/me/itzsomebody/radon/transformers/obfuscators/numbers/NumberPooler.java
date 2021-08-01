@@ -19,16 +19,18 @@
 package me.itzsomebody.radon.transformers.obfuscators.numbers;
 
 import me.itzsomebody.radon.Main;
+import me.itzsomebody.radon.asm.ClassWrapper;
 import me.itzsomebody.radon.asm.MethodWrapper;
+import me.itzsomebody.radon.dictionaries.WrappedDictionary;
 import me.itzsomebody.radon.utils.ASMUtils;
+import me.itzsomebody.radon.utils.Constants;
 import me.itzsomebody.radon.utils.RandomUtils;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.IntStream;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class NumberPooler extends NumberObfuscation
@@ -45,301 +47,640 @@ public class NumberPooler extends NumberObfuscation
 
 		final boolean randomOrder = master.isNumberPoolerRandomOrder();
 
-		getClassWrappers().stream().filter(this::included).forEach(cw ->
+		if (master.canNumberPoolerGlobal())
 		{
-			final String initPoolMethodName = methodDictionary.uniqueRandomString();
-
 			final String integerPoolFieldName = fieldDictionary.uniqueRandomString();
 			final String longPoolFieldName = fieldDictionary.uniqueRandomString();
 			final String floatPoolFieldName = fieldDictionary.uniqueRandomString();
 			final String doublePoolFieldName = fieldDictionary.uniqueRandomString();
 
-			final Queue<Integer> integersToPool = new ConcurrentLinkedQueue<>();
-			final Queue<Long> longsToPool = new ConcurrentLinkedQueue<>();
-			final Queue<Float> floatsToPool = new ConcurrentLinkedQueue<>();
-			final Queue<Double> doublesToPool = new ConcurrentLinkedQueue<>();
+			final Set<Integer> integersToPoolSet = new HashSet<>();
+			final Set<Long> longsToPoolSet = new HashSet<>();
+			final Set<Float> floatsToPoolSet = new HashSet<>();
+			final Set<Double> doublesToPoolSet = new HashSet<>();
 
-			cw.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions()).map(MethodWrapper::getInstructions).forEach(insnList ->
+			getClassWrappers().stream().filter(this::included).forEach(cw -> cw.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions()).map(MethodWrapper::getInstructions).forEach(insnList ->
 			{
 				if (poolIntegers)
-					Stream.of(insnList.toArray()).filter(ASMUtils::isIntInsn).mapToInt(ASMUtils::getIntegerFromInsn).filter(integer -> !integersToPool.contains(integer)).forEach(integersToPool::add);
+					Stream.of(insnList.toArray()).filter(ASMUtils::isIntInsn).mapToInt(ASMUtils::getIntegerFromInsn).filter(integer -> !integersToPoolSet.contains(integer)).forEach(integersToPoolSet::add);
 
 				if (poolLongs)
-					Stream.of(insnList.toArray()).filter(ASMUtils::isLongInsn).mapToLong(ASMUtils::getLongFromInsn).filter(_long -> !longsToPool.contains(_long)).forEach(longsToPool::add);
+					Stream.of(insnList.toArray()).filter(ASMUtils::isLongInsn).mapToLong(ASMUtils::getLongFromInsn).filter(_long -> !longsToPoolSet.contains(_long)).forEach(longsToPoolSet::add);
 
 				if (poolFloats)
-					Stream.of(insnList.toArray()).filter(ASMUtils::isFloatInsn).map(ASMUtils::getFloatFromInsn).filter(_float -> !floatsToPool.contains(_float)).forEach(floatsToPool::add);
+					Stream.of(insnList.toArray()).filter(ASMUtils::isFloatInsn).map(ASMUtils::getFloatFromInsn).filter(_float -> !floatsToPoolSet.contains(_float)).forEach(floatsToPoolSet::add);
 
 				if (poolDoubles)
-					Stream.of(insnList.toArray()).filter(ASMUtils::isDoubleInsn).mapToDouble(ASMUtils::getDoubleFromInsn).filter(_double -> !doublesToPool.contains(_double)).forEach(doublesToPool::add);
-			});
+					Stream.of(insnList.toArray()).filter(ASMUtils::isDoubleInsn).mapToDouble(ASMUtils::getDoubleFromInsn).filter(_double -> !doublesToPoolSet.contains(_double)).forEach(doublesToPoolSet::add);
+			}));
+
+			final List<Integer> integersToPool = new ArrayList<>(integersToPoolSet);
+			final List<Long> longsToPool = new ArrayList<>(longsToPoolSet);
+			final List<Float> floatsToPool = new ArrayList<>(floatsToPoolSet);
+			final List<Double> doublesToPool = new ArrayList<>(doublesToPoolSet);
 
 			final int integerCountToPool = integersToPool.size();
-			final Map<Integer, Integer> integerIndexMappings = new HashMap<>(integerCountToPool);
+			final Map<Integer, Integer> integerMappings = new HashMap<>(integerCountToPool);
+			List<Integer> integerReverseMappings = null;
 			if (integerCountToPool > 0)
-			{
-				final Collection<Integer> rngExclusions = new ArrayList<>(integerCountToPool);
-				final AtomicInteger sequentialIndex = new AtomicInteger();
-				integersToPool.forEach(value ->
+				if (randomOrder)
 				{
-					final int index;
-					if (randomOrder)
+					Collections.shuffle(integersToPool);
+
+					integerReverseMappings = new ArrayList<>(integerCountToPool);
+					for (int i = 0; i < integerCountToPool; i++)
 					{
-						index = RandomUtils.getRandomIntWithExclusion(0, integerCountToPool, rngExclusions);
-						rngExclusions.add(index);
+						final int value = integersToPool.get(i);
+						integerMappings.put(value, i);
+						integerReverseMappings.add(value);
 					}
-					else
-						index = sequentialIndex.getAndIncrement();
-					integerIndexMappings.put(value, index);
-				});
-			}
+				}
+				else
+				{
+					integerReverseMappings = integersToPool;
+					for (int i = 0; i < integerCountToPool; i++)
+						integerMappings.put(integersToPool.get(i), i);
+				}
 
 			final int longCountToPool = longsToPool.size();
-			final Map<Long, Integer> longIndexMappings = new HashMap<>(longCountToPool);
+			final Map<Long, Integer> longMappings = new HashMap<>(longCountToPool);
+			List<Long> longReverseMappings = null;
 			if (longCountToPool > 0)
-			{
-				final Collection<Integer> rngExclusions = new ArrayList<>(longCountToPool);
-				final AtomicInteger sequentialIndex = new AtomicInteger();
-				longsToPool.forEach(value ->
+				if (randomOrder)
 				{
-					final int index;
-					if (randomOrder)
+					Collections.shuffle(longsToPool);
+
+					longReverseMappings = new ArrayList<>(longCountToPool);
+					for (int i = 0; i < longCountToPool; i++)
 					{
-						index = RandomUtils.getRandomIntWithExclusion(0, longCountToPool, rngExclusions);
-						rngExclusions.add(index);
+						final long value = longsToPool.get(i);
+						longMappings.put(value, i);
+						longReverseMappings.add(value);
 					}
-					else
-						index = sequentialIndex.getAndIncrement();
-					longIndexMappings.put(value, index);
-				});
-			}
+				}
+				else
+				{
+					longReverseMappings = longsToPool;
+					for (int i = 0; i < longCountToPool; i++)
+						longMappings.put(longsToPool.get(i), i);
+				}
 
 			final int floatCountToPool = floatsToPool.size();
-			final Map<Float, Integer> floatIndexMappings = new HashMap<>(floatCountToPool);
+			final Map<Float, Integer> floatMappings = new HashMap<>(floatCountToPool);
+			List<Float> floatReverseMappings = null;
 			if (floatCountToPool > 0)
-			{
-				final Collection<Integer> rngExclusions = new ArrayList<>(floatCountToPool);
-				final AtomicInteger sequentialIndex = new AtomicInteger();
-				floatsToPool.forEach(value ->
+				if (randomOrder)
 				{
-					final int index;
-					if (randomOrder)
+					Collections.shuffle(floatsToPool);
+
+					floatReverseMappings = new ArrayList<>(floatCountToPool);
+					for (int i = 0; i < floatCountToPool; i++)
 					{
-						index = RandomUtils.getRandomIntWithExclusion(0, floatCountToPool, rngExclusions);
-						rngExclusions.add(index);
+						final float value = floatsToPool.get(i);
+						floatMappings.put(value, i);
+						floatReverseMappings.add(value);
 					}
-					else
-						index = sequentialIndex.getAndIncrement();
-					floatIndexMappings.put(value, index);
-				});
-			}
+				}
+				else
+				{
+					floatReverseMappings = floatsToPool;
+					for (int i = 0; i < floatCountToPool; i++)
+						floatMappings.put(floatsToPool.get(i), i);
+				}
 
 			final int doubleCountToPool = doublesToPool.size();
-			final Map<Double, Integer> doubleIndexMappings = new HashMap<>(doubleCountToPool);
+			final Map<Double, Integer> doubleMappings = new HashMap<>(doubleCountToPool);
+			List<Double> doubleReverseMappings = null;
 			if (doubleCountToPool > 0)
-			{
-				final Collection<Integer> rngExclusions = new ArrayList<>(doubleCountToPool);
-				final AtomicInteger sequentialIndex = new AtomicInteger();
-				doublesToPool.forEach(value ->
+				if (randomOrder)
 				{
-					final int index;
-					if (randomOrder)
+					Collections.shuffle(doublesToPool);
+
+					doubleReverseMappings = new ArrayList<>(doubleCountToPool);
+					for (int i = 0; i < doubleCountToPool; i++)
 					{
-						index = RandomUtils.getRandomIntWithExclusion(0, doubleCountToPool, rngExclusions);
-						rngExclusions.add(index);
+						final double value = doublesToPool.get(i);
+						doubleMappings.put(value, i);
+						doubleReverseMappings.add(value);
 					}
-					else
-						index = sequentialIndex.getAndIncrement();
-					doubleIndexMappings.put(value, index);
-				});
+				}
+				else
+				{
+					doubleReverseMappings = doublesToPool;
+					for (int i = 0; i < doubleCountToPool; i++)
+						doubleMappings.put(doublesToPool.get(i), i);
+				}
+
+			final boolean inject = master.canNumberPoolerInjectGlobalPool();
+			final ClassWrapper classWrapper;
+			final String classPath;
+			if (inject)
+			{
+				classWrapper = RandomUtils.getRandomElement(getClassWrappers().stream().filter(this::included).collect(Collectors.toList())); // TODO: Constant-pool leeway safeguard
+				classPath = classWrapper.getName();
+			}
+			else
+			{
+				final ClassNode fakeNode = new ClassNode();
+				classPath = randomClassName();
+				fakeNode.name = classPath;
+				classWrapper = new ClassWrapper(fakeNode, false);
 			}
 
-			cw.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions()).map(MethodWrapper::getInstructions).forEach(insnList ->
+			getClassWrappers().stream().filter(this::included).forEach(cw ->
 			{
-				if (poolIntegers)
-					Stream.of(insnList.toArray()).filter(ASMUtils::isIntInsn).forEach(insn ->
-					{
-						final int value = ASMUtils.getIntegerFromInsn(insn);
-
-						if (integerIndexMappings.containsKey(value))
+				cw.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions()).map(MethodWrapper::getInstructions).forEach(insnList ->
+				{
+					if (poolIntegers)
+						Stream.of(insnList.toArray()).filter(ASMUtils::isIntInsn).forEach(insn ->
 						{
-							final int index = integerIndexMappings.get(value);
+							final int value = ASMUtils.getIntegerFromInsn(insn);
 
-							insnList.insertBefore(insn, new FieldInsnNode(Opcodes.GETSTATIC, cw.getName(), integerPoolFieldName, "[I"));
-							insnList.insertBefore(insn, ASMUtils.getNumberInsn(index));
-							insnList.set(insn, new InsnNode(Opcodes.IALOAD));
-							counter.incrementAndGet();
-						}
-					});
+							if (integerMappings.containsKey(value))
+							{
+								final int index = integerMappings.get(value);
 
-				if (poolLongs)
-					Stream.of(insnList.toArray()).filter(ASMUtils::isLongInsn).forEach(insn ->
-					{
-						final long value = ASMUtils.getLongFromInsn(insn);
+								insnList.insertBefore(insn, new FieldInsnNode(Opcodes.GETSTATIC, classWrapper.getName(), integerPoolFieldName, "[I"));
+								insnList.insertBefore(insn, ASMUtils.getNumberInsn(index));
+								insnList.set(insn, new InsnNode(Opcodes.IALOAD));
+								counter.incrementAndGet();
+							}
+						});
 
-						if (longIndexMappings.containsKey(value))
+					if (poolLongs)
+						Stream.of(insnList.toArray()).filter(ASMUtils::isLongInsn).forEach(insn ->
 						{
-							final int index = longIndexMappings.get(value);
+							final long value = ASMUtils.getLongFromInsn(insn);
 
-							insnList.insertBefore(insn, new FieldInsnNode(Opcodes.GETSTATIC, cw.getName(), longPoolFieldName, "[J"));
-							insnList.insertBefore(insn, ASMUtils.getNumberInsn(index));
-							insnList.set(insn, new InsnNode(Opcodes.LALOAD));
-							counter.incrementAndGet();
-						}
-					});
+							if (longMappings.containsKey(value))
+							{
+								final int index = longMappings.get(value);
 
-				if (poolFloats)
-					Stream.of(insnList.toArray()).filter(ASMUtils::isFloatInsn).forEach(insn ->
-					{
-						final float value = ASMUtils.getFloatFromInsn(insn);
+								insnList.insertBefore(insn, new FieldInsnNode(Opcodes.GETSTATIC, classWrapper.getName(), longPoolFieldName, "[J"));
+								insnList.insertBefore(insn, ASMUtils.getNumberInsn(index));
+								insnList.set(insn, new InsnNode(Opcodes.LALOAD));
+								counter.incrementAndGet();
+							}
+						});
 
-						if (floatIndexMappings.containsKey(value))
+					if (poolFloats)
+						Stream.of(insnList.toArray()).filter(ASMUtils::isFloatInsn).forEach(insn ->
 						{
-							final int index = floatIndexMappings.get(value);
+							final float value = ASMUtils.getFloatFromInsn(insn);
 
-							insnList.insertBefore(insn, new FieldInsnNode(Opcodes.GETSTATIC, cw.getName(), floatPoolFieldName, "[F"));
-							insnList.insertBefore(insn, ASMUtils.getNumberInsn(index));
-							insnList.set(insn, new InsnNode(Opcodes.FALOAD));
-							counter.incrementAndGet();
-						}
-					});
+							if (floatMappings.containsKey(value))
+							{
+								final int index = floatMappings.get(value);
 
-				if (poolDoubles)
-					Stream.of(insnList.toArray()).filter(ASMUtils::isDoubleInsn).forEach(insn ->
-					{
-						final double value = ASMUtils.getDoubleFromInsn(insn);
+								insnList.insertBefore(insn, new FieldInsnNode(Opcodes.GETSTATIC, classWrapper.getName(), floatPoolFieldName, "[F"));
+								insnList.insertBefore(insn, ASMUtils.getNumberInsn(index));
+								insnList.set(insn, new InsnNode(Opcodes.FALOAD));
+								counter.incrementAndGet();
+							}
+						});
 
-						if (doubleIndexMappings.containsKey(value))
+					if (poolDoubles)
+						Stream.of(insnList.toArray()).filter(ASMUtils::isDoubleInsn).forEach(insn ->
 						{
-							final int index = doubleIndexMappings.get(value);
+							final double value = ASMUtils.getDoubleFromInsn(insn);
 
-							insnList.insertBefore(insn, new FieldInsnNode(Opcodes.GETSTATIC, cw.getName(), doublePoolFieldName, "[D"));
-							insnList.insertBefore(insn, ASMUtils.getNumberInsn(index));
-							insnList.set(insn, new InsnNode(Opcodes.DALOAD));
-							counter.incrementAndGet();
-						}
-					});
+							if (doubleMappings.containsKey(value))
+							{
+								final int index = doubleMappings.get(value);
+
+								insnList.insertBefore(insn, new FieldInsnNode(Opcodes.GETSTATIC, classWrapper.getName(), doublePoolFieldName, "[D"));
+								insnList.insertBefore(insn, ASMUtils.getNumberInsn(index));
+								insnList.set(insn, new InsnNode(Opcodes.DALOAD));
+								counter.incrementAndGet();
+							}
+						});
+				});
+
 			});
 
 			if (!integersToPool.isEmpty() || !longsToPool.isEmpty() || !floatsToPool.isEmpty() || !doublesToPool.isEmpty())
 			{
-				final Map<Integer, Integer> fixedIntegerIndexMappings = new HashMap<>(integerIndexMappings.size());
-				if (!integerIndexMappings.isEmpty())
-					integerIndexMappings.forEach((key, value) -> fixedIntegerIndexMappings.put(value, key));
+				if (!inject)
+					classWrapper.getClassNode().visit(V1_5, ACC_PUBLIC + ACC_SUPER + ACC_SYNTHETIC, classPath, null, "java/lang/Object", null);
+				createInitializer(integerReverseMappings, longReverseMappings, floatReverseMappings, doubleReverseMappings, classWrapper, methodDictionary, integerPoolFieldName, longPoolFieldName, floatPoolFieldName, doublePoolFieldName);
+				if (!inject)
+					getClasses().put(classWrapper.getName(), classWrapper);
 
-				final Map<Integer, Long> fixedLongIndexMappings = new HashMap<>(longIndexMappings.size());
-				if (!longIndexMappings.isEmpty())
-					longIndexMappings.forEach((key, value) -> fixedLongIndexMappings.put(value, key));
-
-				final Map<Integer, Float> fixedFloatIndexMappings = new HashMap<>(floatIndexMappings.size());
-				if (!floatIndexMappings.isEmpty())
-					floatIndexMappings.forEach((key, value) -> fixedFloatIndexMappings.put(value, key));
-
-				final Map<Integer, Double> fixedDoubleIndexMappings = new HashMap<>(doubleIndexMappings.size());
-				if (!doubleIndexMappings.isEmpty())
-					doubleIndexMappings.forEach((key, value) -> fixedDoubleIndexMappings.put(value, key));
-
-				final MethodNode mv = new MethodNode(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL | Opcodes.ACC_SYNTHETIC | Opcodes.ACC_BRIDGE, initPoolMethodName, "()V", null, null);
-
-				mv.visitCode();
-
-				// Integers
-				if (!integerIndexMappings.isEmpty())
-				{
-					final int numberOfIntegers = fixedIntegerIndexMappings.size();
-					ASMUtils.getNumberInsn(numberOfIntegers).accept(mv);
-					mv.visitIntInsn(Opcodes.NEWARRAY, Opcodes.T_INT);
-					IntStream.range(0, fixedIntegerIndexMappings.size()).forEach(i ->
-					{
-						mv.visitInsn(Opcodes.DUP);
-						ASMUtils.getNumberInsn(i).accept(mv);
-						ASMUtils.getNumberInsn(fixedIntegerIndexMappings.get(i)).accept(mv);
-						mv.visitInsn(Opcodes.IASTORE);
-					});
-					mv.visitFieldInsn(Opcodes.PUTSTATIC, cw.getName(), integerPoolFieldName, "[I");
-
-					final FieldNode fieldNode = new FieldNode(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC, integerPoolFieldName, "[I", null, null);
-					cw.addField(fieldNode);
-				}
-
-				// Longs
-				if (!longIndexMappings.isEmpty())
-				{
-					final int numberOfLongs = fixedLongIndexMappings.size();
-					ASMUtils.getNumberInsn(numberOfLongs).accept(mv);
-					mv.visitIntInsn(Opcodes.NEWARRAY, Opcodes.T_LONG);
-					IntStream.range(0, fixedLongIndexMappings.size()).forEach(i ->
-					{
-						mv.visitInsn(Opcodes.DUP);
-						ASMUtils.getNumberInsn(i).accept(mv);
-						ASMUtils.getNumberInsn(fixedLongIndexMappings.get(i)).accept(mv);
-						mv.visitInsn(Opcodes.LASTORE);
-					});
-					mv.visitFieldInsn(Opcodes.PUTSTATIC, cw.getName(), longPoolFieldName, "[J");
-
-					final FieldNode fieldNode = new FieldNode(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC, longPoolFieldName, "[J", null, null);
-					cw.addField(fieldNode);
-				}
-
-				// Floats
-				if (!floatIndexMappings.isEmpty())
-				{
-					final int numberOfFloats = fixedFloatIndexMappings.size();
-					ASMUtils.getNumberInsn(numberOfFloats).accept(mv);
-					mv.visitIntInsn(Opcodes.NEWARRAY, Opcodes.T_FLOAT);
-					IntStream.range(0, fixedFloatIndexMappings.size()).forEach(i ->
-					{
-						mv.visitInsn(Opcodes.DUP);
-						ASMUtils.getNumberInsn(i).accept(mv);
-						ASMUtils.getNumberInsn(fixedFloatIndexMappings.get(i)).accept(mv);
-						mv.visitInsn(Opcodes.FASTORE);
-					});
-					mv.visitFieldInsn(Opcodes.PUTSTATIC, cw.getName(), floatPoolFieldName, "[F");
-
-					final FieldNode fieldNode = new FieldNode(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC, floatPoolFieldName, "[F", null, null);
-					cw.addField(fieldNode);
-				}
-
-				// Doubles
-				if (!doubleIndexMappings.isEmpty())
-				{
-					final int numberOfDoubles = fixedDoubleIndexMappings.size();
-					ASMUtils.getNumberInsn(numberOfDoubles).accept(mv);
-					mv.visitIntInsn(Opcodes.NEWARRAY, Opcodes.T_DOUBLE);
-					IntStream.range(0, fixedDoubleIndexMappings.size()).forEach(i ->
-					{
-						mv.visitInsn(Opcodes.DUP);
-						ASMUtils.getNumberInsn(i).accept(mv);
-						ASMUtils.getNumberInsn(fixedDoubleIndexMappings.get(i)).accept(mv);
-						mv.visitInsn(Opcodes.DASTORE);
-					});
-					mv.visitFieldInsn(Opcodes.PUTSTATIC, cw.getName(), doublePoolFieldName, "[D");
-
-					final FieldNode fieldNode = new FieldNode(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC, doublePoolFieldName, "[D", null, null);
-					cw.addField(fieldNode);
-				}
-
-				mv.visitInsn(Opcodes.RETURN);
-				mv.visitMaxs(3, 0);
-				mv.visitEnd();
-
-				cw.addMethod(mv);
-
-				MethodNode staticBlock = cw.getClassNode().methods.stream().filter(methodNode -> "<clinit>".equals(methodNode.name)).findFirst().orElse(null);
-				if (staticBlock == null)
-				{
-					staticBlock = new MethodNode(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC, "<clinit>", "()V", null, null);
-					final InsnList insnList = new InsnList();
-					insnList.add(new MethodInsnNode(Opcodes.INVOKESTATIC, cw.getName(), initPoolMethodName, "()V", false));
-					insnList.add(new InsnNode(Opcodes.RETURN));
-					staticBlock.instructions = insnList;
-					cw.getClassNode().methods.add(staticBlock);
-				}
-				else
-					staticBlock.instructions.insertBefore(staticBlock.instructions.getFirst(), new MethodInsnNode(Opcodes.INVOKESTATIC, cw.getName(), initPoolMethodName, "()V", false));
+				Main.info(String.format("*** Global number pool injected into class '%s'", classPath));
 			}
-		});
+		}
+		else
+			getClassWrappers().stream().filter(classWrapper -> included(classWrapper) && (classWrapper.getAccessFlags() & ACC_INTERFACE) == 0
+			// *** Interfaces are excluded from pooling for following problem:
+			// Exception in thread "main" java.lang.IncompatibleClassChangeError: Method 'void me.itzsomebody.radon.utils.Constants.vUa0ibitmil4UMsz3Tf2pqwav7CrzmHx()' must be InterfaceMethodref constant
+			// - at me.itzsomebody.radon.utils.Constants.<clinit>(Unknown Source)
+			// - at me.itzsomebody.radon.Main.<clinit>(Unknown Source)
+			).forEach(cw ->
+			{
+
+				final String integerPoolFieldName = fieldDictionary.uniqueRandomString();
+				final String longPoolFieldName = fieldDictionary.uniqueRandomString();
+				final String floatPoolFieldName = fieldDictionary.uniqueRandomString();
+				final String doublePoolFieldName = fieldDictionary.uniqueRandomString();
+
+				// CHECK: Should use Collections.synchronizedList()?
+				final List<Integer> integersToPool = new ArrayList<>();
+				final List<Long> longsToPool = new ArrayList<>();
+				final List<Float> floatsToPool = new ArrayList<>();
+				final List<Double> doublesToPool = new ArrayList<>();
+
+				cw.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions()).map(MethodWrapper::getInstructions).forEach(insnList ->
+				{
+					if (poolIntegers)
+						Stream.of(insnList.toArray()).filter(ASMUtils::isIntInsn).mapToInt(ASMUtils::getIntegerFromInsn).filter(integer -> !integersToPool.contains(integer)).forEach(integersToPool::add);
+
+					if (poolLongs)
+						Stream.of(insnList.toArray()).filter(ASMUtils::isLongInsn).mapToLong(ASMUtils::getLongFromInsn).filter(_long -> !longsToPool.contains(_long)).forEach(longsToPool::add);
+
+					if (poolFloats)
+						Stream.of(insnList.toArray()).filter(ASMUtils::isFloatInsn).map(ASMUtils::getFloatFromInsn).filter(_float -> !floatsToPool.contains(_float)).forEach(floatsToPool::add);
+
+					if (poolDoubles)
+						Stream.of(insnList.toArray()).filter(ASMUtils::isDoubleInsn).mapToDouble(ASMUtils::getDoubleFromInsn).filter(_double -> !doublesToPool.contains(_double)).forEach(doublesToPool::add);
+				});
+
+				final int integerCountToPool = integersToPool.size();
+				final Map<Integer, Integer> integerMappings = new HashMap<>(integerCountToPool);
+				List<Integer> integerReverseMappings = null;
+				if (integerCountToPool > 0)
+					if (randomOrder)
+					{
+						Collections.shuffle(integersToPool);
+
+						integerReverseMappings = new ArrayList<>(integerCountToPool);
+						for (int i = 0; i < integerCountToPool; i++)
+						{
+							final int value = integersToPool.get(i);
+							integerMappings.put(value, i);
+							integerReverseMappings.add(value);
+						}
+					}
+					else
+					{
+						integerReverseMappings = integersToPool;
+						for (int i = 0; i < integerCountToPool; i++)
+							integerMappings.put(integersToPool.get(i), i);
+					}
+
+				final int longCountToPool = longsToPool.size();
+				final Map<Long, Integer> longMappings = new HashMap<>(longCountToPool);
+				List<Long> longReverseMappings = null;
+				if (longCountToPool > 0)
+					if (randomOrder)
+					{
+						Collections.shuffle(longsToPool);
+
+						longReverseMappings = new ArrayList<>(longCountToPool);
+						for (int i = 0; i < longCountToPool; i++)
+						{
+							final long value = longsToPool.get(i);
+							longMappings.put(value, i);
+							longReverseMappings.add(value);
+						}
+					}
+					else
+					{
+						longReverseMappings = longsToPool;
+						for (int i = 0; i < longCountToPool; i++)
+							longMappings.put(longsToPool.get(i), i);
+					}
+
+				final int floatCountToPool = floatsToPool.size();
+				final Map<Float, Integer> floatMappings = new HashMap<>(floatCountToPool);
+				List<Float> floatReverseMappings = null;
+				if (floatCountToPool > 0)
+					if (randomOrder)
+					{
+						Collections.shuffle(floatsToPool);
+
+						floatReverseMappings = new ArrayList<>(floatCountToPool);
+						for (int i = 0; i < floatCountToPool; i++)
+						{
+							final float value = floatsToPool.get(i);
+							floatMappings.put(value, i);
+							floatReverseMappings.add(value);
+						}
+					}
+					else
+					{
+						floatReverseMappings = floatsToPool;
+						for (int i = 0; i < floatCountToPool; i++)
+							floatMappings.put(floatsToPool.get(i), i);
+					}
+
+				final int doubleCountToPool = doublesToPool.size();
+				final Map<Double, Integer> doubleMappings = new HashMap<>(doubleCountToPool);
+				List<Double> doubleReverseMappings = null;
+				if (doubleCountToPool > 0)
+					if (randomOrder)
+					{
+						Collections.shuffle(doublesToPool);
+
+						doubleReverseMappings = new ArrayList<>(doubleCountToPool);
+						for (int i = 0; i < doubleCountToPool; i++)
+						{
+							final double value = doublesToPool.get(i);
+							doubleMappings.put(value, i);
+							doubleReverseMappings.add(value);
+						}
+					}
+					else
+					{
+						doubleReverseMappings = doublesToPool;
+						for (int i = 0; i < doubleCountToPool; i++)
+							doubleMappings.put(doublesToPool.get(i), i);
+					}
+
+				cw.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions()).map(MethodWrapper::getInstructions).forEach(insnList ->
+				{
+					if (poolIntegers)
+						Stream.of(insnList.toArray()).filter(ASMUtils::isIntInsn).forEach(insn ->
+						{
+							final int value = ASMUtils.getIntegerFromInsn(insn);
+
+							if (integerMappings.containsKey(value))
+							{
+								final int index = integerMappings.get(value);
+
+								insnList.insertBefore(insn, new FieldInsnNode(Opcodes.GETSTATIC, cw.getName(), integerPoolFieldName, "[I"));
+								insnList.insertBefore(insn, ASMUtils.getNumberInsn(index));
+								insnList.set(insn, new InsnNode(Opcodes.IALOAD));
+								counter.incrementAndGet();
+							}
+						});
+
+					if (poolLongs)
+						Stream.of(insnList.toArray()).filter(ASMUtils::isLongInsn).forEach(insn ->
+						{
+							final long value = ASMUtils.getLongFromInsn(insn);
+
+							if (longMappings.containsKey(value))
+							{
+								final int index = longMappings.get(value);
+
+								insnList.insertBefore(insn, new FieldInsnNode(Opcodes.GETSTATIC, cw.getName(), longPoolFieldName, "[J"));
+								insnList.insertBefore(insn, ASMUtils.getNumberInsn(index));
+								insnList.set(insn, new InsnNode(Opcodes.LALOAD));
+								counter.incrementAndGet();
+							}
+						});
+
+					if (poolFloats)
+						Stream.of(insnList.toArray()).filter(ASMUtils::isFloatInsn).forEach(insn ->
+						{
+							final float value = ASMUtils.getFloatFromInsn(insn);
+
+							if (floatMappings.containsKey(value))
+							{
+								final int index = floatMappings.get(value);
+
+								insnList.insertBefore(insn, new FieldInsnNode(Opcodes.GETSTATIC, cw.getName(), floatPoolFieldName, "[F"));
+								insnList.insertBefore(insn, ASMUtils.getNumberInsn(index));
+								insnList.set(insn, new InsnNode(Opcodes.FALOAD));
+								counter.incrementAndGet();
+							}
+						});
+
+					if (poolDoubles)
+						Stream.of(insnList.toArray()).filter(ASMUtils::isDoubleInsn).forEach(insn ->
+						{
+							final double value = ASMUtils.getDoubleFromInsn(insn);
+
+							if (doubleMappings.containsKey(value))
+							{
+								final int index = doubleMappings.get(value);
+
+								insnList.insertBefore(insn, new FieldInsnNode(Opcodes.GETSTATIC, cw.getName(), doublePoolFieldName, "[D"));
+								insnList.insertBefore(insn, ASMUtils.getNumberInsn(index));
+								insnList.set(insn, new InsnNode(Opcodes.DALOAD));
+								counter.incrementAndGet();
+							}
+						});
+				});
+
+				if (!integersToPool.isEmpty() || !longsToPool.isEmpty() || !floatsToPool.isEmpty() || !doublesToPool.isEmpty())
+					createInitializer(integerReverseMappings, longReverseMappings, floatReverseMappings, doubleReverseMappings, cw, methodDictionary, integerPoolFieldName, longPoolFieldName, floatPoolFieldName, doublePoolFieldName);
+			});
 
 		Main.info(String.format("+ Pooled %d numbers.", counter.get()));
 	}
+
+	private static void createInitializer(final List<Integer> integerMappings, final List<Long> longMappings, final List<Float> floatMappings, final List<Double> doubleMappings, final ClassWrapper classWrapper, final WrappedDictionary methodDictionary, final String integerPoolFieldName, final String longPoolFieldName, final String floatPoolFieldName, final String doublePoolFieldName)
+	{
+		final List<MethodNode> poolInits = createNumberPoolMethod(integerMappings, longMappings, floatMappings, doubleMappings, classWrapper, methodDictionary, integerPoolFieldName, longPoolFieldName, floatPoolFieldName, doublePoolFieldName);
+
+		for (final MethodNode mn : poolInits)
+			classWrapper.addMethod(mn);
+
+		final Optional<MethodNode> staticBlock = ASMUtils.findMethod(classWrapper.getClassNode(), "<clinit>", "()V");
+		if (staticBlock.isPresent())
+		{
+			final InsnList insns = staticBlock.get().instructions;
+			final InsnList init = new InsnList();
+			for (final MethodNode mn : poolInits)
+				init.add(new MethodInsnNode(Opcodes.INVOKESTATIC, classWrapper.getName(), mn.name, "()V", false));
+			insns.insertBefore(insns.getFirst(), init);
+		}
+		else
+		{
+			final MethodNode newStaticBlock = new MethodNode(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC, "<clinit>", "()V", null, null);
+			final InsnList insnList = new InsnList();
+			for (final MethodNode mn : poolInits)
+				insnList.add(new MethodInsnNode(Opcodes.INVOKESTATIC, classWrapper.getName(), mn.name, "()V", false));
+			insnList.add(new InsnNode(Opcodes.RETURN));
+			newStaticBlock.instructions = insnList;
+			classWrapper.getClassNode().methods.add(newStaticBlock);
+		}
+	}
+
+	private static List<MethodNode> createNumberPoolMethod(final List<Integer> integerMappings, final List<Long> longMappings, final List<Float> floatMappings, final List<Double> doubleMappings, final ClassWrapper classWrapper, final WrappedDictionary methodDictionary, final String integerPoolFieldName, final String longPoolFieldName, final String floatPoolFieldName, final String doublePoolFieldName)
+	{
+		final List<MethodNode> pools = new ArrayList<>();
+		int flags = 0;
+		Set<Integer> intIndexRNGExclusions = null;
+		Set<Integer> longIndexRNGExclusions = null;
+		Set<Integer> floatIndexRNGExclusions = null;
+		Set<Integer> doubleIndexRNGExclusions = null;
+
+		while (true)
+		{
+			final MethodNode mv = new MethodNode(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC /* | Opcodes.ACC_SYNTHETIC | Opcodes.ACC_BRIDGE */, methodDictionary.uniqueRandomString(), "()V", null, null);
+			mv.visitCode();
+
+			long leeway = Constants.MAX_CODE_SIZE;
+			if (integerMappings != null && !integerMappings.isEmpty())
+			{
+				final int numberOfIntegers = integerMappings.size();
+
+				if ((flags & INPOOL_INITIALIZED) == 0)
+				{
+					intIndexRNGExclusions = new HashSet<>(numberOfIntegers);
+
+					ASMUtils.getNumberInsn(numberOfIntegers).accept(mv);
+					mv.visitIntInsn(Opcodes.NEWARRAY, Opcodes.T_INT);
+
+					final FieldNode fieldNode = new FieldNode(POOL_FIELD_ACCESS, integerPoolFieldName, "[I", null, null);
+					classWrapper.addField(fieldNode);
+					flags |= INPOOL_INITIALIZED;
+				}
+				else
+					mv.visitFieldInsn(Opcodes.GETSTATIC, classWrapper.getName(), integerPoolFieldName, "[I");
+
+				while (intIndexRNGExclusions.size() < numberOfIntegers)
+				{
+					final int index = RandomUtils.getRandomIntWithExclusion(0, numberOfIntegers, intIndexRNGExclusions);
+
+					mv.visitInsn(Opcodes.DUP);
+					ASMUtils.getNumberInsn(index).accept(mv);
+					ASMUtils.getNumberInsn(integerMappings.get(index)).accept(mv);
+					mv.visitInsn(Opcodes.IASTORE);
+
+					intIndexRNGExclusions.add(index);
+					leeway -= ASMUtils.evaluateMaxSize(mv);
+					if (leeway < 30000)
+					{
+						flags |= LOOP_REQUIERD;
+						break;
+					}
+				}
+				mv.visitFieldInsn(Opcodes.PUTSTATIC, classWrapper.getName(), integerPoolFieldName, "[I");
+			}
+
+			if (longMappings != null && !longMappings.isEmpty() && leeway >= 30000)
+			{
+				final int numberOfLongs = longMappings.size();
+
+				if ((flags & LONGPOOL_INITIALIZED) == 0)
+				{
+					longIndexRNGExclusions = new HashSet<>(numberOfLongs);
+
+					ASMUtils.getNumberInsn(numberOfLongs).accept(mv);
+					mv.visitIntInsn(Opcodes.NEWARRAY, Opcodes.T_LONG);
+
+					final FieldNode fieldNode = new FieldNode(POOL_FIELD_ACCESS, longPoolFieldName, "[J", null, null);
+					classWrapper.addField(fieldNode);
+					flags |= LONGPOOL_INITIALIZED;
+				}
+				else
+					mv.visitFieldInsn(Opcodes.GETSTATIC, classWrapper.getName(), longPoolFieldName, "[J");
+
+				while (longIndexRNGExclusions.size() < numberOfLongs)
+				{
+					final int index = RandomUtils.getRandomIntWithExclusion(0, numberOfLongs, longIndexRNGExclusions);
+
+					mv.visitInsn(Opcodes.DUP);
+					ASMUtils.getNumberInsn(index).accept(mv);
+					ASMUtils.getNumberInsn(longMappings.get(index)).accept(mv);
+					mv.visitInsn(Opcodes.LASTORE);
+
+					longIndexRNGExclusions.add(index);
+					leeway -= ASMUtils.evaluateMaxSize(mv);
+					if (leeway < 30000)
+					{
+						flags |= LOOP_REQUIERD;
+						break;
+					}
+				}
+				mv.visitFieldInsn(Opcodes.PUTSTATIC, classWrapper.getName(), longPoolFieldName, "[J");
+			}
+
+			if (floatMappings != null && !floatMappings.isEmpty() && leeway >= 30000)
+			{
+				final int numberOfFloats = floatMappings.size();
+
+				if ((flags & FLOATPOOL_INITIALIZED) == 0)
+				{
+					floatIndexRNGExclusions = new HashSet<>(numberOfFloats);
+
+					ASMUtils.getNumberInsn(numberOfFloats).accept(mv);
+					mv.visitIntInsn(Opcodes.NEWARRAY, Opcodes.T_FLOAT);
+
+					final FieldNode fieldNode = new FieldNode(POOL_FIELD_ACCESS, floatPoolFieldName, "[F", null, null);
+					classWrapper.addField(fieldNode);
+					flags |= FLOATPOOL_INITIALIZED;
+				}
+				else
+					mv.visitFieldInsn(Opcodes.GETSTATIC, classWrapper.getName(), floatPoolFieldName, "[F");
+
+				while (floatIndexRNGExclusions.size() < numberOfFloats)
+				{
+					final int index = RandomUtils.getRandomIntWithExclusion(0, numberOfFloats, floatIndexRNGExclusions);
+
+					mv.visitInsn(Opcodes.DUP);
+					ASMUtils.getNumberInsn(index).accept(mv);
+					ASMUtils.getNumberInsn(floatMappings.get(index)).accept(mv);
+					mv.visitInsn(Opcodes.FASTORE);
+
+					floatIndexRNGExclusions.add(index);
+					leeway -= ASMUtils.evaluateMaxSize(mv);
+					if (leeway < 30000)
+					{
+						flags |= LOOP_REQUIERD;
+						break;
+					}
+				}
+				mv.visitFieldInsn(Opcodes.PUTSTATIC, classWrapper.getName(), floatPoolFieldName, "[F");
+			}
+
+			if (doubleMappings != null && !doubleMappings.isEmpty() && leeway >= 30000)
+			{
+				final int numberOfDoubles = doubleMappings.size();
+
+				if ((flags & DOUBLEPOOL_INITIALIZED) == 0)
+				{
+					doubleIndexRNGExclusions = new HashSet<>(numberOfDoubles);
+
+					ASMUtils.getNumberInsn(numberOfDoubles).accept(mv);
+					mv.visitIntInsn(Opcodes.NEWARRAY, Opcodes.T_DOUBLE);
+
+					final FieldNode fieldNode = new FieldNode(POOL_FIELD_ACCESS, doublePoolFieldName, "[D", null, null);
+					classWrapper.addField(fieldNode);
+					flags |= DOUBLEPOOL_INITIALIZED;
+				}
+				else
+					mv.visitFieldInsn(Opcodes.GETSTATIC, classWrapper.getName(), floatPoolFieldName, "[D");
+
+				while (doubleIndexRNGExclusions.size() < numberOfDoubles)
+				{
+					final int index = RandomUtils.getRandomIntWithExclusion(0, numberOfDoubles, doubleIndexRNGExclusions);
+
+					mv.visitInsn(Opcodes.DUP);
+					ASMUtils.getNumberInsn(index).accept(mv);
+					ASMUtils.getNumberInsn(doubleMappings.get(index)).accept(mv);
+					mv.visitInsn(Opcodes.DASTORE);
+
+					doubleIndexRNGExclusions.add(index);
+					leeway -= ASMUtils.evaluateMaxSize(mv);
+					if (leeway < 30000)
+					{
+						flags |= LOOP_REQUIERD;
+						break;
+					}
+				}
+				mv.visitFieldInsn(Opcodes.PUTSTATIC, classWrapper.getName(), doublePoolFieldName, "[D");
+			}
+
+			mv.visitInsn(Opcodes.RETURN);
+			mv.visitMaxs(3, 0);
+			mv.visitEnd();
+
+			pools.add(mv);
+
+			if ((flags & LOOP_REQUIERD) == 0)
+				return pools;
+			flags &= ~LOOP_REQUIERD;
+		}
+	}
+
+	public static final int INPOOL_INITIALIZED = 0b0000000000001;
+	public static final int LONGPOOL_INITIALIZED = 0b0000000000010;
+	public static final int FLOATPOOL_INITIALIZED = 0b0000000000100;
+	public static final int DOUBLEPOOL_INITIALIZED = 0b0000000001000;
+	public static final int LOOP_REQUIERD = 0b0000000010000;
+	public static final int POOL_FIELD_ACCESS = Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL | Opcodes.ACC_SYNTHETIC;
 }
