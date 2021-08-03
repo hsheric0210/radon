@@ -18,12 +18,10 @@
 
 package me.itzsomebody.radon.transformers.optimizers;
 
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
-
 import org.objectweb.asm.tree.MethodNode;
 
-import me.itzsomebody.radon.Main;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 /**
  * Removes all NOPs found. Do note that ASM's MethodWriter will replace unreachable instructions with NOPs so you might find NOPs in your program even after you ran this transformer on it.
@@ -45,7 +43,7 @@ public class NopRemover extends Optimizer
 			Stream.of(methodNode.instructions.toArray()).filter(insn -> insn.getOpcode() == NOP).forEach(insn -> methodNode.instructions.remove(insn));
 		}));
 
-		Main.info(String.format("Removed %d NOP instructions. [%s]", count.get(), tookThisLong(current)));
+		info(String.format("- Removed %d NOP instructions. [%s]", count.get(), tookThisLong(current)));
 	}
 
 	@Override

@@ -18,7 +18,6 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.strings;
 
-import me.itzsomebody.radon.Main;
 import me.itzsomebody.radon.asm.ClassWrapper;
 import me.itzsomebody.radon.asm.MethodWrapper;
 import me.itzsomebody.radon.dictionaries.WrappedDictionary;
@@ -104,18 +103,18 @@ public class StringPooler extends StringEncryption
 					counter.incrementAndGet();
 				}
 				else
-					Main.warning(String.format("*** String %s not registered in reverseMappings! This can't be happened!!!", ldc.cst));
+					verboseWarn(String.format("! String %s not registered in mappings! This can't be happened!!!", ldc.cst));
 			})));
 
 			if (!reverseMappings.isEmpty())
 			{
 				if (!inject)
-					classWrapper.getClassNode().visit(V1_5, ACC_PUBLIC + ACC_SUPER + ACC_SYNTHETIC, classPath, null, "java/lang/Object", null);
+					classWrapper.getClassNode().visit(V1_5, ACC_PUBLIC | ACC_SUPER | ACC_SYNTHETIC, classPath, null, "java/lang/Object", null);
 				createInitializer(reverseMappings, classWrapper, methodDictionary, fieldName);
 				if (!inject)
 					getClasses().put(classWrapper.getName(), classWrapper);
 
-				Main.info(String.format("*** Global string pool injected into class '%s'", classPath));
+				verboseInfo(() -> String.format("Global string pool injected into class '%s'", classPath));
 			}
 		}
 		else
@@ -170,7 +169,7 @@ public class StringPooler extends StringEncryption
 					createInitializer(reverseMappings, cw, methodDictionary, fieldName);
 			});
 
-		Main.info(String.format("+ Pooled %d strings.", counter.get()));
+		info(String.format("+ Pooled %d strings.", counter.get()));
 	}
 
 	private void createInitializer(final List<String> mappings, final ClassWrapper classWrapper, final WrappedDictionary methodDictionary, final String fieldName)

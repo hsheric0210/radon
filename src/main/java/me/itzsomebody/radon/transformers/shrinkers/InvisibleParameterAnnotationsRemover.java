@@ -20,8 +20,6 @@ package me.itzsomebody.radon.transformers.shrinkers;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import me.itzsomebody.radon.Main;
-
 /**
  * Strips out invisible parameter annotations.
  *
@@ -41,7 +39,7 @@ public class InvisibleParameterAnnotationsRemover extends Shrinker
 			methodWrapper.getMethodNode().invisibleParameterAnnotations = null;
 		}));
 
-		Main.info(String.format("Removed %d invisible parameter annotations.", counter.get()));
+		info(String.format("- Removed %d invisible parameter annotations.", counter.get()));
 	}
 
 	@Override

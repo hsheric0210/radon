@@ -18,15 +18,14 @@
 
 package me.itzsomebody.radon.transformers.obfuscators;
 
-import static me.itzsomebody.radon.config.ConfigurationSetting.MEMBER_SHUFFLER;
+import me.itzsomebody.radon.config.Configuration;
+import me.itzsomebody.radon.exclusions.ExclusionType;
+import me.itzsomebody.radon.transformers.Transformer;
 
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import me.itzsomebody.radon.Main;
-import me.itzsomebody.radon.config.Configuration;
-import me.itzsomebody.radon.exclusions.ExclusionType;
-import me.itzsomebody.radon.transformers.Transformer;
+import static me.itzsomebody.radon.config.ConfigurationSetting.MEMBER_SHUFFLER;
 
 /**
  * Randomizes the order of methods and fields in a class.
@@ -58,7 +57,7 @@ public class MemberShuffler extends Transformer
 			}
 		});
 
-		Main.info(String.format("Shuffled %d members.", counter.get()));
+		info(String.format("Shuffled %d members.", counter.get()));
 	}
 
 	@Override

@@ -18,7 +18,6 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.numbers;
 
-import me.itzsomebody.radon.Main;
 import me.itzsomebody.radon.asm.ClassWrapper;
 import me.itzsomebody.radon.asm.MethodWrapper;
 import me.itzsomebody.radon.dictionaries.WrappedDictionary;
@@ -205,6 +204,8 @@ public class NumberPooler extends NumberObfuscation
 								insnList.set(insn, new InsnNode(Opcodes.IALOAD));
 								counter.incrementAndGet();
 							}
+							else
+								verboseWarn(String.format("! Integer %d not registered in integerMappings! This can't be happened!!!", value));
 						});
 
 					if (poolLongs)
@@ -221,6 +222,8 @@ public class NumberPooler extends NumberObfuscation
 								insnList.set(insn, new InsnNode(Opcodes.LALOAD));
 								counter.incrementAndGet();
 							}
+							else
+								verboseWarn(String.format("! Long %d not registered in integerMappings! This can't be happened!!!", value));
 						});
 
 					if (poolFloats)
@@ -237,6 +240,8 @@ public class NumberPooler extends NumberObfuscation
 								insnList.set(insn, new InsnNode(Opcodes.FALOAD));
 								counter.incrementAndGet();
 							}
+							else
+								verboseWarn(String.format("! Float %.6f not registered in integerMappings! This can't be happened!!!", value));
 						});
 
 					if (poolDoubles)
@@ -253,20 +258,21 @@ public class NumberPooler extends NumberObfuscation
 								insnList.set(insn, new InsnNode(Opcodes.DALOAD));
 								counter.incrementAndGet();
 							}
+							else
+								verboseWarn(String.format("! Float %.16f not registered in integerMappings! This can't be happened!!!", value));
 						});
 				});
-
 			});
 
 			if (!integersToPool.isEmpty() || !longsToPool.isEmpty() || !floatsToPool.isEmpty() || !doublesToPool.isEmpty())
 			{
 				if (!inject)
-					classWrapper.getClassNode().visit(V1_5, ACC_PUBLIC + ACC_SUPER + ACC_SYNTHETIC, classPath, null, "java/lang/Object", null);
+					classWrapper.getClassNode().visit(V1_5, ACC_PUBLIC | ACC_SUPER | ACC_SYNTHETIC, classPath, null, "java/lang/Object", null);
 				createInitializer(integerReverseMappings, longReverseMappings, floatReverseMappings, doubleReverseMappings, classWrapper, methodDictionary, integerPoolFieldName, longPoolFieldName, floatPoolFieldName, doublePoolFieldName);
 				if (!inject)
 					getClasses().put(classWrapper.getName(), classWrapper);
 
-				Main.info(String.format("*** Global number pool injected into class '%s'", classPath));
+				verboseInfo(() -> String.format("Global number pool injected into class '%s'", classPath));
 			}
 		}
 		else
@@ -412,6 +418,8 @@ public class NumberPooler extends NumberObfuscation
 								insnList.set(insn, new InsnNode(Opcodes.IALOAD));
 								counter.incrementAndGet();
 							}
+							else
+								verboseWarn(String.format("! Integer %d not registered in integerMappings! This can't be happened!!!", value));
 						});
 
 					if (poolLongs)
@@ -428,6 +436,8 @@ public class NumberPooler extends NumberObfuscation
 								insnList.set(insn, new InsnNode(Opcodes.LALOAD));
 								counter.incrementAndGet();
 							}
+							else
+								verboseWarn(String.format("! Long %d not registered in integerMappings! This can't be happened!!!", value));
 						});
 
 					if (poolFloats)
@@ -444,6 +454,8 @@ public class NumberPooler extends NumberObfuscation
 								insnList.set(insn, new InsnNode(Opcodes.FALOAD));
 								counter.incrementAndGet();
 							}
+							else
+								verboseWarn(String.format("! Integer %.6f not registered in integerMappings! This can't be happened!!!", value));
 						});
 
 					if (poolDoubles)
@@ -460,6 +472,8 @@ public class NumberPooler extends NumberObfuscation
 								insnList.set(insn, new InsnNode(Opcodes.DALOAD));
 								counter.incrementAndGet();
 							}
+							else
+								verboseWarn(String.format("! Integer %.16f not registered in integerMappings! This can't be happened!!!", value));
 						});
 				});
 
@@ -467,15 +481,20 @@ public class NumberPooler extends NumberObfuscation
 					createInitializer(integerReverseMappings, longReverseMappings, floatReverseMappings, doubleReverseMappings, cw, methodDictionary, integerPoolFieldName, longPoolFieldName, floatPoolFieldName, doublePoolFieldName);
 			});
 
-		Main.info(String.format("+ Pooled %d numbers.", counter.get()));
+		info(String.format("+ Pooled %d numbers.", counter.get()));
 	}
 
-	private static void createInitializer(final List<Integer> integerMappings, final List<Long> longMappings, final List<Float> floatMappings, final List<Double> doubleMappings, final ClassWrapper classWrapper, final WrappedDictionary methodDictionary, final String integerPoolFieldName, final String longPoolFieldName, final String floatPoolFieldName, final String doublePoolFieldName)
+	private void createInitializer(final List<Integer> integerMappings, final List<Long> longMappings, final List<Float> floatMappings, final List<Double> doubleMappings, final ClassWrapper classWrapper, final WrappedDictionary methodDictionary, final String integerPoolFieldName, final String longPoolFieldName, final String floatPoolFieldName, final String doublePoolFieldName)
 	{
 		final List<MethodNode> poolInits = createNumberPoolMethod(integerMappings, longMappings, floatMappings, doubleMappings, classWrapper, methodDictionary, integerPoolFieldName, longPoolFieldName, floatPoolFieldName, doublePoolFieldName);
 
-		for (final MethodNode mn : poolInits)
+		for (int i = 0, poolInitsSize = poolInits.size(); i < poolInitsSize; i++)
+		{
+			final MethodNode mn = poolInits.get(i);
 			classWrapper.addMethod(mn);
+			final int finalI = i;
+			verboseInfo(() -> String.format("Number pool initializer method #%d name: %s", finalI, mn.name));
+		}
 
 		final Optional<MethodNode> staticBlock = ASMUtils.findMethod(classWrapper.getClassNode(), "<clinit>", "()V");
 		if (staticBlock.isPresent())

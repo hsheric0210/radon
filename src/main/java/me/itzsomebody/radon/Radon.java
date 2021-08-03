@@ -18,17 +18,6 @@
 
 package me.itzsomebody.radon;
 
-import java.io.*;
-import java.lang.reflect.Field;
-import java.util.*;
-import java.util.stream.IntStream;
-import java.util.zip.*;
-
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.commons.JSRInlinerAdapter;
-import org.objectweb.asm.tree.MethodNode;
-
 import me.itzsomebody.radon.asm.ClassTree;
 import me.itzsomebody.radon.asm.ClassWrapper;
 import me.itzsomebody.radon.config.ObfuscationConfiguration;
@@ -37,7 +26,20 @@ import me.itzsomebody.radon.exceptions.RadonException;
 import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.transformers.Transformer;
 import me.itzsomebody.radon.transformers.miscellaneous.TrashClasses;
-import me.itzsomebody.radon.utils.*;
+import me.itzsomebody.radon.utils.FileUtils;
+import me.itzsomebody.radon.utils.IOUtils;
+import me.itzsomebody.radon.utils.RandomUtils;
+import me.itzsomebody.radon.utils.Strings;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.commons.JSRInlinerAdapter;
+import org.objectweb.asm.tree.MethodNode;
+
+import java.io.*;
+import java.lang.reflect.Field;
+import java.util.*;
+import java.util.stream.IntStream;
+import java.util.zip.*;
 
 /**
  * This class is how Radon processes the provided {@link ObfuscationConfiguration} to produce an obfuscated jar.
@@ -102,12 +104,12 @@ public class Radon
 		transformers.stream().filter(Objects::nonNull).forEach(transformer ->
 		{
 			final long nanoTime = System.nanoTime();
-			Main.info(String.format("Running %s transformer.", transformer.getName()));
+			Main.info(String.format("+ Running %s transformer.", transformer.getName()));
 			Main.infoNewline();
 			transformer.init(this);
 			transformer.transform();
 			Main.infoNewline();
-			Main.info(String.format("Finished running %s transformer. [%s]", transformer.getName(), Transformer.tookThisLong(nanoTime)));
+			Main.info(String.format("+ Finished running %s transformer. [%s]", transformer.getName(), Transformer.tookThisLong(nanoTime)));
 			Main.infoNewline();
 			Main.info(Strings.EXECUTION_SEPARATOR);
 			Main.infoNewline();
@@ -128,7 +130,7 @@ public class Radon
 	{
 		final File output = config.getOutput();
 		final long nanoTime = System.nanoTime();
-		Main.info(String.format("Writing output to \"%s\".", output.getAbsolutePath()));
+		Main.info(String.format("+ Writing output to \"%s\".", output.getAbsolutePath()));
 
 		if (output.exists())
 			Main.info(String.format("*** Output file already exists, renamed to %s.", FileUtils.renameExistingFile(output)));
@@ -137,7 +139,7 @@ public class Radon
 		{
 			final ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(output));
 			zos.setLevel(config.getCompressionLevel());
-			Main.info(String.format("+ Output jar compression level is %d.", config.getCompressionLevel()));
+			Main.info(String.format("*** Output jar compression level is %d.", config.getCompressionLevel()));
 
 			if (config.isCorruptCrc())
 				try
@@ -150,8 +152,7 @@ public class Radon
 				}
 				catch (final Exception e)
 				{
-					e.printStackTrace();
-					Main.severe("*** Failed to inject CRC corrupter.");
+					Main.severe("*** Failed to inject CRC corrupter.", e);
 				}
 
 			classes.values().forEach(classWrapper ->
@@ -164,10 +165,9 @@ public class Radon
 					zos.write(classWrapper.toByteArray(this));
 					zos.closeEntry();
 				}
-				catch (final Exception t)
+				catch (final Exception e)
 				{
-					Main.severe(String.format("*** Error writing class %s. Skipping.", classWrapper.getName() + ".class"));
-					t.printStackTrace();
+					Main.severe(String.format("*** Error writing class %s. Skipping.", classWrapper.getName() + ".class"), e);
 				}
 			});
 
@@ -183,8 +183,7 @@ public class Radon
 				}
 				catch (final IOException ioe)
 				{
-					Main.severe(String.format("*** Error writing resource %s. Skipping.", name));
-					ioe.printStackTrace();
+					Main.severe(String.format("*** Error writing resource %s. Skipping.", name), ioe);
 				}
 			});
 
@@ -240,7 +239,7 @@ public class Radon
 				}
 			}
 			else
-				Main.warning(String.format("*** Library \"%s\" could not be found and will be ignored.", file.getAbsolutePath()));
+				Main.warn(String.format("*** Library \"%s\" could not be found and will be ignored.", file.getAbsolutePath()));
 		});
 	}
 
@@ -286,7 +285,7 @@ public class Radon
 							}
 							catch (final Throwable t)
 							{
-								Main.warning(String.format("*** Could not load %s as a class and will be loaded as resource.", entry.getName()));
+								Main.warn(String.format("*** Could not load %s as a class and will be loaded as resource.", entry.getName()));
 								resources.put(entry.getName(), IOUtils.toByteArray(in));
 							}
 						else

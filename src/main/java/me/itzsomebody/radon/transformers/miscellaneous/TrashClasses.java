@@ -18,20 +18,19 @@
 
 package me.itzsomebody.radon.transformers.miscellaneous;
 
-import java.util.ArrayList;
-
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.Handle;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.*;
-
 import me.itzsomebody.radon.Main;
 import me.itzsomebody.radon.config.Configuration;
 import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.transformers.Transformer;
 import me.itzsomebody.radon.utils.ASMUtils;
 import me.itzsomebody.radon.utils.RandomUtils;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Handle;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.*;
+
+import java.util.ArrayList;
 
 /**
  * Not really a transformer. This "transformer" generates unused classes full of random bytecode.
@@ -72,7 +71,7 @@ public class TrashClasses extends Transformer
 			getResources().put(classNode.name + ".class", cw.toByteArray());
 		}
 
-		Main.info(String.format("+ Generated %d trash classes.", radon.getConfig().getnTrashClasses()));
+		info(String.format("+ Generated %d trash classes.", radon.getConfig().getnTrashClasses()));
 	}
 
 	private ClassNode generateClass()

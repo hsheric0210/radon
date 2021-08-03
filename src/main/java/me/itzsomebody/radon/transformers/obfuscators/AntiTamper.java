@@ -18,19 +18,6 @@
 
 package me.itzsomebody.radon.transformers.obfuscators;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
-
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.LdcInsnNode;
-import org.objectweb.asm.tree.MethodInsnNode;
-
-import me.itzsomebody.radon.Main;
 import me.itzsomebody.radon.asm.ClassWrapper;
 import me.itzsomebody.radon.asm.MethodWrapper;
 import me.itzsomebody.radon.config.Configuration;
@@ -38,6 +25,17 @@ import me.itzsomebody.radon.exceptions.RadonException;
 import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.transformers.Transformer;
 import me.itzsomebody.radon.utils.RandomUtils;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.LdcInsnNode;
+import org.objectweb.asm.tree.MethodInsnNode;
+
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 /**
  * This applies passive integrity checking to the application with a special type of string encryption. todo: scrap and remake
@@ -89,7 +87,7 @@ public class AntiTamper extends Transformer
 		final ClassNode decryptor = createDecryptor(memberNames);
 		getClasses().put(decryptor.name, new ClassWrapper(decryptor, false));
 
-		Main.info("Encrypted " + counter.get() + " strings with anti-tamper algorithm");
+		info("+ Encrypted " + counter.get() + " strings with anti-tamper algorithm");
 	}
 
 	@Override
@@ -146,9 +144,9 @@ public class AntiTamper extends Transformer
 		final ClassNode cw = new ClassNode();
 		final MethodVisitor mv;
 
-		cw.visit(V1_5, ACC_PUBLIC + ACC_SUPER, memberNames.className, null, "java/lang/Object", null);
+		cw.visit(V1_5, ACC_PUBLIC | ACC_SUPER, memberNames.className, null, "java/lang/Object", null);
 
-		mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, memberNames.decryptMethodName, "(Ljava/lang/String;)Ljava/lang/String;", null, null);
+		mv = cw.visitMethod(ACC_PUBLIC | ACC_STATIC, memberNames.decryptMethodName, "(Ljava/lang/String;)Ljava/lang/String;", null, null);
 		mv.visitCode();
 		final Label l0 = new Label();
 		mv.visitLabel(l0);

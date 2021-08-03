@@ -18,11 +18,9 @@
 
 package me.itzsomebody.radon.transformers.shrinkers;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.objectweb.asm.tree.ClassNode;
 
-import me.itzsomebody.radon.Main;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Removes annotations invisible to the runtime from classes, methods and fields.
@@ -59,7 +57,7 @@ public class InvisibleAnnotationsRemover extends Shrinker
 			});
 		});
 
-		Main.info(String.format("Removed %d invisible annotations.", counter.get()));
+		info(String.format("- Removed %d invisible annotations.", counter.get()));
 	}
 
 	@Override

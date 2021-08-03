@@ -18,14 +18,12 @@
 
 package me.itzsomebody.radon.transformers.shrinkers;
 
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
-
 import me.itzsomebody.radon.asm.ClassWrapper;
+import me.itzsomebody.radon.utils.Constants;
 import org.objectweb.asm.Attribute;
 
-import me.itzsomebody.radon.Main;
-import me.itzsomebody.radon.utils.Constants;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 /**
  * Removes all unknown attributes from the classes.
@@ -45,7 +43,7 @@ public class UnknownAttributesRemover extends Shrinker
 			counter.incrementAndGet();
 		}));
 
-		Main.info(String.format("Removed %d attributes.", counter.get()));
+		info(String.format("- Removed %d attributes.", counter.get()));
 	}
 
 	@Override

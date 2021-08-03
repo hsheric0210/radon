@@ -18,7 +18,6 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.numbers;
 
-import me.itzsomebody.radon.Main;
 import me.itzsomebody.radon.utils.ASMUtils;
 import me.itzsomebody.radon.utils.RandomUtils;
 import org.objectweb.asm.Opcodes;
@@ -101,12 +100,12 @@ public class ArithmeticObfuscator extends NumberObfuscation
 			}
 		}));
 
-		Main.info("+ Split " + counter.get() + " number constants into arithmetic instructions (minIteration: " + master.getMinIteration() + ", maxIteration: " + master.getMaxIteration() + ")");
+		info("+ Split " + counter.get() + " number constants into arithmetic instructions (minIteration: " + master.getMinIteration() + ", maxIteration: " + master.getMaxIteration() + ")");
 	}
 
 	private InsnList obfuscateNumber(final int originalNum)
 	{
-		final StringBuilder builder = new StringBuilder("*** [ArithmeticObfuscator] Verify failed: Obfuscate int '" + originalNum + "' to '");
+		final StringBuilder builder = new StringBuilder("! [ArithmeticObfuscator] Verify failed: Obfuscate int '" + originalNum + "' to '");
 
 		int current = randomInt(originalNum);
 
@@ -199,7 +198,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 
 		if (originalNum != current)
 		{
-			Main.info(builder.toString());
+			verboseWarn(builder.toString());
 			return ASMUtils.singletonList(ASMUtils.getNumberInsn(originalNum));
 		}
 
@@ -208,7 +207,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 
 	private InsnList obfuscateNumber(final long originalNum)
 	{
-		final StringBuilder builder = new StringBuilder("*** [ArithmeticObfuscator] Verify failed: Obfuscate long '" + originalNum + "' to '");
+		final StringBuilder builder = new StringBuilder("! [ArithmeticObfuscator] Verify failed: Obfuscate long '" + originalNum + "' to '");
 
 		long current = randomLong(originalNum);
 
@@ -301,7 +300,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 
 		if (originalNum != current)
 		{
-			Main.info(builder.toString());
+			verboseWarn(builder.toString());
 			return ASMUtils.singletonList(ASMUtils.getNumberInsn(originalNum));
 		}
 
@@ -310,7 +309,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 
 	private InsnList obfuscateNumber(final float originalNum) // TODO: Overflow protection
 	{
-		final StringBuilder builder = new StringBuilder("*** [ArithmeticObfuscator] Verify failed: Obfuscate float '" + originalNum + "' to '");
+		final StringBuilder builder = new StringBuilder("! [ArithmeticObfuscator] Verify failed: Obfuscate float '" + originalNum + "' to '");
 
 		float current = originalNum == 0 ? randomFloat(Integer.MAX_VALUE) : randomFloat(originalNum);
 
@@ -416,7 +415,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 
 		if (!(Float.isNaN(originalNum) && Float.isNaN(current)) && originalNum - current > 0.000001F)
 		{
-			Main.info(builder.toString());
+			verboseWarn(builder.toString());
 			return ASMUtils.singletonList(ASMUtils.getNumberInsn(originalNum));
 		}
 
@@ -425,7 +424,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 
 	private InsnList obfuscateNumber(final double originalNum) // TODO: Overflow protection
 	{
-		final StringBuilder builder = new StringBuilder("*** [ArithmeticObfuscator] Verify failed: Obfuscate double '" + originalNum + "' to '");
+		final StringBuilder builder = new StringBuilder("! [ArithmeticObfuscator] Verify failed: Obfuscate double '" + originalNum + "' to '");
 
 		double current = originalNum == 0 ? randomDouble(Integer.MAX_VALUE) : randomDouble(originalNum);
 
@@ -530,7 +529,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 
 		if (!(Double.isNaN(originalNum) && Double.isNaN(current)) && originalNum - current > 0.00000001)
 		{
-			Main.info(builder.toString());
+			verboseWarn(builder.toString());
 			return ASMUtils.singletonList(ASMUtils.getNumberInsn(originalNum));
 		}
 

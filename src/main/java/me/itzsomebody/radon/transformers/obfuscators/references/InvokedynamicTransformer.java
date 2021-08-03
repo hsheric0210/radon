@@ -18,17 +18,17 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.references;
 
-import me.itzsomebody.radon.Main;
-import me.itzsomebody.radon.asm.ClassWrapper;
-import me.itzsomebody.radon.utils.ASMUtils;
-import me.itzsomebody.radon.utils.Constants;
-import org.objectweb.asm.*;
-import org.objectweb.asm.tree.*;
-
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.stream.Stream;
+
+import org.objectweb.asm.*;
+import org.objectweb.asm.tree.*;
+
+import me.itzsomebody.radon.asm.ClassWrapper;
+import me.itzsomebody.radon.utils.ASMUtils;
+import me.itzsomebody.radon.utils.Constants;
 
 /**
  * Hides method invocations and field accesses by swapping them out with an invokedynamic instruction.
@@ -41,83 +41,94 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 	public final void transform()
 	{
 		final MemberNames memberNames = new MemberNames();
+		verboseInfos(memberNames::toStrings);
+
 		final AtomicInteger counter = new AtomicInteger();
 
 		final Handle bootstrapHandle = new Handle(H_INVOKESTATIC, memberNames.className, memberNames.bootstrapMethodName, "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", false);
 
-		getClassWrappers().stream().filter(cw -> included(cw) && !"java/lang/Enum".equals(cw.getSuperName()) && cw.allowsIndy()).forEach(classWrapper -> classWrapper.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
+		getClassWrappers().stream().filter(cw -> included(cw) && !"java/lang/Enum".equals(cw.getSuperName()) && cw.allowsIndy()).forEach(classWrapper ->
 		{
-			final InsnList insns = mw.getInstructions();
+			if ((classWrapper.getAccessFlags() & ACC_INTERFACE) == 0)
+				classWrapper.getFields().stream().forEach(fw -> fw.setAccessFlags(fw.getAccessFlags() & ~ACC_FINAL)); // J16 checks 'final' flags
 
-			Stream.of(insns.toArray()).forEach(insn ->
+			classWrapper.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
 			{
-				if (insn instanceof MethodInsnNode)
+				final InsnList insns = mw.getInstructions();
+
+				Stream.of(insns.toArray()).forEach(insn ->
 				{
-					final MethodInsnNode m = (MethodInsnNode) insn;
-
-					if (!m.name.isEmpty() && m.name.charAt(0) == '<')
-						return;
-
-					String newDesc = Constants.CLOSING_BRACE_PATTERN.matcher(m.desc).replaceAll(Matcher.quoteReplacement("Ljava/lang/String;J)"));
-					if (m.getOpcode() != INVOKESTATIC)
-						newDesc = Constants.OPENING_BRACE_PATTERN.matcher(newDesc).replaceAll(Matcher.quoteReplacement("(Ljava/lang/Object;"));
-
-					newDesc = ASMUtils.getGenericMethodDesc(newDesc);
-					final String name = insn.getOpcode() == INVOKESTATIC ? "a" : "b";
-					// TODO: Randomize the unique identifiers if can.
-
-					final InvokeDynamicInsnNode indy = new InvokeDynamicInsnNode(name, newDesc, bootstrapHandle);
-
-					insns.insertBefore(m, new LdcInsnNode(m.owner.replace('/', '.')));
-					insns.insertBefore(m, ASMUtils.getNumberInsn(hash(m.desc) & 0xffffffffL | (long) m.name.hashCode() << 32));
-					insns.set(m, indy);
-
-					counter.incrementAndGet();
-				}
-				else if (insn instanceof FieldInsnNode && !"<init>".equals(mw.getName()))
-				{
-					final FieldInsnNode f = (FieldInsnNode) insn;
-
-					final boolean isStatic = f.getOpcode() == GETSTATIC || f.getOpcode() == PUTSTATIC;
-					final boolean isSetter = f.getOpcode() == PUTFIELD || f.getOpcode() == PUTSTATIC;
-
-					String newDesc = isSetter ? "(" + f.desc + "Ljava/lang/String;J)V" : "(Ljava/lang/String;J)" + f.desc;
-					if (!isStatic)
-						newDesc = Constants.OPENING_BRACE_PATTERN.matcher(newDesc).replaceAll(Matcher.quoteReplacement("(Ljava/lang/Object;"));
-
-					final String name;
-
-					switch (insn.getOpcode())
+					if (insn instanceof MethodInsnNode)
 					{
-						case GETSTATIC:
-							name = "d";
-							break;
-						case GETFIELD:
-							name = "e";
-							break;
-						case PUTSTATIC:
-							name = "f";
-							break;
-						default:
-							name = "g";
-							break;
+						final MethodInsnNode m = (MethodInsnNode) insn;
+
+						if (!m.name.isEmpty() && m.name.charAt(0) == '<')
+							return;
+
+						String newDesc = Constants.CLOSING_BRACE_PATTERN.matcher(m.desc).replaceAll(Matcher.quoteReplacement("Ljava/lang/String;J)"));
+						if (m.getOpcode() != INVOKESTATIC)
+							newDesc = Constants.OPENING_BRACE_PATTERN.matcher(newDesc).replaceAll(Matcher.quoteReplacement("(Ljava/lang/Object;"));
+
+						newDesc = ASMUtils.getGenericMethodDesc(newDesc);
+						final String name = insn.getOpcode() == INVOKESTATIC ? "a" : "b";
+						// TODO: Randomize the unique identifiers if can.
+
+						final InvokeDynamicInsnNode indy = new InvokeDynamicInsnNode(name, newDesc, bootstrapHandle);
+
+						insns.insertBefore(m, new LdcInsnNode(m.owner.replace('/', '.')));
+						insns.insertBefore(m, ASMUtils.getNumberInsn(hash(m.desc) & 0xffffffffL | (long) m.name.hashCode() << 32));
+						insns.set(m, indy);
+
+						counter.incrementAndGet();
 					}
+					else if (insn instanceof FieldInsnNode && !"<init>".equals(mw.getName()))
+					{
+						final FieldInsnNode f = (FieldInsnNode) insn;
 
-					final InvokeDynamicInsnNode indy = new InvokeDynamicInsnNode(name, newDesc, bootstrapHandle);
+						final boolean isStatic = f.getOpcode() == GETSTATIC || f.getOpcode() == PUTSTATIC;
+						final boolean isSetter = f.getOpcode() == PUTFIELD || f.getOpcode() == PUTSTATIC;
 
-					insns.insertBefore(f, new LdcInsnNode(f.owner.replace('/', '.')));
-					insns.insertBefore(f, ASMUtils.getNumberInsn(hashType(f.desc) & 0xffffffffL | (long) f.name.hashCode() << 32));
-					insns.set(f, indy);
+						if (!(isSetter && (classWrapper.getAccessFlags() & ACC_INTERFACE) != 0))
+						{
+							String newDesc = isSetter ? "(" + f.desc + "Ljava/lang/String;J)V" : "(Ljava/lang/String;J)" + f.desc;
+							if (!isStatic)
+								newDesc = Constants.OPENING_BRACE_PATTERN.matcher(newDesc).replaceAll(Matcher.quoteReplacement("(Ljava/lang/Object;"));
 
-					counter.incrementAndGet();
-				}
+							final String name;
+
+							switch (insn.getOpcode())
+							{
+								case GETSTATIC:
+									name = "d";
+									break;
+								case GETFIELD:
+									name = "e";
+									break;
+								case PUTSTATIC:
+									name = "f";
+									break;
+								default:
+									name = "g";
+									break;
+							}
+
+							final InvokeDynamicInsnNode indy = new InvokeDynamicInsnNode(name, newDesc, bootstrapHandle);
+
+							insns.insertBefore(f, new LdcInsnNode(f.owner.replace('/', '.')));
+							insns.insertBefore(f, ASMUtils.getNumberInsn(hashType(f.desc) & 0xffffffffL | (long) f.name.hashCode() << 32));
+							insns.set(f, indy);
+
+							counter.incrementAndGet();
+						}
+					}
+				});
 			});
-		}));
+		});
 
 		final ClassNode decryptor = createBootstrapClass(memberNames);
 		getClasses().put(decryptor.name, new ClassWrapper(decryptor, false));
 
-		Main.info("+ Hid API " + counter.get() + " references using invokedynamic");
+		info("+ Hid API " + counter.get() + " references using invokedynamic");
 	}
 
 	private static int hashType(final String sType)
@@ -355,7 +366,7 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 			mv.visitEnd();
 		}
 		{
-			mv = cw.visitMethod(ACC_PRIVATE + ACC_STATIC, memberNames.findFieldMethodName, "(Ljava/lang/Class;II)Ljava/lang/reflect/Field;", null, null);
+			mv = cw.visitMethod(ACC_PRIVATE | ACC_STATIC, memberNames.findFieldMethodName, "(Ljava/lang/Class;II)Ljava/lang/reflect/Field;", null, null);
 			mv.visitCode();
 			final Label l0 = new Label();
 			mv.visitLabel(l0);
@@ -496,7 +507,7 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 			mv.visitEnd();
 		}
 		{
-			mv = cw.visitMethod(ACC_PRIVATE + ACC_STATIC, memberNames.resolveMethodHandleMethodName, "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MutableCallSite;[Ljava/lang/Object;)Ljava/lang/Object;", null, new String[]
+			mv = cw.visitMethod(ACC_PRIVATE | ACC_STATIC, memberNames.resolveMethodHandleMethodName, "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MutableCallSite;[Ljava/lang/Object;)Ljava/lang/Object;", null, new String[]
 			{
 					"java/lang/Throwable"
 			});
@@ -548,11 +559,11 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 			final Label l6 = new Label();
 			mv.visitLabel(l6);
 			mv.visitVarInsn(ILOAD, 5);
-			mv.visitIntInsn(BIPUSH, 97);
+			mv.visitIntInsn(BIPUSH, 97); // a
 			final Label l7 = new Label();
 			mv.visitJumpInsn(IF_ICMPLT, l7);
 			mv.visitVarInsn(ILOAD, 5);
-			mv.visitIntInsn(BIPUSH, 99);
+			mv.visitIntInsn(BIPUSH, 99); // c
 			mv.visitJumpInsn(IF_ICMPGT, l7);
 			final Label l8 = new Label();
 			mv.visitLabel(l8);
@@ -596,7 +607,7 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 			final Label l12 = new Label();
 			mv.visitLabel(l12);
 			mv.visitVarInsn(ILOAD, 5);
-			mv.visitIntInsn(BIPUSH, 97);
+			mv.visitIntInsn(BIPUSH, 97); // a
 			final Label l13 = new Label();
 			mv.visitJumpInsn(IF_ICMPNE, l13);
 			final Label l14 = new Label();
@@ -613,7 +624,7 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 			mv.visitJumpInsn(GOTO, l16);
 			mv.visitLabel(l13);
 			mv.visitVarInsn(ILOAD, 5);
-			mv.visitIntInsn(BIPUSH, 98);
+			mv.visitIntInsn(BIPUSH, 98); // b
 			final Label l17 = new Label();
 			mv.visitJumpInsn(IF_ICMPNE, l17);
 			final Label l18 = new Label();
@@ -679,7 +690,7 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 			mv.visitInsn(ATHROW);
 			mv.visitLabel(l22);
 			mv.visitVarInsn(ILOAD, 5);
-			mv.visitIntInsn(BIPUSH, 100);
+			mv.visitIntInsn(BIPUSH, 100); // d
 			final Label l24 = new Label();
 			mv.visitJumpInsn(IF_ICMPNE, l24);
 			final Label l25 = new Label();
@@ -697,7 +708,7 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 			mv.visitJumpInsn(GOTO, l20);
 			mv.visitLabel(l24);
 			mv.visitVarInsn(ILOAD, 5);
-			mv.visitIntInsn(BIPUSH, 101);
+			mv.visitIntInsn(BIPUSH, 101); // e
 			final Label l27 = new Label();
 			mv.visitJumpInsn(IF_ICMPNE, l27);
 			final Label l28 = new Label();
@@ -723,7 +734,7 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 			mv.visitJumpInsn(GOTO, l20);
 			mv.visitLabel(l27);
 			mv.visitVarInsn(ILOAD, 5);
-			mv.visitIntInsn(BIPUSH, 102);
+			mv.visitIntInsn(BIPUSH, 102); // e
 			final Label l30 = new Label();
 			mv.visitJumpInsn(IF_ICMPNE, l30);
 			final Label l31 = new Label();
@@ -788,7 +799,7 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 			mv.visitEnd();
 		}
 		{
-			mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, memberNames.bootstrapMethodName, "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", null, null);
+			mv = cw.visitMethod(ACC_PUBLIC | ACC_STATIC, memberNames.bootstrapMethodName, "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", null, null);
 			mv.visitCode();
 			final Label l0 = new Label();
 			final Label l1 = new Label();
@@ -905,6 +916,20 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 
 		MemberNames()
 		{
+		}
+
+		public String[] toStrings()
+		{
+			final String[] strings = new String[8];
+			strings[0] = "Decryptor class name: " + className;
+			strings[1] = "Method cache field name: " + methodCacheFieldName;
+			strings[2] = "Field cache field name: " + fieldCacheFieldName;
+			strings[3] = "Hash method name: " + hashMethodName;
+			strings[4] = "Find method method name: " + findMethodMethodName;
+			strings[5] = "Find field method name: " + findFieldMethodName;
+			strings[6] = "Resolve method handle method name: " + resolveMethodHandleMethodName;
+			strings[7] = "Bootstrap method name: " + bootstrapMethodName;
+			return strings;
 		}
 	}
 }

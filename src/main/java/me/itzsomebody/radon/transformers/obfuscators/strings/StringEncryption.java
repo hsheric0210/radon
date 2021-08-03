@@ -18,20 +18,22 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.strings;
 
-import me.itzsomebody.radon.Main;
 import me.itzsomebody.radon.asm.ClassWrapper;
 import me.itzsomebody.radon.config.Configuration;
 import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.transformers.Transformer;
 import me.itzsomebody.radon.utils.ASMUtils;
+import me.itzsomebody.radon.utils.ArrayUtils;
 import me.itzsomebody.radon.utils.RandomUtils;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.tree.*;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.StringJoiner;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static me.itzsomebody.radon.config.ConfigurationSetting.STRING_ENCRYPTION;
@@ -89,6 +91,8 @@ public class StringEncryption extends Transformer
 		}
 
 		final MemberNames memberNames = new MemberNames();
+		verboseInfos(memberNames::toStrings);
+
 		final AtomicInteger counter = new AtomicInteger();
 
 		getClassWrappers().stream().filter(this::included).forEach(classWrapper -> classWrapper.getMethods().stream().filter(this::included).forEach(methodWrapper ->
@@ -98,7 +102,10 @@ public class StringEncryption extends Transformer
 			for (final AbstractInsnNode insn : methodWrapper.getMethodNode().instructions.toArray())
 			{
 				if (leeway < 10000)
+				{
+					verboseWarn("! Skipped method " + methodWrapper.getOriginalName() + " because of insufficient leeway (leeway: " + leeway + ")");
 					break;
+				}
 
 				if (insn instanceof LdcInsnNode)
 				{
@@ -114,21 +121,30 @@ public class StringEncryption extends Transformer
 						final int decryptorClassHC = memberNames.className.replace('/', '.').hashCode();
 						final int decryptorMethodHC = memberNames.decryptMethodName.replace('/', '.').hashCode();
 
-						final int randomKey1 = RandomUtils.getRandomInt();
-						final int randomKey2 = RandomUtils.getRandomInt();
-						final int randomKey3 = RandomUtils.getRandomInt();
+						final int[] randomKeys =
+						{
+								RandomUtils.getRandomInt(), RandomUtils.getRandomInt(), RandomUtils.getRandomInt()
+						};
 
-						final int key1 = (contextCheckingEnabled ? decryptorClassHC + callerClassHC + callerMethodHC : 0) ^ randomKey1 ^ randomKey2;
-						final int key2 = (contextCheckingEnabled ? callerMethodHC + decryptorMethodHC + callerClassHC : 0) ^ randomKey2 ^ randomKey3;
-						final int key3 = (contextCheckingEnabled ? decryptorClassHC + callerClassHC + callerMethodHC : 0) ^ randomKey1 ^ randomKey3;
-						final int key4 = (contextCheckingEnabled ? decryptorMethodHC + callerClassHC + decryptorClassHC : 0) ^ randomKey1 ^ randomKey2 ^ randomKey3;
+						final int[] keys =
+						{
+								(contextCheckingEnabled ? decryptorClassHC + callerClassHC + callerMethodHC : 0) ^ randomKeys[0] ^ randomKeys[1], // RC2 ^ RC3
+								(contextCheckingEnabled ? callerMethodHC + decryptorMethodHC + callerClassHC : 0) ^ randomKeys[1] ^ randomKeys[2], // RC1 ^ RC2
+								(contextCheckingEnabled ? decryptorClassHC + callerClassHC + callerMethodHC : 0) ^ randomKeys[0] ^ randomKeys[2], // RC1 ^ RC3
+								(contextCheckingEnabled ? decryptorMethodHC + callerClassHC + decryptorClassHC : 0) ^ randomKeys[0] ^ randomKeys[1] ^ randomKeys[2] // RC1 ^ RC2 ^ RC3
+						};
 
-						ldc.cst = encrypt(string, key1, key2, key3, key4);
+						for (int i = 0; i < 3; i++)
+							ArrayUtils.swap(randomKeys, i, memberNames.randomKeyOrder.get(i));
+						for (int i = 0; i < 4; i++)
+							ArrayUtils.swap(keys, i, memberNames.keyOrder.get(i));
+
+						ldc.cst = encrypt(string, keys[0], keys[1], keys[2], keys[3]);
 
 						final InsnList decryptorCall = new InsnList();
-						decryptorCall.add(ASMUtils.getNumberInsn(randomKey1));
-						decryptorCall.add(ASMUtils.getNumberInsn(randomKey2));
-						decryptorCall.add(ASMUtils.getNumberInsn(randomKey3));
+						decryptorCall.add(ASMUtils.getNumberInsn(randomKeys[0]));
+						decryptorCall.add(ASMUtils.getNumberInsn(randomKeys[1]));
+						decryptorCall.add(ASMUtils.getNumberInsn(randomKeys[2]));
 						decryptorCall.add(new MethodInsnNode(INVOKESTATIC, memberNames.className, memberNames.decryptMethodName, "(Ljava/lang/Object;III)Ljava/lang/String;", false));
 						methodWrapper.getInstructions().insert(ldc, decryptorCall);
 
@@ -142,7 +158,7 @@ public class StringEncryption extends Transformer
 		final ClassNode decryptor = createDecryptor(memberNames);
 		getClasses().put(decryptor.name, new ClassWrapper(decryptor, false));
 
-		Main.info("+ Encrypted " + counter.get() + " strings");
+		info("+ Encrypted " + counter.get() + " strings");
 	}
 
 	@Override
@@ -215,10 +231,10 @@ public class StringEncryption extends Transformer
 
 	private static String encrypt(final String s, final int key1, final int key2, final int key3, final int key4)
 	{
-		final StringBuilder sb = new StringBuilder();
 		final char[] chars = s.toCharArray();
-
-		for (int i = 0, j = chars.length; i < j; i++)
+		final int charCount = chars.length;
+		final StringBuilder sb = new StringBuilder(charCount);
+		for (int i = 0; i < charCount; i++)
 			switch (i % 4)
 			{
 				case 0:
@@ -241,14 +257,17 @@ public class StringEncryption extends Transformer
 	@SuppressWarnings("Duplicates")
 	private ClassNode createDecryptor(final MemberNames memberNames)
 	{
+		final List<Integer> randomKeyOrder = memberNames.randomKeyOrder;
+		final List<Integer> keyOrder = memberNames.keyOrder;
+
 		final ClassNode cw = new ClassNode();
 		MethodVisitor mv;
 
-		cw.visit(V1_5, ACC_PUBLIC + ACC_SUPER, memberNames.className, null, "java/lang/Object", null);
+		cw.visit(V1_5, ACC_PUBLIC | ACC_SUPER, memberNames.className, null, "java/lang/Object", null);
 
-		FieldVisitor fv = cw.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC, memberNames.cacheFieldName, "Ljava/util/Map;", null, null);
+		FieldVisitor fv = cw.visitField(ACC_PRIVATE | ACC_FINAL | ACC_STATIC, memberNames.cacheFieldName, "Ljava/util/Map;", null, null);
 		fv.visitEnd();
-		fv = cw.visitField(ACC_PRIVATE + ACC_FINAL + ACC_STATIC, memberNames.bigBoizFieldName, "[J", null, null);
+		fv = cw.visitField(ACC_PRIVATE | ACC_FINAL | ACC_STATIC, memberNames.bigBoizFieldName, "[J", null, null);
 		fv.visitEnd();
 		{
 			mv = cw.visitMethod(ACC_PUBLIC, "<init>", "()V", null, null);
@@ -705,8 +724,8 @@ public class StringEncryption extends Transformer
 				mv.visitVarInsn(ALOAD, 18);
 				mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Thread", "getStackTrace", "()[Ljava/lang/StackTraceElement;", false);
 				mv.visitVarInsn(ASTORE, 19);
-				final Label l60 = new Label();
-				mv.visitLabel(l60);
+				final Label l60_key1 = new Label();
+				mv.visitLabel(l60_key1);
 				mv.visitVarInsn(ALOAD, 19);
 				mv.visitInsn(ICONST_2);
 				mv.visitInsn(AALOAD);
@@ -725,12 +744,18 @@ public class StringEncryption extends Transformer
 				mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "hashCode", "()I", false);
 				mv.visitInsn(IADD);
 			}
-			else
-				mv.visitInsn(ICONST_0);
 
-			mv.visitVarInsn(ILOAD, 1);
-			mv.visitInsn(IXOR);
-			mv.visitVarInsn(ILOAD, 2);
+			final int[] randomKeys =
+			{
+					1, 2, 3
+			};
+			for (int i = 0; i < 3; i++)
+				ArrayUtils.swap(randomKeys, i, randomKeyOrder.get(i));
+
+			mv.visitVarInsn(ILOAD, randomKeys[0]); // Random Key #1
+			if (contextCheckingEnabled)
+				mv.visitInsn(IXOR); // TODO: not only xor, more bit-wise operations
+			mv.visitVarInsn(ILOAD, randomKeys[1]); // Random Key #2
 			mv.visitInsn(IXOR);
 
 			mv.visitVarInsn(ISTORE, 20);
@@ -739,8 +764,8 @@ public class StringEncryption extends Transformer
 			// <editor-fold desc="key2">
 			if (contextCheckingEnabled)
 			{
-				final Label l61 = new Label();
-				mv.visitLabel(l61);
+				final Label l61_key2 = new Label();
+				mv.visitLabel(l61_key2);
 				mv.visitVarInsn(ALOAD, 19);
 				mv.visitInsn(ICONST_2);
 				mv.visitInsn(AALOAD);
@@ -759,18 +784,17 @@ public class StringEncryption extends Transformer
 				mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "hashCode", "()I", false);
 				mv.visitInsn(IADD);
 			}
-			else
-				mv.visitInsn(ICONST_0);
 
-			mv.visitVarInsn(ILOAD, 2);
-			mv.visitInsn(IXOR);
-			mv.visitVarInsn(ILOAD, 3);
+			mv.visitVarInsn(ILOAD, randomKeys[1]); // Random Key #2
+			if (contextCheckingEnabled)
+				mv.visitInsn(IXOR);
+			mv.visitVarInsn(ILOAD, randomKeys[2]); // Random Key #3
 			mv.visitInsn(IXOR);
 
 			mv.visitVarInsn(ISTORE, 21);
 			// </editor-fold>
-			final Label l62 = new Label();
-			mv.visitLabel(l62);
+			final Label l62_key3 = new Label();
+			mv.visitLabel(l62_key3);
 
 			// <editor-fold desc="key3">
 			if (contextCheckingEnabled)
@@ -793,18 +817,17 @@ public class StringEncryption extends Transformer
 				mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "hashCode", "()I", false);
 				mv.visitInsn(IADD);
 			}
-			else
-				mv.visitInsn(ICONST_0);
 
-			mv.visitVarInsn(ILOAD, 1);
-			mv.visitInsn(IXOR);
-			mv.visitVarInsn(ILOAD, 3);
+			mv.visitVarInsn(ILOAD, randomKeys[0]); // Random Key #1
+			if (contextCheckingEnabled)
+				mv.visitInsn(IXOR);
+			mv.visitVarInsn(ILOAD, randomKeys[2]); // Random Key #3
 			mv.visitInsn(IXOR);
 
 			mv.visitVarInsn(ISTORE, 22);
 			// </editor-fold>
-			final Label l63 = new Label();
-			mv.visitLabel(l63);
+			final Label l63_key4 = new Label();
+			mv.visitLabel(l63_key4);
 
 			// <editor-fold desc="key4">
 			if (contextCheckingEnabled)
@@ -827,14 +850,13 @@ public class StringEncryption extends Transformer
 				mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "hashCode", "()I", false);
 				mv.visitInsn(IADD);
 			}
-			else
-				mv.visitInsn(ICONST_0);
 
-			mv.visitVarInsn(ILOAD, 1);
+			mv.visitVarInsn(ILOAD, randomKeys[0]); // Random Key #1
+			if (contextCheckingEnabled)
+				mv.visitInsn(IXOR);
+			mv.visitVarInsn(ILOAD, randomKeys[1]); // Random Key #2
 			mv.visitInsn(IXOR);
-			mv.visitVarInsn(ILOAD, 2);
-			mv.visitInsn(IXOR);
-			mv.visitVarInsn(ILOAD, 3);
+			mv.visitVarInsn(ILOAD, randomKeys[2]); // Random Key #3
 			mv.visitInsn(IXOR);
 
 			mv.visitVarInsn(ISTORE, 23);
@@ -893,69 +915,99 @@ public class StringEncryption extends Transformer
 			mv.visitVarInsn(ILOAD, 24);
 			mv.visitInsn(ICONST_4);
 			mv.visitInsn(IREM);
-			final Label l69 = new Label();
-			final Label l70 = new Label();
-			final Label l71 = new Label();
-			final Label l72 = new Label();
+			final Label l69_key1 = new Label();
+			final Label l70_key2 = new Label();
+			final Label l71_key3 = new Label();
+			final Label l72_key4 = new Label();
+			final List<Label> labels = Arrays.asList(l69_key1, l70_key2, l71_key3, l72_key4);
+			for (int i = 0; i < 4; i++)
+				Collections.swap(labels, i, keyOrder.get(i));
 			final Label l73 = new Label();
-			mv.visitTableSwitchInsn(0, 3, l73, l69, l70, l71, l72);
-			mv.visitLabel(l69);
-			mv.visitVarInsn(ALOAD, 17);
-			mv.visitVarInsn(ILOAD, 24);
-			mv.visitVarInsn(ALOAD, 14);
-			mv.visitVarInsn(ILOAD, 24);
-			mv.visitInsn(CALOAD);
-			mv.visitVarInsn(ILOAD, 20);
-			mv.visitInsn(IXOR);
-			mv.visitLdcInsn(65535);
-			mv.visitInsn(IAND);
-			mv.visitInsn(I2C);
-			mv.visitInsn(CASTORE);
-			final Label l74 = new Label();
-			mv.visitLabel(l74);
-			mv.visitJumpInsn(GOTO, l73);
-			mv.visitLabel(l70);
-			mv.visitVarInsn(ALOAD, 17);
-			mv.visitVarInsn(ILOAD, 24);
-			mv.visitVarInsn(ALOAD, 14);
-			mv.visitVarInsn(ILOAD, 24);
-			mv.visitInsn(CALOAD);
-			mv.visitVarInsn(ILOAD, 21);
-			mv.visitInsn(IXOR);
-			mv.visitLdcInsn(65535);
-			mv.visitInsn(IAND);
-			mv.visitInsn(I2C);
-			mv.visitInsn(CASTORE);
-			final Label l75 = new Label();
-			mv.visitLabel(l75);
-			mv.visitJumpInsn(GOTO, l73);
-			mv.visitLabel(l71);
-			mv.visitVarInsn(ALOAD, 17);
-			mv.visitVarInsn(ILOAD, 24);
-			mv.visitVarInsn(ALOAD, 14);
-			mv.visitVarInsn(ILOAD, 24);
-			mv.visitInsn(CALOAD);
-			mv.visitVarInsn(ILOAD, 22);
-			mv.visitInsn(IXOR);
-			mv.visitLdcInsn(65535);
-			mv.visitInsn(IAND);
-			mv.visitInsn(I2C);
-			mv.visitInsn(CASTORE);
-			final Label l76 = new Label();
-			mv.visitLabel(l76);
-			mv.visitJumpInsn(GOTO, l73);
-			mv.visitLabel(l72);
-			mv.visitVarInsn(ALOAD, 17);
-			mv.visitVarInsn(ILOAD, 24);
-			mv.visitVarInsn(ALOAD, 14);
-			mv.visitVarInsn(ILOAD, 24);
-			mv.visitInsn(CALOAD);
-			mv.visitVarInsn(ILOAD, 23);
-			mv.visitInsn(IXOR);
-			mv.visitLdcInsn(65535);
-			mv.visitInsn(IAND);
-			mv.visitInsn(I2C);
-			mv.visitInsn(CASTORE);
+			mv.visitTableSwitchInsn(0, 3, l73, labels.get(0), labels.get(1), labels.get(2), labels.get(3));
+			for (int i = 0, j = keyOrder.size(); i < j; i++)
+			{
+				switch (keyOrder.indexOf(i))
+				{
+					case 0:
+					{
+						// Key #1
+						mv.visitLabel(l69_key1);
+						mv.visitVarInsn(ALOAD, 17);
+						mv.visitVarInsn(ILOAD, 24);
+						mv.visitVarInsn(ALOAD, 14);
+						mv.visitVarInsn(ILOAD, 24);
+						mv.visitInsn(CALOAD);
+						mv.visitVarInsn(ILOAD, 20);
+						mv.visitInsn(IXOR);
+						mv.visitLdcInsn(65535);
+						mv.visitInsn(IAND);
+						mv.visitInsn(I2C);
+						mv.visitInsn(CASTORE);
+						break;
+					}
+
+					case 1:
+					{
+						// Key #2
+						mv.visitLabel(l70_key2);
+						mv.visitVarInsn(ALOAD, 17);
+						mv.visitVarInsn(ILOAD, 24);
+						mv.visitVarInsn(ALOAD, 14);
+						mv.visitVarInsn(ILOAD, 24);
+						mv.visitInsn(CALOAD);
+						mv.visitVarInsn(ILOAD, 21);
+						mv.visitInsn(IXOR);
+						mv.visitLdcInsn(65535);
+						mv.visitInsn(IAND);
+						mv.visitInsn(I2C);
+						mv.visitInsn(CASTORE);
+						break;
+					}
+
+					case 2:
+					{
+						// Key #3
+						mv.visitLabel(l71_key3);
+						mv.visitVarInsn(ALOAD, 17);
+						mv.visitVarInsn(ILOAD, 24);
+						mv.visitVarInsn(ALOAD, 14);
+						mv.visitVarInsn(ILOAD, 24);
+						mv.visitInsn(CALOAD);
+						mv.visitVarInsn(ILOAD, 22);
+						mv.visitInsn(IXOR);
+						mv.visitLdcInsn(65535);
+						mv.visitInsn(IAND);
+						mv.visitInsn(I2C);
+						mv.visitInsn(CASTORE);
+						break;
+					}
+
+					case 3:
+					{
+						// Key #4
+						mv.visitLabel(l72_key4);
+						mv.visitVarInsn(ALOAD, 17);
+						mv.visitVarInsn(ILOAD, 24);
+						mv.visitVarInsn(ALOAD, 14);
+						mv.visitVarInsn(ILOAD, 24);
+						mv.visitInsn(CALOAD);
+						mv.visitVarInsn(ILOAD, 23);
+						mv.visitInsn(IXOR);
+						mv.visitLdcInsn(65535);
+						mv.visitInsn(IAND);
+						mv.visitInsn(I2C);
+						mv.visitInsn(CASTORE);
+						break;
+					}
+				}
+
+				if (i < j - 1) // Last case doesn't need break statement (fall-through)
+				{
+					final Label breakLabel = new Label();
+					mv.visitLabel(breakLabel);
+					mv.visitJumpInsn(GOTO, l73);
+				}
+			}
 			mv.visitLabel(l73);
 			mv.visitIincInsn(24, 1);
 			mv.visitJumpInsn(GOTO, l66);
@@ -1008,7 +1060,7 @@ public class StringEncryption extends Transformer
 			mv.visitLabel(l83);
 			mv.visitVarInsn(ALOAD, 10);
 			mv.visitMethodInsn(INVOKEVIRTUAL, "java/util/concurrent/atomic/AtomicInteger", "get", "()I", false);
-			mv.visitVarInsn(ILOAD, 1);
+			mv.visitVarInsn(ILOAD, randomKeys[0] + 1);
 			mv.visitInsn(IXOR);
 			mv.visitVarInsn(ISTORE, 28);
 			final Label l84 = new Label();
@@ -1243,9 +1295,31 @@ public class StringEncryption extends Transformer
 		final String cacheFieldName = fieldDictionary.uniqueRandomString();
 		final String bigBoizFieldName = fieldDictionary.uniqueRandomString();
 		final String decryptMethodName = methodDictionary.uniqueRandomString();
+		final List<Integer> randomKeyOrder = Collections.unmodifiableList(RandomUtils.getRandomInts(0, 3));
+		final List<Integer> keyOrder = Collections.unmodifiableList(RandomUtils.getRandomInts(0, 4));
 
 		MemberNames()
 		{
+		}
+
+		public String[] toStrings()
+		{
+			final String[] strings = new String[6];
+			strings[0] = "Decryptor class name: " + className;
+			strings[1] = "Cache field name: " + cacheFieldName;
+			strings[2] = "BigBoiz field name: " + bigBoizFieldName;
+			strings[3] = "Decrypt method name: " + decryptMethodName;
+
+			final StringJoiner randomKeyOrderBuilder = new StringJoiner(", ", "[", "]");
+			for (final int i : randomKeyOrder)
+				randomKeyOrderBuilder.add(Integer.toString(i));
+			strings[4] = "Random key order: " + randomKeyOrderBuilder;
+
+			final StringJoiner keyOrderBuilder = new StringJoiner(", ", "[", "]");
+			for (final int i : keyOrder)
+				keyOrderBuilder.add(Integer.toString(i));
+			strings[5] = "Key order: " + keyOrderBuilder;
+			return strings;
 		}
 	}
 }

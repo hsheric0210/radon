@@ -18,18 +18,16 @@
 
 package me.itzsomebody.radon.transformers.obfuscators;
 
+import me.itzsomebody.radon.config.Configuration;
+import me.itzsomebody.radon.exclusions.ExclusionType;
+import me.itzsomebody.radon.transformers.Transformer;
+import org.objectweb.asm.tree.LdcInsnNode;
+import org.objectweb.asm.tree.MethodNode;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
-
-import org.objectweb.asm.tree.LdcInsnNode;
-import org.objectweb.asm.tree.MethodNode;
-
-import me.itzsomebody.radon.Main;
-import me.itzsomebody.radon.config.Configuration;
-import me.itzsomebody.radon.exclusions.ExclusionType;
-import me.itzsomebody.radon.transformers.Transformer;
 
 /**
  * Renames bundled JAR resources to make their purpose less obvious.
@@ -83,7 +81,7 @@ public class ResourceRenamer extends Transformer
 			}
 		});
 
-		Main.info("Renamed " + counter.get() + " resources");
+		info("+ Renamed " + counter.get() + " resources");
 	}
 
 	@Override

@@ -18,11 +18,9 @@
 
 package me.itzsomebody.radon.transformers.shrinkers;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.objectweb.asm.tree.ClassNode;
 
-import me.itzsomebody.radon.Main;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Strips out visible parameter annotations.
@@ -59,7 +57,7 @@ public class VisibleTypeAnnotationsRemover extends Shrinker
 			});
 		});
 
-		Main.info(String.format("Removed %d visible type annotations.", counter.get()));
+		info(String.format("- Removed %d visible type annotations.", counter.get()));
 	}
 
 	@Override

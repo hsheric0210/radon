@@ -18,6 +18,7 @@
 
 package me.itzsomebody.radon.transformers;
 
+import me.itzsomebody.radon.Main;
 import me.itzsomebody.radon.Radon;
 import me.itzsomebody.radon.asm.ClassWrapper;
 import me.itzsomebody.radon.asm.FieldWrapper;
@@ -34,6 +35,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 /**
  * Abstract transformer for all the transformers. \o/
@@ -117,6 +119,49 @@ public abstract class Transformer implements Opcodes
 	protected final Map<String, byte[]> getResources()
 	{
 		return radon.resources;
+	}
+
+	protected boolean enableVerboseLogging()
+	{
+		return radon.getConfig().enableVerboseLogging();
+	}
+
+	protected final void verboseInfo(final Supplier<String> verboseMessage)
+	{
+		if (enableVerboseLogging())
+			Main.info(String.format("[VERBOSE] [%1$s] %2$s", getName(), verboseMessage.get()));
+	}
+
+	protected final void verboseInfos(final Supplier<String[]> verboseMessages)
+	{
+		if (enableVerboseLogging())
+			for (final String message : verboseMessages.get())
+			Main.info(String.format("[VERBOSE] [%1$s] %2$s", getName(), message));
+	}
+
+	protected final void verboseWarn(final String verboseMessage)
+	{
+		if (enableVerboseLogging())
+			Main.warn(String.format("[VERBOSE] [%1$s] %2$s", getName(), verboseMessage));
+	}
+
+	protected final void info(final String message)
+	{
+		Main.info(String.format("[%1$s] %2$s", getName(), message));
+	}
+
+	protected final void warn(final String message)
+	{
+		Main.warn(String.format("[%1$s] %2$s", getName(), message));
+	}
+
+	protected final void warn(final String message, final Throwable thrown)
+	{
+		Main.warn(String.format("[%1$s] %2$s", getName(), message), thrown);
+	}
+	protected final void severe(final String message, final Throwable thrown)
+	{
+		Main.severe(String.format("[%1$s] %2$s", getName(), message), thrown);
 	}
 
 	public abstract void transform();

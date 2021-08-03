@@ -18,17 +18,17 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.references;
 
-import me.itzsomebody.radon.Main;
 import me.itzsomebody.radon.asm.ClassWrapper;
-import me.itzsomebody.radon.utils.ASMUtils;
-import me.itzsomebody.radon.utils.Constants;
-import me.itzsomebody.radon.utils.RandomUtils;
+import me.itzsomebody.radon.utils.*;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.StringJoiner;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.stream.Stream;
@@ -45,11 +45,13 @@ public class FastInvokedynamicTransformer extends ReferenceObfuscation
 	public final void transform()
 	{
 		final MemberNames memberNames = new MemberNames();
+		verboseInfos(memberNames::toStrings);
+
 		final AtomicInteger counter = new AtomicInteger();
 
 		final Handle bootstrapHandle = new Handle(H_INVOKESTATIC, memberNames.className, memberNames.bootstrapMethodName, "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;", false);
 
-		getClassWrappers().stream().filter(cw -> included(cw) && !"java/lang/Enum".equals(cw.getSuperName()) && cw.allowsIndy()).forEach(classWrapper -> classWrapper.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
+		getClassWrappers().stream().filter(cw -> included(cw) && !"java/lang/Enum".equals(cw.getSuperName()) && cw.allowsIndy()).forEach(cw -> cw.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
 		{
 			final InsnList insnList = mw.getInstructions();
 
@@ -71,27 +73,23 @@ public class FastInvokedynamicTransformer extends ReferenceObfuscation
 				// fixme: j11 doesn't like null bytes
 
 				/* <method owner>\u0000\u0000<method name>\u0000\u0000<method descriptor>\u0000\u0000<opcode identifier> */
-				final char invokeStaticIdentifier = memberNames.invertIdentifierVerifySystem ? memberNames.generateRandomID() : memberNames.preservedId;
-				final char invokeVirtualIdentifier = memberNames.invertIdentifierVerifySystem ? memberNames.preservedId : memberNames.generateRandomID();
 
-				final int builderCapacity = method.owner.length() + method.name.length() + method.desc.length() + memberNames.separator.length() * 3 + 1; // +1 for identifier character
-				final StringBuilder nameBuilder = new StringBuilder(builderCapacity);
+				boolean flag = method.getOpcode() == INVOKESTATIC;
+				if (memberNames.invertIdentifierVerifySystem)
+					flag = !flag;
 
-				if (memberNames.invertIdentifierPosition) // Start with identifier
+				final String[] identifiers =
 				{
-					nameBuilder.append(method.getOpcode() == INVOKESTATIC ? invokeStaticIdentifier : invokeVirtualIdentifier);
-					nameBuilder.append(memberNames.separator);
-				}
+						method.owner.replace('/', '.'),
+						method.name,
+						method.desc,
+						String.valueOf((char) (flag ? RandomUtils.getRandomInt(Character.MAX_VALUE) | memberNames.invokeStaticFlag : RandomUtils.getRandomInt(Character.MAX_VALUE) & ~memberNames.invokeStaticFlag))
+				};
 
-				nameBuilder.append(method.owner.replace('/', '.')).append(memberNames.separator).append(method.name).append(memberNames.separator).append(method.desc);
+				for (int i = 0; i < 4; i++)
+					ArrayUtils.swap(identifiers, i, memberNames.identifierOrder.get(i));
 
-				if (!memberNames.invertIdentifierPosition) // End with identifier
-				{
-					nameBuilder.append(memberNames.separator);
-					nameBuilder.append(method.getOpcode() == INVOKESTATIC ? invokeStaticIdentifier : invokeVirtualIdentifier);
-				}
-
-				final InvokeDynamicInsnNode invDyn = new InvokeDynamicInsnNode(encrypt(nameBuilder.toString(), memberNames), newDesc, bootstrapHandle);
+				final InvokeDynamicInsnNode invDyn = new InvokeDynamicInsnNode(encrypt(String.join(memberNames.separator, identifiers), memberNames), newDesc, bootstrapHandle);
 
 				insnList.set(method, invDyn);
 
@@ -102,7 +100,7 @@ public class FastInvokedynamicTransformer extends ReferenceObfuscation
 		final ClassNode decryptor = createBootstrap(memberNames);
 		getClasses().put(decryptor.name, new ClassWrapper(decryptor, false));
 
-		Main.info("+ Hid API " + counter.get() + " references using fast invokedynamic");
+		info("+ Hid API " + counter.get() + " references using fast invokedynamic");
 	}
 
 	private static String encrypt(final String plain, final MemberNames memberNames)
@@ -132,10 +130,10 @@ public class FastInvokedynamicTransformer extends ReferenceObfuscation
 		final ClassNode cw = new ClassNode();
 		MethodVisitor mv;
 
-		cw.visit(V1_7, ACC_PUBLIC + ACC_SUPER, memberNames.className, null, "java/lang/Object", null);
+		cw.visit(V1_7, ACC_PUBLIC | ACC_SUPER, memberNames.className, null, "java/lang/Object", null);
 
 		{
-			mv = cw.visitMethod(ACC_PRIVATE + ACC_STATIC, memberNames.decryptMethodName, "(Ljava/lang/String;)Ljava/lang/String;", null, null);
+			mv = cw.visitMethod(ACC_PRIVATE | ACC_STATIC, memberNames.decryptMethodName, "(Ljava/lang/String;)Ljava/lang/String;", null, null);
 			mv.visitCode();
 			final Label l0 = new Label();
 			mv.visitLabel(l0);
@@ -237,7 +235,7 @@ public class FastInvokedynamicTransformer extends ReferenceObfuscation
 			mv.visitEnd();
 		}
 		{
-			mv = cw.visitMethod(ACC_PRIVATE + ACC_STATIC, memberNames.getMethodHandleMethodName, "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;C)Ljava/lang/invoke/MethodHandle;", null, new String[]
+			mv = cw.visitMethod(ACC_PRIVATE | ACC_STATIC, memberNames.getMethodHandleMethodName, "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;C)Ljava/lang/invoke/MethodHandle;", null, new String[]
 			{
 					"java/lang/Exception"
 			});
@@ -245,15 +243,15 @@ public class FastInvokedynamicTransformer extends ReferenceObfuscation
 			final Label l0 = new Label();
 			mv.visitLabel(l0);
 			mv.visitVarInsn(ILOAD, 4);
-//			mv.visitIntInsn(BIPUSH, 97);
-			ASMUtils.getNumberInsn(memberNames.preservedId).accept(mv);
-			final Label l1 = new Label();
-			mv.visitJumpInsn(memberNames.invertIdentifierVerifySystem ? IF_ICMPEQ : IF_ICMPNE, l1);
+			ASMUtils.getNumberInsn(memberNames.invokeStaticFlag).accept(mv);
+			mv.visitInsn(IAND); // if ((identifier & FLAG_INVOKESTATIC) != 0) decodeInvokeStatic else decodeInvokeVirtual
+			final Label l1 = new Label(); // l1 : INVOKEVIRTUAL
+			mv.visitJumpInsn(memberNames.invertIdentifierVerifySystem ? IFNE : IFEQ, l1);
 			final Label l2 = new Label();
 			mv.visitLabel(l2);
 			mv.visitVarInsn(ALOAD, 0);
 			mv.visitVarInsn(ALOAD, 1);
-			final Label l3 = new Label();
+			final Label l3 = new Label(); // l3 : INVOKESTATIC
 			mv.visitLabel(l3);
 			mv.visitMethodInsn(INVOKESTATIC, "java/lang/Class", "forName", "(Ljava/lang/String;)Ljava/lang/Class;", false);
 			mv.visitVarInsn(ALOAD, 2);
@@ -293,7 +291,7 @@ public class FastInvokedynamicTransformer extends ReferenceObfuscation
 			mv.visitMaxs(5, 5);
 			mv.visitEnd();
 		}
-		mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, memberNames.bootstrapMethodName, "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;", null, null);
+		mv = cw.visitMethod(ACC_PUBLIC | ACC_STATIC, memberNames.bootstrapMethodName, "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;", null, null);
 		mv.visitCode();
 		final Label l0 = new Label();
 		final Label l1 = new Label();
@@ -304,33 +302,41 @@ public class FastInvokedynamicTransformer extends ReferenceObfuscation
 		mv.visitMethodInsn(INVOKESTATIC, memberNames.className, memberNames.decryptMethodName, "(Ljava/lang/String;)Ljava/lang/String;", false);
 		mv.visitLdcInsn(memberNames.separator);
 		mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "split", "(Ljava/lang/String;)[Ljava/lang/String;", false);
-		mv.visitVarInsn(ASTORE, 3); // splitten string stored to register 3
+		mv.visitVarInsn(ASTORE, 3); // string pieces are stored to register 3
 		final Label l3 = new Label();
 		mv.visitLabel(l3);
 		mv.visitVarInsn(ALOAD, 0);
 
-		// split[0]
+		final int[] index =
+		{
+				ICONST_0, ICONST_1, ICONST_2, ICONST_3
+		};
+		for (int i = 0; i < 4; i++)
+			ArrayUtils.swap(index, i, memberNames.identifierOrder.get(i));
+
+		// split[0] - Method Owner
 		mv.visitVarInsn(ALOAD, 3);
-		mv.visitInsn(memberNames.invertIdentifierPosition ? ICONST_3 : ICONST_0); // split[3]
+		mv.visitInsn(index[0]);
 		mv.visitInsn(AALOAD);
 
-		// split[1]
+		// split[1] - Method Name
 		mv.visitVarInsn(ALOAD, 3);
-		mv.visitInsn(ICONST_1);
+		mv.visitInsn(index[1]);
 		mv.visitInsn(AALOAD);
 
-		// split[2]
+		// split[2] - Method Descriptor
 		mv.visitVarInsn(ALOAD, 3);
-		mv.visitInsn(ICONST_2);
+		mv.visitInsn(index[2]);
 		mv.visitInsn(AALOAD);
 
-		// split[3]
+		// split[3] - Method Opcode Identifier
 		mv.visitVarInsn(ALOAD, 3);
-		mv.visitInsn(memberNames.invertIdentifierPosition ? ICONST_0 : ICONST_3); // split[0]
+		mv.visitInsn(index[3]);
 		mv.visitInsn(AALOAD);
 
 		mv.visitInsn(ICONST_0);
 		mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "charAt", "(I)C", false);
+
 		mv.visitMethodInsn(INVOKESTATIC, memberNames.className, memberNames.getMethodHandleMethodName, "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;C)Ljava/lang/invoke/MethodHandle;", false);
 		mv.visitVarInsn(ASTORE, 4);
 		final Label l4 = new Label();
@@ -372,12 +378,12 @@ public class FastInvokedynamicTransformer extends ReferenceObfuscation
 
 		final String bootstrapMethodName;
 
-		final char preservedId;
+		final char invokeStaticFlag;
 
 		final String separator;
 
 		final boolean invertIdentifierVerifySystem;
-		final boolean invertIdentifierPosition;
+		final List<Integer> identifierOrder;
 
 		MemberNames()
 		{
@@ -387,22 +393,30 @@ public class FastInvokedynamicTransformer extends ReferenceObfuscation
 			getMethodHandleMethodName = methodDictionary.uniqueRandomString();
 			decryptMethodName = methodDictionary.uniqueRandomString();
 
-			preservedId = (char) RandomUtils.getRandomInt(Character.MIN_VALUE + 1, Character.MAX_VALUE);
+			invokeStaticFlag = (char) RandomUtils.getRandomInt(Character.MIN_VALUE + 1, Character.MAX_VALUE);
 			separator = "\u0000\u0000";
 
 			invertIdentifierVerifySystem = RandomUtils.getRandomBoolean();
-			invertIdentifierPosition = RandomUtils.getRandomBoolean();
+
+			identifierOrder = Collections.unmodifiableList(RandomUtils.getRandomInts(0, 4));
 		}
 
-		char generateRandomID()
+		public String[] toStrings()
 		{
-			char id;
+			final String[] strings = new String[8];
+			strings[0] = "Decryptor class name: " + className;
+			strings[1] = "Bootstrap method name: " + bootstrapMethodName;
+			strings[2] = "GetMethodHandle method name: " + getMethodHandleMethodName;
+			strings[3] = "Decrypt method name: " + decryptMethodName;
+			strings[4] = "INVOKESTATIC opcode flag: " + Strings.intToHexByte(invokeStaticFlag, 4);
+			strings[5] = "Invocation data separator : '" + separator + "' (" + Strings.stringToHexBytes(separator) + ")";
+			strings[6] = "Invert identifier verify system: " + invertIdentifierVerifySystem;
 
-			do
-				id = (char) RandomUtils.getRandomInt(Character.MIN_VALUE + 1, Character.MAX_VALUE);
-			while (id == preservedId);
-
-			return id;
+			final StringJoiner identifierOrderBuilder = new StringJoiner(", ", "[", "]");
+			for (final int i : identifierOrder)
+				identifierOrderBuilder.add(Integer.toString(i));
+			strings[7] = "Identifier order: " + identifierOrderBuilder;
+			return strings;
 		}
 	}
 }

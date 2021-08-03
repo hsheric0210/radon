@@ -18,7 +18,19 @@
 
 package me.itzsomebody.radon.transformers.miscellaneous;
 
-import java.io.*;
+import me.itzsomebody.radon.asm.ClassWrapper;
+import me.itzsomebody.radon.config.Configuration;
+import me.itzsomebody.radon.config.ConfigurationSetting;
+import me.itzsomebody.radon.exceptions.RadonException;
+import me.itzsomebody.radon.exclusions.ExclusionType;
+import me.itzsomebody.radon.transformers.Transformer;
+import org.objectweb.asm.*;
+import org.objectweb.asm.tree.ClassNode;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -26,17 +38,6 @@ import java.util.jar.Manifest;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPOutputStream;
-
-import org.objectweb.asm.*;
-import org.objectweb.asm.tree.ClassNode;
-
-import me.itzsomebody.radon.Main;
-import me.itzsomebody.radon.asm.ClassWrapper;
-import me.itzsomebody.radon.config.Configuration;
-import me.itzsomebody.radon.config.ConfigurationSetting;
-import me.itzsomebody.radon.exceptions.RadonException;
-import me.itzsomebody.radon.exclusions.ExclusionType;
-import me.itzsomebody.radon.transformers.Transformer;
 
 /**
  * Packs classes and resources into a stub file which is unpacked on runtime.
@@ -55,9 +56,9 @@ public class Packer extends Transformer
 		final AtomicInteger counter = new AtomicInteger();
 
 		if (packWithGZIP)
-			Main.info("+ Using GZIP algorithm");
+			info("+ Using GZIP algorithm");
 		else
-			Main.info("+ Using DEFLATE algorithm");
+			info("+ Using DEFLATE algorithm");
 
 		try (final ByteArrayOutputStream bos = new ByteArrayOutputStream();
 				final DeflaterOutputStream compressedStream = packWithGZIP ? new GZIPOutputStream(bos) : new DeflaterOutputStream(bos, new Deflater(Deflater.BEST_COMPRESSION));
@@ -155,7 +156,7 @@ public class Packer extends Transformer
 			throw new RadonException(e);
 		}
 
-		Main.info("+ Packed " + counter.get() + " files");
+		info("+ Packed " + counter.get() + " files");
 	}
 
 	@Override

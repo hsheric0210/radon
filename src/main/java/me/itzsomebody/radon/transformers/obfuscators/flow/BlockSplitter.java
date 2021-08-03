@@ -18,12 +18,10 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.flow;
 
-import java.util.ArrayList;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.objectweb.asm.tree.*;
 
-import me.itzsomebody.radon.Main;
+import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * This splits a method's block of code into two blocks: P1 and P2 and then inserting P2 behind P1.
@@ -46,7 +44,7 @@ public class BlockSplitter extends FlowObfuscation
 
 		getClassWrappers().stream().filter(this::included).forEach(cw -> cw.getMethods().stream().filter(this::included).forEach(mw -> doSplit(mw.getMethodNode(), counter, 0)));
 
-		Main.info("+ Split " + counter.get() + " blocks");
+		info("+ Split " + counter.get() + " blocks");
 	}
 
 	private static void doSplit(final MethodNode methodNode, final AtomicInteger counter, final int callStackSize)
@@ -58,13 +56,13 @@ public class BlockSplitter extends FlowObfuscation
 			final LabelNode p1 = new LabelNode();
 			final LabelNode p2 = new LabelNode();
 
-			final AbstractInsnNode p2Start = insns.get((insns.size() - 1) / 2);
+			final AbstractInsnNode p1Start = insns.getFirst();
+			final int p2StartIndex = (insns.size() - 1) / 2;
+			final AbstractInsnNode p2Start = insns.get(p2StartIndex);
 			final AbstractInsnNode p2End = insns.getLast();
 
-			final AbstractInsnNode p1Start = insns.getFirst();
-
 			// We can't have trap ranges mutilated by block splitting
-			if (methodNode.tryCatchBlocks.stream().anyMatch(tcbn -> insns.indexOf(tcbn.end) >= insns.indexOf(p2Start) && insns.indexOf(tcbn.start) <= insns.indexOf(p2Start)))
+			if (methodNode.tryCatchBlocks.stream().anyMatch(tcbn -> insns.indexOf(tcbn.start) <= p2StartIndex && p2StartIndex <= insns.indexOf(tcbn.end)))
 				return;
 
 			final ArrayList<AbstractInsnNode> insnNodes = new ArrayList<>();
@@ -75,7 +73,6 @@ public class BlockSplitter extends FlowObfuscation
 			while (currentInsn != p2Start)
 			{
 				insnNodes.add(currentInsn);
-
 				currentInsn = currentInsn.getNext();
 			}
 

@@ -18,7 +18,6 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.numbers;
 
-import me.itzsomebody.radon.Main;
 import me.itzsomebody.radon.asm.ClassWrapper;
 import me.itzsomebody.radon.utils.ASMUtils;
 import me.itzsomebody.radon.utils.RandomUtils;
@@ -41,6 +40,8 @@ public class ContextCheckObfuscator extends NumberObfuscation
 	public void transform()
 	{
 		final MemberNames memberNames = new MemberNames();
+		verboseInfos(memberNames::toStrings);
+
 		final AtomicInteger counter = new AtomicInteger();
 
 		getClassWrappers().stream().filter(this::included).forEach(classWrapper -> classWrapper.getMethods().stream().filter(methodWrapper -> included(methodWrapper) && methodWrapper.hasInstructions()).forEach(methodWrapper ->
@@ -58,17 +59,17 @@ public class ContextCheckObfuscator extends NumberObfuscation
 					final int originalNum = ASMUtils.getIntegerFromInsn(insn);
 					final int encodedInt = encodeInt(originalNum, methodWrapper.getName().hashCode());
 
-					final InsnList insnList = new InsnList();
-					insnList.add(ASMUtils.getNumberInsn(encodedInt));
-					insnList.add(new MethodInsnNode(INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false));
-					insnList.add(new InsnNode(ICONST_0));
-					insnList.add(new MethodInsnNode(INVOKESTATIC, memberNames.className, memberNames.decodeConstantMethodName, "(Ljava/lang/Object;I)Ljava/lang/Object;", false));
-					insnList.add(new TypeInsnNode(CHECKCAST, "java/lang/Integer"));
-					insnList.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Integer", "intValue", "()I", false));
+					final InsnList insns = new InsnList();
+					insns.add(ASMUtils.getNumberInsn(encodedInt));
+					insns.add(new MethodInsnNode(INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false));
+					insns.add(new InsnNode(ICONST_0));
+					insns.add(new MethodInsnNode(INVOKESTATIC, memberNames.className, memberNames.decodeConstantMethodName, "(Ljava/lang/Object;I)Ljava/lang/Object;", false));
+					insns.add(new TypeInsnNode(CHECKCAST, "java/lang/Integer"));
+					insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Integer", "intValue", "()I", false));
 
-					methodInstructions.insertBefore(insn, insnList);
+					methodInstructions.insertBefore(insn, insns);
 					methodInstructions.remove(insn);
-					leeway -= 20;
+					leeway -= ASMUtils.evaluateMaxSize(insns);
 					counter.incrementAndGet();
 				}
 				else if (ASMUtils.isLongInsn(insn) && master.isLongTamperingEnabled())
@@ -76,17 +77,17 @@ public class ContextCheckObfuscator extends NumberObfuscation
 					final long originalNum = ASMUtils.getLongFromInsn(insn);
 					final long encodedLong = encodeLong(originalNum, methodWrapper.getName().hashCode());
 
-					final InsnList insnList = new InsnList();
-					insnList.add(ASMUtils.getNumberInsn(encodedLong));
-					insnList.add(new MethodInsnNode(INVOKESTATIC, "java/lang/Long", "valueOf", "(J)Ljava/lang/Long;", false));
-					insnList.add(new InsnNode(ICONST_0));
-					insnList.add(new MethodInsnNode(INVOKESTATIC, memberNames.className, memberNames.decodeConstantMethodName, "(Ljava/lang/Object;I)Ljava/lang/Object;", false));
-					insnList.add(new TypeInsnNode(CHECKCAST, "java/lang/Long"));
-					insnList.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Long", "longValue", "()J", false));
+					final InsnList insns = new InsnList();
+					insns.add(ASMUtils.getNumberInsn(encodedLong));
+					insns.add(new MethodInsnNode(INVOKESTATIC, "java/lang/Long", "valueOf", "(J)Ljava/lang/Long;", false));
+					insns.add(new InsnNode(ICONST_0));
+					insns.add(new MethodInsnNode(INVOKESTATIC, memberNames.className, memberNames.decodeConstantMethodName, "(Ljava/lang/Object;I)Ljava/lang/Object;", false));
+					insns.add(new TypeInsnNode(CHECKCAST, "java/lang/Long"));
+					insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Long", "longValue", "()J", false));
 
-					methodInstructions.insertBefore(insn, insnList);
+					methodInstructions.insertBefore(insn, insns);
 					methodInstructions.remove(insn);
-					leeway -= 25;
+					leeway -= ASMUtils.evaluateMaxSize(insns);
 					counter.incrementAndGet();
 				}
 				else if (ASMUtils.isFloatInsn(insn) && master.isFloatTamperingEnabled())
@@ -131,8 +132,9 @@ public class ContextCheckObfuscator extends NumberObfuscation
 
 		final ClassNode decoder = createConstantDecoder(memberNames);
 		getClasses().put(decoder.name, new ClassWrapper(decoder, false));
+		verboseInfo(() -> String.format("Number context checker and decoder injected into class '%s'", decoder.name));
 
-		Main.info("+ Enabled " + counter.get() + " number context checks");
+		info("+ Enabled " + counter.get() + " number context checks");
 	}
 
 	private static int encodeInt(final int n, final int hashCode)
@@ -165,7 +167,7 @@ public class ContextCheckObfuscator extends NumberObfuscation
 		final ClassNode cw = new ClassNode();
 		MethodVisitor mv;
 
-		cw.visit(V1_5, ACC_PUBLIC + ACC_SUPER, memberNames.className, null, "java/lang/Thread", null);
+		cw.visit(V1_5, ACC_PUBLIC | ACC_SUPER, memberNames.className, null, "java/lang/Thread", null);
 
 		FieldVisitor fv = cw.visitField(ACC_PRIVATE + ACC_STATIC + ACC_VOLATILE, memberNames.constantFieldName, "Ljava/lang/Object;", null, null);
 		fv.visitEnd();
@@ -189,7 +191,7 @@ public class ContextCheckObfuscator extends NumberObfuscation
 			mv.visitEnd();
 		}
 		{
-			mv = cw.visitMethod(ACC_PRIVATE + ACC_STATIC, memberNames.threadStarterMethodName, "()V", null, null);
+			mv = cw.visitMethod(ACC_PRIVATE | ACC_STATIC, memberNames.threadStarterMethodName, "()V", null, null);
 			mv.visitCode();
 			final Label l0 = new Label();
 			final Label l1 = new Label();
@@ -234,7 +236,7 @@ public class ContextCheckObfuscator extends NumberObfuscation
 			mv.visitJumpInsn(IFNE, l5);
 			final Label l6 = new Label();
 			mv.visitLabel(l6);
-			mv.visitMethodInsn(INVOKESTATIC, memberNames.className, memberNames.decodeWordMethodName, "()I", false);
+			mv.visitMethodInsn(INVOKESTATIC, memberNames.className, memberNames.decodeDwordMethodName, "()I", false);
 			mv.visitFieldInsn(GETSTATIC, memberNames.className, memberNames.elementFieldName, "Ljava/lang/StackTraceElement;");
 			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StackTraceElement", "getMethodName", "()Ljava/lang/String;", false);
 			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "hashCode", "()I", false);
@@ -244,7 +246,7 @@ public class ContextCheckObfuscator extends NumberObfuscation
 			final Label l7 = new Label();
 			mv.visitJumpInsn(GOTO, l7);
 			mv.visitLabel(l5);
-			mv.visitMethodInsn(INVOKESTATIC, memberNames.className, memberNames.decodeWordMethodName, "()I", false);
+			mv.visitMethodInsn(INVOKESTATIC, memberNames.className, memberNames.decodeDwordMethodName, "()I", false);
 			mv.visitFieldInsn(GETSTATIC, memberNames.className, memberNames.elementFieldName, "Ljava/lang/StackTraceElement;");
 			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StackTraceElement", "getMethodName", "()Ljava/lang/String;", false);
 			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "hashCode", "()I", false);
@@ -270,7 +272,7 @@ public class ContextCheckObfuscator extends NumberObfuscation
 			mv.visitJumpInsn(IFNE, l9);
 			final Label l10 = new Label();
 			mv.visitLabel(l10);
-			mv.visitMethodInsn(INVOKESTATIC, memberNames.className, memberNames.decodeDwordMethodName, "()J", false);
+			mv.visitMethodInsn(INVOKESTATIC, memberNames.className, memberNames.decodeQwordMethodName, "()J", false);
 			mv.visitFieldInsn(GETSTATIC, memberNames.className, memberNames.elementFieldName, "Ljava/lang/StackTraceElement;");
 			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StackTraceElement", "getMethodName", "()Ljava/lang/String;", false);
 			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "hashCode", "()I", false);
@@ -281,7 +283,7 @@ public class ContextCheckObfuscator extends NumberObfuscation
 			final Label l11 = new Label();
 			mv.visitJumpInsn(GOTO, l11);
 			mv.visitLabel(l9);
-			mv.visitMethodInsn(INVOKESTATIC, memberNames.className, memberNames.decodeDwordMethodName, "()J", false);
+			mv.visitMethodInsn(INVOKESTATIC, memberNames.className, memberNames.decodeQwordMethodName, "()J", false);
 			mv.visitFieldInsn(GETSTATIC, memberNames.className, memberNames.elementFieldName, "Ljava/lang/StackTraceElement;");
 			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StackTraceElement", "getMethodName", "()Ljava/lang/String;", false);
 			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "hashCode", "()I", false);
@@ -311,7 +313,7 @@ public class ContextCheckObfuscator extends NumberObfuscation
 			mv.visitEnd();
 		}
 		{
-			mv = cw.visitMethod(ACC_PRIVATE + ACC_STATIC, memberNames.decodeWordMethodName, "()I", null, null);
+			mv = cw.visitMethod(ACC_PRIVATE | ACC_STATIC, memberNames.decodeDwordMethodName, "()I", null, null);
 			mv.visitCode();
 			final Label l0 = new Label();
 			mv.visitLabel(l0);
@@ -395,7 +397,7 @@ public class ContextCheckObfuscator extends NumberObfuscation
 			mv.visitEnd();
 		}
 		{
-			mv = cw.visitMethod(ACC_PRIVATE + ACC_STATIC, memberNames.decodeDwordMethodName, "()J", null, null);
+			mv = cw.visitMethod(ACC_PRIVATE | ACC_STATIC, memberNames.decodeQwordMethodName, "()J", null, null);
 			mv.visitCode();
 			final Label l0 = new Label();
 			mv.visitLabel(l0);
@@ -479,7 +481,7 @@ public class ContextCheckObfuscator extends NumberObfuscation
 			mv.visitEnd();
 		}
 		{
-			mv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, memberNames.decodeConstantMethodName, "(Ljava/lang/Object;I)Ljava/lang/Object;", null, null);
+			mv = cw.visitMethod(ACC_PUBLIC | ACC_STATIC, memberNames.decodeConstantMethodName, "(Ljava/lang/Object;I)Ljava/lang/Object;", null, null);
 			mv.visitCode();
 			final Label l0 = new Label();
 			mv.visitLabel(l0);
@@ -574,8 +576,8 @@ public class ContextCheckObfuscator extends NumberObfuscation
 		final String elementFieldName;
 		final String indexFieldName;
 		final String threadStarterMethodName;
-		final String decodeWordMethodName;
 		final String decodeDwordMethodName;
+		final String decodeQwordMethodName;
 		final String decodeConstantMethodName;
 
 		MemberNames()
@@ -586,9 +588,24 @@ public class ContextCheckObfuscator extends NumberObfuscation
 			elementFieldName = fieldDictionary.uniqueRandomString();
 			indexFieldName = fieldDictionary.uniqueRandomString();
 			threadStarterMethodName = methodDictionary.uniqueRandomString();
-			decodeWordMethodName = methodDictionary.uniqueRandomString();
 			decodeDwordMethodName = methodDictionary.uniqueRandomString();
+			decodeQwordMethodName = methodDictionary.uniqueRandomString();
 			decodeConstantMethodName = methodDictionary.uniqueRandomString();
+		}
+
+		public String[] toStrings()
+		{
+			final String[] strings = new String[9];
+			strings[0] = "Decoder class name: " + className;
+			strings[1] = "Constant field name: " + constantFieldName;
+			strings[2] = "Indicator field name: " + indicatorFieldName;
+			strings[3] = "Element field name: " + elementFieldName;
+			strings[4] = "Index field name: " + indexFieldName;
+			strings[5] = "Thread starter method name: " + threadStarterMethodName;
+			strings[6] = "Decode DWORD(int) method name: " + decodeDwordMethodName;
+			strings[7] = "Decode QWORD(long) method name: " + decodeQwordMethodName;
+			strings[8] = "Decode constant method name: " + decodeConstantMethodName;
+			return strings;
 		}
 	}
 }

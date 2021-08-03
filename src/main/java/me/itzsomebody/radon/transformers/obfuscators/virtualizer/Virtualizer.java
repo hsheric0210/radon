@@ -90,7 +90,7 @@ public class Virtualizer extends Transformer implements VMOpcodes
 			throw new RadonException();
 		}
 
-		Main.info("Virtualized " + counter.get() + " methods");
+		info("Virtualized " + counter.get() + " methods");
 	}
 
 	private static boolean canProtect(final InsnList insnList)

@@ -18,16 +18,14 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.flow;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import me.itzsomebody.radon.utils.ASMUtils;
 import me.itzsomebody.radon.utils.BogusJumps;
 import me.itzsomebody.radon.utils.RandomUtils;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 
-import me.itzsomebody.radon.Main;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Replaces GOTO instructions with an expression which is always true. This does nothing more than adding a one more edge to a control flow graph for every GOTO instruction present.
@@ -47,7 +45,7 @@ public class GotoReplacer extends FlowObfuscation
 		{
 			final AtomicBoolean shouldAdd = new AtomicBoolean();
 
-			final Type predicateType = ASMUtils.getRandomType(); // Boolean ~ Double. see java.lang.reflect.Type
+			final Type predicateType = ASMUtils.getRandomType();
 			final String predicateDescriptor = predicateType.getDescriptor();
 			final Object predicateInitialValue = RandomUtils.getRandomBoolean() ? RandomUtils.getRandomValue(predicateType) : null;
 
@@ -106,6 +104,6 @@ public class GotoReplacer extends FlowObfuscation
 				cw.addField(predicate);
 		});
 
-		Main.info("+ Swapped " + counter.get() + " GOTO instructions");
+		info("+ Swapped " + counter.get() + " GOTO instructions");
 	}
 }

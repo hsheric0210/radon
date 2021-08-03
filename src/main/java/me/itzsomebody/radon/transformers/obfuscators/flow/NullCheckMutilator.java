@@ -18,20 +18,18 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.flow;
 
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.objectweb.asm.tree.*;
-
-import me.itzsomebody.radon.Main;
 import me.itzsomebody.radon.asm.StackHeightZeroFinder;
 import me.itzsomebody.radon.exceptions.RadonException;
 import me.itzsomebody.radon.exceptions.StackEmulationException;
 import me.itzsomebody.radon.utils.ASMUtils;
 import me.itzsomebody.radon.utils.Throwables;
+import org.objectweb.asm.tree.*;
+
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Replaces IFNONNULL and IFNULL with a semantically equivalent try-catch block. This relies on the fact that {@link NullPointerException} is thrown when a method is invoked upon null.
+ * Replaces IFNONNULL and IFNULL with a semantically equivalent try-catch block. This relies on the fact that {@link NullPointerException} is thrown when a method is invoked upon null. Very similar to https://www.sable.mcgill.ca/JBCO/examples.html#RIITCB
  *
  * @author ItzSomebody
  */
@@ -105,6 +103,6 @@ public class NullCheckMutilator extends FlowObfuscation
 			}
 		}));
 
-		Main.info("+ Mutilated " + counter.get() + " null checks");
+		info("+ Mutilated " + counter.get() + " null checks");
 	}
 }

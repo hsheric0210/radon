@@ -18,9 +18,10 @@
 
 package me.itzsomebody.radon.asm;
 
-import java.util.ArrayList;
-import java.util.List;
-
+import me.itzsomebody.radon.Main;
+import me.itzsomebody.radon.Radon;
+import me.itzsomebody.radon.asm.accesses.Access;
+import me.itzsomebody.radon.asm.accesses.ClassAccess;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
@@ -29,10 +30,8 @@ import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import me.itzsomebody.radon.Main;
-import me.itzsomebody.radon.Radon;
-import me.itzsomebody.radon.asm.accesses.Access;
-import me.itzsomebody.radon.asm.accesses.ClassAccess;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Wrapper for ClassNodes.
@@ -292,10 +291,9 @@ public class ClassWrapper
 
 			return writer.toByteArray();
 		}
-		catch (final Throwable t)
+		catch (final Throwable e)
 		{
-			Main.info(String.format("Error writing class %s. Skipping frames (might cause runtime errors).", getName() + ".class"));
-			t.printStackTrace();
+			Main.warn(String.format("*** Error writing class %s. Skipping frames (might cause runtime errors).", getName() + ".class"), e);
 
 			writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
 			writer.newUTF8("RADON" + Main.VERSION);

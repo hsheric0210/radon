@@ -18,16 +18,14 @@
 
 package me.itzsomebody.radon.transformers.optimizers;
 
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
-
+import me.itzsomebody.radon.utils.ASMUtils;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import me.itzsomebody.radon.Main;
-import me.itzsomebody.radon.utils.ASMUtils;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 /**
  * Inlines goto-return sequences by setting the goto to a return opcode.
@@ -59,7 +57,7 @@ public class GotoReturnInliner extends Optimizer
 			});
 		}));
 
-		Main.info(String.format("Inlined %d GOTO->RETURN sequences. [%s]", count.get(), tookThisLong(current)));
+		info(String.format("- Inlined %d GOTO->RETURN sequences. [%s]", count.get(), tookThisLong(current)));
 	}
 
 	@Override

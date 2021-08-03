@@ -20,8 +20,6 @@ package me.itzsomebody.radon.transformers.shrinkers;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import me.itzsomebody.radon.Main;
-
 /**
  * Strips out deprecated access flags.
  *
@@ -55,7 +53,7 @@ public class DeprecatedAccessRemover extends Shrinker
 			});
 		});
 
-		Main.info(String.format("Removed %d deprecated access flags.", counter.get()));
+		info(String.format("- Removed %d deprecated access flags.", counter.get()));
 	}
 
 	@Override

@@ -18,7 +18,17 @@
 
 package me.itzsomebody.radon.transformers.obfuscators;
 
-import static me.itzsomebody.radon.config.ConfigurationSetting.RENAMER;
+import me.itzsomebody.radon.asm.ClassTree;
+import me.itzsomebody.radon.asm.FieldWrapper;
+import me.itzsomebody.radon.asm.MemberRemapper;
+import me.itzsomebody.radon.asm.MethodWrapper;
+import me.itzsomebody.radon.config.Configuration;
+import me.itzsomebody.radon.exclusions.ExclusionType;
+import me.itzsomebody.radon.transformers.Transformer;
+import me.itzsomebody.radon.utils.FileUtils;
+import org.objectweb.asm.commons.ClassRemapper;
+import org.objectweb.asm.commons.Remapper;
+import org.objectweb.asm.tree.ClassNode;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -30,20 +40,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
-import org.objectweb.asm.commons.ClassRemapper;
-import org.objectweb.asm.commons.Remapper;
-import org.objectweb.asm.tree.ClassNode;
-
-import me.itzsomebody.radon.Main;
-import me.itzsomebody.radon.asm.ClassTree;
-import me.itzsomebody.radon.asm.FieldWrapper;
-import me.itzsomebody.radon.asm.MemberRemapper;
-import me.itzsomebody.radon.asm.MethodWrapper;
-import me.itzsomebody.radon.config.Configuration;
-import me.itzsomebody.radon.dictionaries.Dictionary;
-import me.itzsomebody.radon.exclusions.ExclusionType;
-import me.itzsomebody.radon.transformers.Transformer;
-import me.itzsomebody.radon.utils.FileUtils;
+import static me.itzsomebody.radon.config.ConfigurationSetting.RENAMER;
 
 /**
  * Transformer which renames classes and their members.
@@ -69,7 +66,7 @@ public class Renamer extends Transformer
 		mappings = new HashMap<>();
 		final Map<String, String> packageMappings = new HashMap<>();
 
-		Main.info("Generating mappings.");
+		info("Generating mappings.");
 		long current = System.currentTimeMillis();
 
 		getClassWrappers().forEach(classWrapper ->
@@ -113,8 +110,8 @@ public class Renamer extends Transformer
 			}
 		});
 
-		Main.info(String.format("Finished generated mappings. [%s]", tookThisLong(current)));
-		Main.info("Applying mappings.");
+		info(String.format("Finished generated mappings. [%s]", tookThisLong(current)));
+		info("Applying mappings.");
 		current = System.currentTimeMillis();
 
 		// Apply mappings
@@ -138,11 +135,11 @@ public class Renamer extends Transformer
 			getClassPath().put(classWrapper.getName(), classWrapper);
 		});
 
-		Main.info(String.format("Mapped %d members. [%s]", mappings.size(), tookThisLong(current)));
+		info(String.format("Mapped %d members. [%s]", mappings.size(), tookThisLong(current)));
 		current = System.currentTimeMillis();
 
 		// Now we gotta fix those resources because we probably screwed up random files.
-		Main.info("Attempting to map class names in resources");
+		info("Attempting to map class names in resources");
 		final AtomicInteger fixed = new AtomicInteger();
 		getResources().forEach((name, byteArray) -> adaptTheseResources.forEach(s ->
 		{
@@ -172,7 +169,7 @@ public class Renamer extends Transformer
 			}
 		}));
 
-		Main.info(String.format("Mapped %d names in resources. [%s]", fixed.get(), tookThisLong(current)));
+		info(String.format("Mapped %d names in resources. [%s]", fixed.get(), tookThisLong(current)));
 
 		if (dumpMappings)
 			dumpMappings();
@@ -259,7 +256,7 @@ public class Renamer extends Transformer
 	private void dumpMappings()
 	{
 		final long current = System.currentTimeMillis();
-		Main.info("Dumping mappings.");
+		info("Dumping mappings.");
 		final File file = new File("mappings.txt");
 		if (file.exists())
 			FileUtils.renameExistingFile(file);
@@ -277,18 +274,16 @@ public class Renamer extends Transformer
 				}
 				catch (final IOException ioe)
 				{
-					Main.severe(String.format("Ran into an error trying to append \"%s -> %s\"", oldName, newName));
-					ioe.printStackTrace();
+					severe(String.format("Ran into an error trying to append \"%s -> %s\"", oldName, newName), ioe);
 				}
 			});
 
 			bw.close();
-			Main.info(String.format("Finished dumping mappings at %s. [%s]", file.getAbsolutePath(), tookThisLong(current)));
+			info(String.format("Finished dumping mappings at %s. [%s]", file.getAbsolutePath(), tookThisLong(current)));
 		}
 		catch (final Throwable t)
 		{
-			Main.severe("Ran into an error trying to create the mappings file.");
-			t.printStackTrace();
+			severe("Ran into an error trying to create the mappings file.", t);
 		}
 	}
 

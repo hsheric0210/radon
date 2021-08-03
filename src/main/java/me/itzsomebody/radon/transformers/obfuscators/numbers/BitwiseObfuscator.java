@@ -18,7 +18,6 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.numbers;
 
-import me.itzsomebody.radon.Main;
 import me.itzsomebody.radon.utils.ASMUtils;
 import me.itzsomebody.radon.utils.RandomUtils;
 import org.objectweb.asm.Opcodes;
@@ -103,7 +102,7 @@ public class BitwiseObfuscator extends NumberObfuscation
 			}
 		}));
 
-		Main.info("+ Split " + counter.get() + " number constants into bitwise instructions (minIteration: " + master.getMinIteration() + ", maxIteration: " + master.getMaxIteration() + ")");
+		info("+ Split " + counter.get() + " number constants into bitwise instructions (minIteration: " + master.getMinIteration() + ", maxIteration: " + master.getMaxIteration() + ")");
 	}
 
 	private InsnList obfuscateNumber(final int originalNum)
@@ -113,7 +112,7 @@ public class BitwiseObfuscator extends NumberObfuscation
 		final InsnList insns = new InsnList();
 		insns.add(ASMUtils.getNumberInsn(current));
 
-		final StringBuilder builder = new StringBuilder("*** [BitwiseObfuscator] Verify failed: Obfuscate int '" + originalNum + "' to '");
+		final StringBuilder builder = new StringBuilder("! [BitwiseObfuscator] Verify failed: Obfuscate int '" + originalNum + "' to '");
 		builder.append(current);
 
 		for (int i = 0, iterations = getIterationCount(); i < iterations; i++)
@@ -217,7 +216,7 @@ public class BitwiseObfuscator extends NumberObfuscation
 		builder.append(" [current: ").append(current).append(", delta: ").append(current - originalNum).append(']');
 		if (originalNum != current)
 		{
-			Main.info(builder.toString());
+			verboseWarn(builder.toString());
 			return ASMUtils.singletonList(ASMUtils.getNumberInsn(originalNum));
 		}
 
@@ -231,7 +230,7 @@ public class BitwiseObfuscator extends NumberObfuscation
 		final InsnList insns = new InsnList();
 		insns.add(ASMUtils.getNumberInsn(current));
 
-		final StringBuilder builder = new StringBuilder("*** [BitwiseObfuscator] Verify failed: Obfuscate long '" + originalNum + "' to '");
+		final StringBuilder builder = new StringBuilder("! [BitwiseObfuscator] Verify failed: Obfuscate long '" + originalNum + "' to '");
 		builder.append(current);
 
 		for (int i = 0, iterations = getIterationCount(); i < iterations; i++)
@@ -333,7 +332,7 @@ public class BitwiseObfuscator extends NumberObfuscation
 		builder.append(" [current: ").append(current).append(", delta: ").append(current - originalNum).append(']');
 		if (originalNum != current)
 		{
-			Main.info(builder.toString());
+			verboseWarn(builder.toString());
 			return ASMUtils.singletonList(ASMUtils.getNumberInsn(originalNum));
 		}
 

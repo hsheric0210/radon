@@ -18,21 +18,19 @@
 
 package me.itzsomebody.radon.transformers.miscellaneous;
 
-import static me.itzsomebody.radon.config.ConfigurationSetting.EXPIRATION;
+import me.itzsomebody.radon.asm.ClassWrapper;
+import me.itzsomebody.radon.config.Configuration;
+import me.itzsomebody.radon.exceptions.RadonException;
+import me.itzsomebody.radon.exclusions.ExclusionType;
+import me.itzsomebody.radon.transformers.Transformer;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.tree.*;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import me.itzsomebody.radon.asm.ClassWrapper;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.tree.*;
-
-import me.itzsomebody.radon.Main;
-import me.itzsomebody.radon.config.Configuration;
-import me.itzsomebody.radon.exceptions.RadonException;
-import me.itzsomebody.radon.exclusions.ExclusionType;
-import me.itzsomebody.radon.transformers.Transformer;
+import static me.itzsomebody.radon.config.ConfigurationSetting.EXPIRATION;
 
 /**
  * Inserts an expiration block of instructions in each constructor method.
@@ -57,7 +55,7 @@ public class Expiration extends Transformer
 			counter.incrementAndGet();
 		}));
 
-		Main.info(String.format("+ Added %d expiration code blocks.", counter.get()));
+		info(String.format("+ Added %d expiration code blocks.", counter.get()));
 	}
 
 	private InsnList createExpirationInstructions()
@@ -134,9 +132,8 @@ public class Expiration extends Transformer
 		}
 		catch (final ParseException e)
 		{
-			Main.severe("Error while parsing expiration date.");
-			e.printStackTrace();
-			throw new RadonException();
+			severe("Error while parsing expiration date.", e);
+			throw new RadonException(e);
 		}
 	}
 

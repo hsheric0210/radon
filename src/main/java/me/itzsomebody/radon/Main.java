@@ -18,13 +18,6 @@
 
 package me.itzsomebody.radon;
 
-import java.io.*;
-import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.logging.*;
-import java.util.zip.ZipFile;
-
 import me.itzsomebody.radon.cli.CommandArgumentsParser;
 import me.itzsomebody.radon.config.Configuration;
 import me.itzsomebody.radon.config.ObfuscationConfiguration;
@@ -33,10 +26,20 @@ import me.itzsomebody.radon.utils.CustomOutputStream;
 import me.itzsomebody.radon.utils.IOUtils;
 import me.itzsomebody.radon.utils.WatermarkUtils;
 
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.Objects;
+import java.util.logging.*;
+import java.util.zip.ZipFile;
+
 /**
- * Main class of obfuscator. \o/ TODO: Renamer transformer should correct strings used for reflection. (i.e. Class.forName("me.itzsomebody.Thing"))
+ * Main class of obfuscator. \o/
  * <p>
- * TODO: Clean code up in general.
+ * TODO: Renamer transformer should correct strings used for reflection. (i.e. Class.forName("me.itzsomebody.Thing")) TODO: Clean code up in general. TODO: InstanceofCheckMutilator (replace 'instanceof' checks into try-catch of ClassCastException)
+ * </p>
  *
  * @author ItzSomebody
  */
@@ -77,7 +80,29 @@ public final class Main
 			@Override
 			public String format(final LogRecord record)
 			{
-				return String.format("[%s] %s: %s\n", new SimpleDateFormat("dd/MM/yyyy-hh:mm:ss").format(new Date(record.getMillis())), record.getLevel().getName(), formatMessage(record));
+				final String prefix = String.format("[%s] %s: ", new SimpleDateFormat("dd/MM/yyyy-hh:mm:ss").format(new Date(record.getMillis())), record.getLevel().getName());
+
+				final StringBuilder builder = new StringBuilder();
+				builder.append(prefix).append(formatMessage(record)).append("\n");
+
+				if (record.getThrown() != null)
+				{
+					final StringWriter sw = new StringWriter();
+					try (final PrintWriter pw = new PrintWriter(sw)
+					{
+						@Override
+						public void println(final Object o)
+						{
+							printf("%s  %s%n", prefix, o);
+						}
+					})
+					{
+						record.getThrown().printStackTrace(pw);
+					}
+					builder.append(sw);
+				}
+
+				return builder.toString();
 			}
 		});
 		LOGGER.addHandler(handler);
@@ -163,14 +188,24 @@ public final class Main
 		info("");
 	}
 
-	public static void warning(final String msg)
+	public static void warn(final String msg)
 	{
 		LOGGER.warning(msg);
+	}
+
+	public static void warn(final String msg, final Throwable thrown)
+	{
+		LOGGER.log(Level.WARNING, msg, thrown);
 	}
 
 	public static void severe(final String msg)
 	{
 		LOGGER.severe(msg);
+	}
+
+	public static void severe(final String msg, final Throwable thrown)
+	{
+		LOGGER.log(Level.SEVERE, msg, thrown);
 	}
 
 	private static String getProgramName()
@@ -195,7 +230,7 @@ public final class Main
 	 */
 	private static void showLicense()
 	{
-		System.out.println(new String(IOUtils.toByteArray(Main.class.getResourceAsStream("/license.txt"))));
+		System.out.println(new String(IOUtils.toByteArray(Objects.requireNonNull(Main.class.getResourceAsStream("/license.txt"))), StandardCharsets.UTF_8));
 	}
 
 	private Main()

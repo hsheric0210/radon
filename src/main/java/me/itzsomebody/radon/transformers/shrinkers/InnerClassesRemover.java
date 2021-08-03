@@ -21,8 +21,6 @@ package me.itzsomebody.radon.transformers.shrinkers;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import me.itzsomebody.radon.Main;
-
 /**
  * Strips out innerclass information.
  *
@@ -41,7 +39,7 @@ public class InnerClassesRemover extends Shrinker
 			classWrapper.getClassNode().innerClasses = new ArrayList<>();
 		});
 
-		Main.info(String.format("Removed %d inner classes.", counter.get()));
+		info(String.format("- Removed %d inner classes.", counter.get()));
 	}
 
 	@Override

@@ -20,8 +20,6 @@ package me.itzsomebody.radon.transformers.shrinkers;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import me.itzsomebody.radon.Main;
-
 /**
  * Strips out synthetic/bridge access flags.
  *
@@ -55,7 +53,7 @@ public class SyntheticAccessRemover extends Shrinker
 			});
 		});
 
-		Main.info(String.format("Removed %d synthetic/bridge access flags.", counter.get()));
+		info(String.format("- Removed %d synthetic/bridge access flags.", counter.get()));
 	}
 
 	@Override

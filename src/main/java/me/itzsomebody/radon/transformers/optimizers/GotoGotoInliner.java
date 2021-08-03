@@ -18,14 +18,12 @@
 
 package me.itzsomebody.radon.transformers.optimizers;
 
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
-
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import me.itzsomebody.radon.Main;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 /**
  * Inlines goto-goto sequences by directing the first goto's target to the second goto's target.
@@ -56,7 +54,7 @@ public class GotoGotoInliner extends Optimizer
 			});
 		}));
 
-		Main.info(String.format("Inlined %d GOTO->GOTO sequences. [%s]", count.get(), tookThisLong(current)));
+		info(String.format("- Inlined %d GOTO->GOTO sequences. [%s]", count.get(), tookThisLong(current)));
 	}
 
 	@Override

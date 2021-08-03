@@ -18,7 +18,13 @@
 
 package me.itzsomebody.radon.config;
 
-import static me.itzsomebody.radon.config.ConfigurationSetting.*;
+import me.itzsomebody.radon.dictionaries.Dictionary;
+import me.itzsomebody.radon.dictionaries.DictionaryFactory;
+import me.itzsomebody.radon.exceptions.RadonException;
+import me.itzsomebody.radon.exclusions.Exclusion;
+import me.itzsomebody.radon.exclusions.ExclusionManager;
+import me.itzsomebody.radon.transformers.Transformer;
+import me.itzsomebody.radon.utils.FileUtils;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -28,13 +34,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 import java.util.zip.Deflater;
 
-import me.itzsomebody.radon.dictionaries.Dictionary;
-import me.itzsomebody.radon.dictionaries.DictionaryFactory;
-import me.itzsomebody.radon.exceptions.RadonException;
-import me.itzsomebody.radon.exclusions.Exclusion;
-import me.itzsomebody.radon.exclusions.ExclusionManager;
-import me.itzsomebody.radon.transformers.Transformer;
-import me.itzsomebody.radon.utils.FileUtils;
+import static me.itzsomebody.radon.config.ConfigurationSetting.*;
 
 public final class ObfuscationConfiguration
 {
@@ -149,6 +149,7 @@ public final class ObfuscationConfiguration
 		obfConfig.verify = config.getOrDefault(VERIFY, false);
 		obfConfig.corruptCrc = config.getOrDefault(CORRUPT_CRC, false);
 		obfConfig.nTrashClasses = config.getOrDefault(TRASH_CLASSES, 0);
+		obfConfig.verboseLogging = config.getOrDefault(VERBOSE_LOGGING, false);
 
 		// TRANSFORMERS
 
@@ -178,6 +179,7 @@ public final class ObfuscationConfiguration
 	private boolean verify;
 	private boolean corruptCrc;
 	private int nTrashClasses;
+	private boolean verboseLogging;
 
 	private Dictionary genericDictionary;
 	private int genericMinRandomizedStringLength;
@@ -439,5 +441,15 @@ public final class ObfuscationConfiguration
 	public void setTransformers(final List<Transformer> transformers)
 	{
 		this.transformers = transformers;
+	}
+
+	public boolean enableVerboseLogging()
+	{
+		return verboseLogging;
+	}
+
+	public void setVerboseLogging(boolean verboseLogging)
+	{
+		this.verboseLogging = verboseLogging;
 	}
 }

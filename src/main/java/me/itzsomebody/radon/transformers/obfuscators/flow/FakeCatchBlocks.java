@@ -18,16 +18,14 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.flow;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
-import me.itzsomebody.radon.utils.Throwables;
-import org.objectweb.asm.tree.*;
-
 import me.itzsomebody.radon.Main;
 import me.itzsomebody.radon.asm.ClassWrapper;
 import me.itzsomebody.radon.utils.ASMUtils;
-import me.itzsomebody.radon.utils.Constants;
 import me.itzsomebody.radon.utils.RandomUtils;
+import me.itzsomebody.radon.utils.Throwables;
+import org.objectweb.asm.tree.*;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Traps random instructions using a fake handler. Essentially the same thing as Zelix's exception obfuscation or Dasho's fake try catches.
@@ -91,6 +89,6 @@ public class FakeCatchBlocks extends FlowObfuscation
 		getClasses().put(fakeHandler.name, newWrapper);
 		getClassPath().put(fakeHandler.name, newWrapper);
 
-		Main.info("+ Inserted " + counter.get() + " fake try catches");
+		info("+ Inserted " + counter.get() + " fake try catches");
 	}
 }

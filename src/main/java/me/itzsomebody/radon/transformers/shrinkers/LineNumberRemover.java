@@ -18,13 +18,11 @@
 
 package me.itzsomebody.radon.transformers.shrinkers;
 
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
-
 import org.objectweb.asm.tree.LineNumberNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import me.itzsomebody.radon.Main;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 /**
  * Removes line numbers.
@@ -49,7 +47,7 @@ public class LineNumberRemover extends Shrinker
 			});
 		}));
 
-		Main.info(String.format("Removed %d line numbers.", counter.get()));
+		info(String.format("- Removed %d line numbers.", counter.get()));
 	}
 
 	@Override

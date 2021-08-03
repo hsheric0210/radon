@@ -18,13 +18,14 @@
 
 package me.itzsomebody.radon.utils;
 
+import org.objectweb.asm.Type;
+
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
-import org.objectweb.asm.Type;
 
 /**
  * Used to generate various randoms.
@@ -39,22 +40,22 @@ public final class RandomUtils
 		return ThreadLocalRandom.current().nextInt();
 	}
 
-	public static int getRandomInt(final int bounds)
+	public static int getRandomInt(final int endExclusive)
 	{
-		if (!(bounds > 0))
-			throw new IllegalArgumentException("bound " + bounds + " is zero or negative");
-		return ThreadLocalRandom.current().nextInt(bounds);
+		if (!(endExclusive > 0))
+			throw new IllegalArgumentException("bound " + endExclusive + " is zero or negative");
+		return ThreadLocalRandom.current().nextInt(endExclusive);
 	}
 
-	public static int getRandomInt(final int origin, final int bounds)
+	public static int getRandomInt(final int startInclusive, final int endExclusive)
 	{
-		return origin == bounds ? bounds : ThreadLocalRandom.current().nextInt(origin, bounds);
+		return startInclusive == endExclusive ? endExclusive : ThreadLocalRandom.current().nextInt(startInclusive, endExclusive);
 
 	}
 
 	public static boolean getRandomBoolean()
 	{
-		return getRandomFloat() > 0.5;
+		return ThreadLocalRandom.current().nextBoolean();
 	}
 
 	public static <T> T getRandomElement(final List<T> list)
@@ -62,14 +63,21 @@ public final class RandomUtils
 		return list.get(getRandomInt(list.size()));
 	}
 
+	@SafeVarargs
 	public static <T> T getRandomElement(final T... arr)
 	{
 		return arr[getRandomInt(arr.length)];
 	}
-
-	public static int getRandomIntWithExclusion(final int origin, final int bounds, final Collection<Integer> exclusions)
+	public static List<Integer> getRandomInts(final int startInclusive, final int endExclusive)
 	{
-		final List<Integer> list = IntStream.range(origin, bounds).boxed().collect(Collectors.toList());
+		final List<Integer> ints = IntStream.range(startInclusive, endExclusive).boxed().collect(Collectors.toList()); // TODO: Replace this shitty algorithm to the better one
+		Collections.shuffle(ints);
+		return ints;
+	}
+
+	public static int getRandomIntWithExclusion(final int startInclusive, final int endExclusive, final Collection<Integer> exclusions)
+	{
+		final List<Integer> list = IntStream.range(startInclusive, endExclusive).boxed().collect(Collectors.toList());
 		list.removeAll(exclusions);
 		return getRandomElement(list);
 	}
@@ -79,16 +87,16 @@ public final class RandomUtils
 		return ThreadLocalRandom.current().nextLong();
 	}
 
-	public static long getRandomLong(final long bounds)
+	public static long getRandomLong(final long endExclusive)
 	{
-		if (!(bounds > 0))
-			throw new IllegalArgumentException("bound " + bounds + " is zero or negative");
-		return ThreadLocalRandom.current().nextLong(bounds);
+		if (!(endExclusive > 0))
+			throw new IllegalArgumentException("bound " + endExclusive + " is zero or negative");
+		return ThreadLocalRandom.current().nextLong(endExclusive);
 	}
 
-	public static long getRandomLong(final long origin, final long bounds)
+	public static long getRandomLong(final long startInclusive, final long endExclusive)
 	{
-		return origin == bounds ? origin : ThreadLocalRandom.current().nextLong(origin, bounds);
+		return startInclusive == endExclusive ? startInclusive : ThreadLocalRandom.current().nextLong(startInclusive, endExclusive);
 
 	}
 
@@ -97,16 +105,16 @@ public final class RandomUtils
 		return ThreadLocalRandom.current().nextFloat();
 	}
 
-	public static float getRandomFloat(final float bounds)
+	public static float getRandomFloat(final float endExclusive)
 	{
-		if (!(bounds > 0.0F))
-			throw new IllegalArgumentException("bound " + bounds + " is zero or negative");
-		return (float) ThreadLocalRandom.current().nextDouble(bounds);
+		if (!(endExclusive > 0.0F))
+			throw new IllegalArgumentException("bound " + endExclusive + " is zero or negative");
+		return (float) ThreadLocalRandom.current().nextDouble(endExclusive);
 	}
 
-	public static float getRandomFloat(final float origin, final float bounds)
+	public static float getRandomFloat(final float startInclusive, final float endExclusive)
 	{
-		return origin == bounds ? origin : (float) ThreadLocalRandom.current().nextDouble(origin, bounds);
+		return startInclusive == endExclusive ? startInclusive : (float) ThreadLocalRandom.current().nextDouble(startInclusive, endExclusive);
 	}
 
 	public static double getRandomDouble()
@@ -114,16 +122,16 @@ public final class RandomUtils
 		return ThreadLocalRandom.current().nextDouble();
 	}
 
-	public static double getRandomDouble(final double bounds)
+	public static double getRandomDouble(final double endExclusive)
 	{
-		if (!(bounds > 0.0))
-			throw new IllegalArgumentException("bound " + bounds + " is zero or negative");
-		return ThreadLocalRandom.current().nextDouble(bounds);
+		if (!(endExclusive > 0.0))
+			throw new IllegalArgumentException("bound " + endExclusive + " is zero or negative");
+		return ThreadLocalRandom.current().nextDouble(endExclusive);
 	}
 
-	public static double getRandomDouble(final double origin, final double bounds)
+	public static double getRandomDouble(final double startInclusive, final double endExclusive)
 	{
-		return origin == bounds ? origin : ThreadLocalRandom.current().nextDouble(origin, bounds);
+		return startInclusive == endExclusive ? startInclusive : ThreadLocalRandom.current().nextDouble(startInclusive, endExclusive);
 	}
 
 	public static Object getRandomValue(final Type type)

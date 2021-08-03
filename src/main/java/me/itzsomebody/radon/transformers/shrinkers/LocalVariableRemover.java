@@ -18,11 +18,9 @@
 
 package me.itzsomebody.radon.transformers.shrinkers;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.objectweb.asm.tree.MethodNode;
 
-import me.itzsomebody.radon.Main;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Destroys the local variable table.
@@ -44,7 +42,7 @@ public class LocalVariableRemover extends Shrinker
 			methodNode.localVariables = null;
 		}));
 
-		Main.info(String.format("Removed %d local variables.", counter.get()));
+		info(String.format("- Removed %d local variables.", counter.get()));
 	}
 
 	@Override
