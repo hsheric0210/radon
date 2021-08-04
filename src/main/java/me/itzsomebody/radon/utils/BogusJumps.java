@@ -38,13 +38,13 @@ public final class BogusJumps implements Opcodes
 			{
 				case Type.LONG:
 					createBogusComparisonLong(insnList, predicateValue, jumpTo, invertCondition);
-					break;
+					return insnList;
 				case Type.FLOAT:
 					createBogusComparisonFloat(predicateValue, jumpTo, invertCondition, insnList);
-					break;
+					return insnList;
 				case Type.DOUBLE:
 					createBogusComparisonDouble(predicateValue, jumpTo, invertCondition, insnList);
-					break;
+					return insnList;
 				default: // int, byte, char, etc.
 					createBogusComparisonInt(predicateValue, jumpTo, invertCondition, insnList);
 			}
@@ -53,13 +53,13 @@ public final class BogusJumps implements Opcodes
 			{
 				case Type.LONG:
 					createFakeEqualityCheckLong(predicateValue, jumpTo, invertCondition, insnList);
-					break;
+					return insnList;
 				case Type.FLOAT:
 					createFakeEqualityCheckFloat(predicateValue, jumpTo, invertCondition, insnList);
-					break;
+					return insnList;
 				case Type.DOUBLE:
 					createFakeEqualityCheckDouble(predicateValue, jumpTo, invertCondition, insnList);
-					break;
+					return insnList;
 				default: // int, byte, char, etc.
 					createFakeEqualityCheckInt(predicateValue, jumpTo, invertCondition, insnList);
 			}
@@ -399,69 +399,95 @@ public final class BogusJumps implements Opcodes
 		final InsnList insnList = new InsnList();
 
 		AbstractInsnNode pushNode = null;
-		final int popNodeOp;
+		int popNodeOpcode;
 
-		if (RandomUtils.getRandomBoolean())
-			switch (Type.getReturnType(mn.desc).getSort()) // Create fake 'return' statement
+		switch (RandomUtils.getRandomInt(3))
+		{
+			case 0:
 			{
-				case Type.VOID:
-					popNodeOp = RETURN;
-					break;
-				case Type.BOOLEAN:
-					pushNode = ASMUtils.getNumberInsn(RandomUtils.getRandomInt(2));
-					popNodeOp = IRETURN;
-					break;
-				case Type.CHAR:
-					pushNode = ASMUtils.getNumberInsn(RandomUtils.getRandomInt(Character.MAX_VALUE + 1));
-					popNodeOp = IRETURN;
-					break;
-				case Type.BYTE:
-					pushNode = ASMUtils.getNumberInsn(RandomUtils.getRandomInt(Byte.MAX_VALUE + 1));
-					popNodeOp = IRETURN;
-					break;
-				case Type.SHORT:
-					pushNode = ASMUtils.getNumberInsn(RandomUtils.getRandomInt(Short.MAX_VALUE + 1));
-					popNodeOp = IRETURN;
-					break;
-				case Type.INT:
-					pushNode = ASMUtils.getNumberInsn(RandomUtils.getRandomInt());
-					popNodeOp = IRETURN;
-					break;
-				case Type.LONG:
-					pushNode = ASMUtils.getNumberInsn(RandomUtils.getRandomLong());
-					popNodeOp = LRETURN;
-					break;
-				case Type.FLOAT:
-					pushNode = ASMUtils.getNumberInsn(RandomUtils.getRandomFloat());
-					popNodeOp = FRETURN;
-					break;
-				case Type.DOUBLE:
-					pushNode = ASMUtils.getNumberInsn(RandomUtils.getRandomDouble());
-					popNodeOp = DRETURN;
-					break;
-				default:
-					pushNode = new InsnNode(ACONST_NULL);
-					popNodeOp = ARETURN;
+				switch (RandomUtils.getRandomInt(2))
+				{
+					case 0:
+					{
+						// System.exit(n)
+						insnList.add(new LdcInsnNode(RandomUtils.getRandomInt()));
+						insnList.add(new MethodInsnNode(INVOKESTATIC, "java/lang/System", "exit", "(I)V", false));
+						break;
+					}
+
+					case 1:
+					{
+						insnList.add(new MethodInsnNode(INVOKESTATIC, "java/lang/Runtime", "getRuntime", "()Ljava/lang/Runtime;", false));
+						insnList.add(new LdcInsnNode(RandomUtils.getRandomInt()));
+						insnList.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Runtime", RandomUtils.getRandomBoolean() ? "halt" : "exit", "(I)V", false));
+						break;
+					}
+				}
+
+				popNodeOpcode = IRETURN;
+				switch (Type.getReturnType(mn.desc).getSort())
+				{
+					case Type.VOID:
+						pushNode = null;
+						popNodeOpcode = RETURN;
+						break;
+					case Type.BOOLEAN:
+						pushNode = ASMUtils.getNumberInsn(RandomUtils.getRandomInt(2));
+						break;
+					case Type.CHAR:
+						pushNode = ASMUtils.getNumberInsn(RandomUtils.getRandomInt(Character.MAX_VALUE + 1));
+						break;
+					case Type.BYTE:
+						pushNode = ASMUtils.getNumberInsn(RandomUtils.getRandomInt(Byte.MAX_VALUE + 1));
+						break;
+					case Type.SHORT:
+						pushNode = ASMUtils.getNumberInsn(RandomUtils.getRandomInt(Short.MAX_VALUE + 1));
+						break;
+					case Type.INT:
+						pushNode = ASMUtils.getNumberInsn(RandomUtils.getRandomInt());
+						break;
+					case Type.LONG:
+						pushNode = ASMUtils.getNumberInsn(RandomUtils.getRandomLong());
+						popNodeOpcode = LRETURN;
+						break;
+					case Type.FLOAT:
+						pushNode = ASMUtils.getNumberInsn(RandomUtils.getRandomFloat());
+						popNodeOpcode = FRETURN;
+						break;
+					case Type.DOUBLE:
+						pushNode = ASMUtils.getNumberInsn(RandomUtils.getRandomDouble());
+						popNodeOpcode = DRETURN;
+						break;
+					default:
+						pushNode = new InsnNode(ACONST_NULL);
+						popNodeOpcode = ARETURN;
+						break;
+				}
+				break;
 			}
-		else if (RandomUtils.getRandomBoolean())
-		{
-			mn.maxStack++;
-			final String exceptionClass = RandomUtils.getRandomElement(Throwables.getRandomThrowable());
-			insnList.add(new TypeInsnNode(NEW, exceptionClass));
-			insnList.add(new InsnNode(DUP));
-			insnList.add(new MethodInsnNode(INVOKESPECIAL, exceptionClass, "<init>", "()V", false));
-			popNodeOp = ATHROW;
-		}
-		else
-		{
-			// Create unused 'throw null' statement
-			pushNode = new InsnNode(ACONST_NULL);
-			popNodeOp = ATHROW;
+
+			case 1:
+			{
+				mn.maxStack++;
+				final String exceptionClass = RandomUtils.getRandomElement(Throwables.getRandomThrowable());
+				insnList.add(new TypeInsnNode(NEW, exceptionClass));
+				insnList.add(new InsnNode(DUP));
+				insnList.add(new MethodInsnNode(INVOKESPECIAL, exceptionClass, "<init>", "()V", false));
+				popNodeOpcode = ATHROW;
+				break;
+			}
+
+			default:
+			{
+				pushNode = new InsnNode(ACONST_NULL);
+				popNodeOpcode = ATHROW;
+				break;
+			}
 		}
 
 		if (pushNode != null)
 			insnList.add(pushNode);
-		insnList.add(new InsnNode(popNodeOp));
+		insnList.add(new InsnNode(popNodeOpcode));
 
 		return insnList;
 	}

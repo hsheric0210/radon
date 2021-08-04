@@ -18,6 +18,15 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.ejector;
 
+import static me.itzsomebody.radon.config.ConfigurationSetting.EJECTOR;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.objectweb.asm.tree.analysis.AnalyzerException;
+import org.objectweb.asm.tree.analysis.Frame;
+
 import me.itzsomebody.radon.analysis.constant.ConstantAnalyzer;
 import me.itzsomebody.radon.analysis.constant.values.AbstractValue;
 import me.itzsomebody.radon.asm.ClassWrapper;
@@ -27,14 +36,6 @@ import me.itzsomebody.radon.transformers.Transformer;
 import me.itzsomebody.radon.transformers.obfuscators.ejector.phases.AbstractEjectPhase;
 import me.itzsomebody.radon.transformers.obfuscators.ejector.phases.FieldSetEjector;
 import me.itzsomebody.radon.transformers.obfuscators.ejector.phases.MethodCallEjector;
-import org.objectweb.asm.tree.analysis.AnalyzerException;
-import org.objectweb.asm.tree.analysis.Frame;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static me.itzsomebody.radon.config.ConfigurationSetting.EJECTOR;
 
 /**
  * Extracts parts of code to individual methods.

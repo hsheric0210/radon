@@ -18,6 +18,15 @@
 
 package me.itzsomebody.radon.transformers;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
+
+import org.objectweb.asm.Opcodes;
+
 import me.itzsomebody.radon.Main;
 import me.itzsomebody.radon.Radon;
 import me.itzsomebody.radon.asm.ClassWrapper;
@@ -28,14 +37,6 @@ import me.itzsomebody.radon.config.ObfuscationConfiguration;
 import me.itzsomebody.radon.dictionaries.WrappedDictionary;
 import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.utils.RandomUtils;
-import org.objectweb.asm.Opcodes;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
 /**
  * Abstract transformer for all the transformers. \o/
@@ -136,7 +137,7 @@ public abstract class Transformer implements Opcodes
 	{
 		if (enableVerboseLogging())
 			for (final String message : verboseMessages.get())
-			Main.info(String.format("[VERBOSE] [%1$s] %2$s", getName(), message));
+				Main.info(String.format("[VERBOSE] [%1$s] %2$s", getName(), message));
 	}
 
 	protected final void verboseWarn(final String verboseMessage)
@@ -159,6 +160,7 @@ public abstract class Transformer implements Opcodes
 	{
 		Main.warn(String.format("[%1$s] %2$s", getName(), message), thrown);
 	}
+
 	protected final void severe(final String message, final Throwable thrown)
 	{
 		Main.severe(String.format("[%1$s] %2$s", getName(), message), thrown);

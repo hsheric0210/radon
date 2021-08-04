@@ -18,14 +18,6 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.flow;
 
-import me.itzsomebody.radon.asm.StackHeightZeroFinder;
-import me.itzsomebody.radon.exceptions.RadonException;
-import me.itzsomebody.radon.exceptions.StackEmulationException;
-import me.itzsomebody.radon.utils.ASMUtils;
-import me.itzsomebody.radon.utils.Constants;
-import me.itzsomebody.radon.utils.RandomUtils;
-import org.objectweb.asm.tree.*;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -33,6 +25,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import org.objectweb.asm.tree.*;
+
+import me.itzsomebody.radon.asm.StackHeightZeroFinder;
+import me.itzsomebody.radon.exceptions.RadonException;
+import me.itzsomebody.radon.exceptions.StackEmulationException;
+import me.itzsomebody.radon.utils.ASMUtils;
+import me.itzsomebody.radon.utils.Constants;
+import me.itzsomebody.radon.utils.RandomUtils;
 
 public class BogusSwitchJumpInserter extends FlowObfuscation
 {

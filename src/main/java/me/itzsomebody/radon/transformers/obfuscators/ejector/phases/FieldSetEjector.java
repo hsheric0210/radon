@@ -20,7 +20,6 @@ package me.itzsomebody.radon.transformers.obfuscators.ejector.phases;
 
 import java.util.*;
 
-import me.itzsomebody.radon.utils.Constants;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
@@ -31,6 +30,7 @@ import me.itzsomebody.radon.asm.ClassWrapper;
 import me.itzsomebody.radon.asm.MethodWrapper;
 import me.itzsomebody.radon.transformers.obfuscators.ejector.EjectorContext;
 import me.itzsomebody.radon.utils.ASMUtils;
+import me.itzsomebody.radon.utils.Constants;
 import me.itzsomebody.radon.utils.RandomUtils;
 
 public final class FieldSetEjector extends AbstractEjectPhase
@@ -217,4 +217,4 @@ public final class FieldSetEjector extends AbstractEjectPhase
 		}
 	}
 
-	}
+}

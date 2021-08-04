@@ -34,7 +34,7 @@ public class Instantiate extends Handler
 	public void handle(final VM vm, final Object... operands) throws Throwable
 	{
 		final String ownerName = (String) operands[0];
-		final String[] paramsAsStrings = PTRN.split(((String) operands[1]));
+		final String[] paramsAsStrings = PTRN.split((String) operands[1]);
 		final Class[] params;
 		if ("\u0000\u0000\u0000".equals(paramsAsStrings[0]))
 			params = Constants.ZERO_LENGTH_CLASS_ARRAY;

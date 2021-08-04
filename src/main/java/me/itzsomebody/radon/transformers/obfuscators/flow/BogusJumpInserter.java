@@ -18,18 +18,19 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.flow;
 
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.*;
+
 import me.itzsomebody.radon.asm.StackHeightZeroFinder;
 import me.itzsomebody.radon.exceptions.RadonException;
 import me.itzsomebody.radon.exceptions.StackEmulationException;
 import me.itzsomebody.radon.utils.ASMUtils;
 import me.itzsomebody.radon.utils.BogusJumps;
 import me.itzsomebody.radon.utils.RandomUtils;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.*;
-
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Inserts opaque predicates which always evaluate to false but are meant to insert significantly more edges to a control flow graph. To determine where we should insert the conditions, we use an analyzer to determine where the stack is empty. This leads

@@ -18,9 +18,9 @@
 
 package me.itzsomebody.radon.transformers.shrinkers;
 
-import org.objectweb.asm.tree.ClassNode;
-
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.objectweb.asm.tree.ClassNode;
 
 /**
  * Strips out visible parameter annotations.

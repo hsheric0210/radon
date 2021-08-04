@@ -18,14 +18,15 @@
 
 package me.itzsomebody.radon.transformers.optimizers;
 
-import me.itzsomebody.radon.utils.ASMUtils;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
+
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
+import me.itzsomebody.radon.utils.ASMUtils;
 
 /**
  * Inlines goto-return sequences by setting the goto to a return opcode.

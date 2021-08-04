@@ -18,11 +18,11 @@
 
 package me.itzsomebody.radon.transformers.shrinkers;
 
-import org.objectweb.asm.tree.LineNumberNode;
-import org.objectweb.asm.tree.MethodNode;
-
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
+
+import org.objectweb.asm.tree.LineNumberNode;
+import org.objectweb.asm.tree.MethodNode;
 
 /**
  * Removes line numbers.

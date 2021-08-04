@@ -18,9 +18,9 @@
 
 package me.itzsomebody.radon.transformers.shrinkers;
 
-import org.objectweb.asm.tree.MethodNode;
-
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.objectweb.asm.tree.MethodNode;
 
 /**
  * Destroys the local variable table.

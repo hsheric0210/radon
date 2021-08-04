@@ -19,6 +19,7 @@
 package me.itzsomebody.radon.transformers.obfuscators;
 
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -37,6 +38,8 @@ public class BadAnnotation extends Transformer
 	@Override
 	public void transform()
 	{
+		final AtomicInteger counter = new AtomicInteger();
+
 		getClassWrappers().stream().filter(this::included).forEach(cw -> cw.getMethods().stream().filter(this::included).forEach(mw ->
 		{
 			final MethodNode methodNode = mw.getMethodNode();
@@ -49,6 +52,8 @@ public class BadAnnotation extends Transformer
 			methodNode.visibleAnnotations.add(new AnnotationNode("@"));
 			methodNode.invisibleAnnotations.add(new AnnotationNode("@"));
 		}));
+
+		info("+ Added " + counter.get() + " bad annotations");
 	}
 
 	@Override

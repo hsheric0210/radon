@@ -18,15 +18,16 @@
 
 package me.itzsomebody.radon.utils;
 
-import me.itzsomebody.radon.exceptions.RadonException;
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.Optional;
+
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.CodeSizeEvaluator;
 import org.objectweb.asm.tree.*;
 
-import java.util.Arrays;
-import java.util.Objects;
-import java.util.Optional;
+import me.itzsomebody.radon.exceptions.RadonException;
 
 /**
  * Bytecode utilities for bytecode instructions.

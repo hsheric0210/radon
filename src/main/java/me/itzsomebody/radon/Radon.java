@@ -18,6 +18,17 @@
 
 package me.itzsomebody.radon;
 
+import java.io.*;
+import java.lang.reflect.Field;
+import java.util.*;
+import java.util.stream.IntStream;
+import java.util.zip.*;
+
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.commons.JSRInlinerAdapter;
+import org.objectweb.asm.tree.MethodNode;
+
 import me.itzsomebody.radon.asm.ClassTree;
 import me.itzsomebody.radon.asm.ClassWrapper;
 import me.itzsomebody.radon.config.ObfuscationConfiguration;
@@ -30,16 +41,6 @@ import me.itzsomebody.radon.utils.FileUtils;
 import me.itzsomebody.radon.utils.IOUtils;
 import me.itzsomebody.radon.utils.RandomUtils;
 import me.itzsomebody.radon.utils.Strings;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.commons.JSRInlinerAdapter;
-import org.objectweb.asm.tree.MethodNode;
-
-import java.io.*;
-import java.lang.reflect.Field;
-import java.util.*;
-import java.util.stream.IntStream;
-import java.util.zip.*;
 
 /**
  * This class is how Radon processes the provided {@link ObfuscationConfiguration} to produce an obfuscated jar.

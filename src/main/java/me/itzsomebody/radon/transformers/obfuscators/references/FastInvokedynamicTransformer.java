@@ -18,20 +18,21 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.references;
 
-import me.itzsomebody.radon.asm.ClassWrapper;
-import me.itzsomebody.radon.utils.*;
-import org.objectweb.asm.Handle;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.*;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.StringJoiner;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.stream.Stream;
+
+import org.objectweb.asm.Handle;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.*;
+
+import me.itzsomebody.radon.asm.ClassWrapper;
+import me.itzsomebody.radon.utils.*;
 
 /**
  * Hides INVOKEVIRTUALs and INVOKESTATICs with invokedynamic instructions.

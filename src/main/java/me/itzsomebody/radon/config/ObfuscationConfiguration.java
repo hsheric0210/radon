@@ -18,13 +18,7 @@
 
 package me.itzsomebody.radon.config;
 
-import me.itzsomebody.radon.dictionaries.Dictionary;
-import me.itzsomebody.radon.dictionaries.DictionaryFactory;
-import me.itzsomebody.radon.exceptions.RadonException;
-import me.itzsomebody.radon.exclusions.Exclusion;
-import me.itzsomebody.radon.exclusions.ExclusionManager;
-import me.itzsomebody.radon.transformers.Transformer;
-import me.itzsomebody.radon.utils.FileUtils;
+import static me.itzsomebody.radon.config.ConfigurationSetting.*;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -34,7 +28,13 @@ import java.util.Map;
 import java.util.stream.Stream;
 import java.util.zip.Deflater;
 
-import static me.itzsomebody.radon.config.ConfigurationSetting.*;
+import me.itzsomebody.radon.dictionaries.Dictionary;
+import me.itzsomebody.radon.dictionaries.DictionaryFactory;
+import me.itzsomebody.radon.exceptions.RadonException;
+import me.itzsomebody.radon.exclusions.Exclusion;
+import me.itzsomebody.radon.exclusions.ExclusionManager;
+import me.itzsomebody.radon.transformers.Transformer;
+import me.itzsomebody.radon.utils.FileUtils;
 
 public final class ObfuscationConfiguration
 {
@@ -128,7 +128,7 @@ public final class ObfuscationConfiguration
 		}
 		obfConfig.methodMinRandomizedStringLength = config.getOrDefault(METHOD_MIN_RANDOMIZED_STRING_LENGTH, 16);
 		obfConfig.methodMaxRandomizedStringLength = config.getOrDefault(METHOD_MAX_RANDOMIZED_STRING_LENGTH, 16);
-		
+
 		try
 		{
 			final String dictionaryName = config.getOrDefault(FIELD_DICTIONARY, "alphanumeric");
@@ -448,7 +448,7 @@ public final class ObfuscationConfiguration
 		return verboseLogging;
 	}
 
-	public void setVerboseLogging(boolean verboseLogging)
+	public void setVerboseLogging(final boolean verboseLogging)
 	{
 		this.verboseLogging = verboseLogging;
 	}

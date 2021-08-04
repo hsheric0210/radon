@@ -1,11 +1,11 @@
 package me.itzsomebody.radon.utils;
 
+import java.util.ArrayList;
+import java.util.regex.Pattern;
+
 import org.objectweb.asm.Attribute;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.LabelNode;
-
-import java.util.ArrayList;
-import java.util.regex.Pattern;
 
 public interface Constants
 {

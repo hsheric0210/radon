@@ -18,10 +18,9 @@
 
 package me.itzsomebody.radon.asm;
 
-import me.itzsomebody.radon.Main;
-import me.itzsomebody.radon.Radon;
-import me.itzsomebody.radon.asm.accesses.Access;
-import me.itzsomebody.radon.asm.accesses.ClassAccess;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
@@ -30,8 +29,10 @@ import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import java.util.ArrayList;
-import java.util.List;
+import me.itzsomebody.radon.Main;
+import me.itzsomebody.radon.Radon;
+import me.itzsomebody.radon.asm.accesses.Access;
+import me.itzsomebody.radon.asm.accesses.ClassAccess;
 
 /**
  * Wrapper for ClassNodes.

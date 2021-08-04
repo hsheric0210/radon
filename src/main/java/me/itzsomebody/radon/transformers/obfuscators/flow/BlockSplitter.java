@@ -18,10 +18,10 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.flow;
 
-import org.objectweb.asm.tree.*;
-
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.objectweb.asm.tree.*;
 
 /**
  * This splits a method's block of code into two blocks: P1 and P2 and then inserting P2 behind P1.

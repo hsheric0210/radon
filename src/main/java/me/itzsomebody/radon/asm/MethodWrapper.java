@@ -20,14 +20,14 @@ package me.itzsomebody.radon.asm;
 
 import java.util.List;
 
-import me.itzsomebody.radon.utils.Constants;
-import org.objectweb.asm.commons.CodeSizeEvaluator;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 
 import me.itzsomebody.radon.asm.accesses.Access;
 import me.itzsomebody.radon.asm.accesses.MethodAccess;
+import me.itzsomebody.radon.utils.ASMUtils;
+import me.itzsomebody.radon.utils.Constants;
 
 /**
  * Wrapper for MethodNodes.
@@ -186,9 +186,7 @@ public class MethodWrapper
 	 */
 	public int getCodeSize()
 	{
-		final CodeSizeEvaluator cse = new CodeSizeEvaluator(null);
-		methodNode.accept(cse);
-		return cse.getMaxSize();
+		return ASMUtils.evaluateMaxSize(methodNode);
 	}
 
 	/**

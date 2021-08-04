@@ -22,12 +22,13 @@ import java.util.Locale;
 
 public enum FlowObfuscationSetting
 {
-	REPLACE_GOTO(new GotoReplacer()),
 	INSERT_BOGUS_SWITCH_JUMPS(new BogusSwitchJumpInserter()),
 	INSERT_BOGUS_JUMPS(new BogusJumpInserter()),
 	MUTILATE_NULL_CHECK(new NullCheckMutilator()),
+	MUTILATE_INSTANCEOF_CHECK(new InstanceOfCheckMutilator()),
 	SPLIT_BLOCKS(new BlockSplitter()),
-	FAKE_CATCH_BLOCKS(new FakeCatchBlocks());
+	FAKE_CATCH_BLOCKS(new FakeCatchBlocks()),
+	REPLACE_GOTO(new GotoReplacer());
 
 	private final FlowObfuscation flowObfuscation;
 

@@ -18,14 +18,14 @@
 
 package me.itzsomebody.radon.utils;
 
-import org.objectweb.asm.Type;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import org.objectweb.asm.Type;
 
 /**
  * Used to generate various randoms.
@@ -68,6 +68,7 @@ public final class RandomUtils
 	{
 		return arr[getRandomInt(arr.length)];
 	}
+
 	public static List<Integer> getRandomInts(final int startInclusive, final int endExclusive)
 	{
 		final List<Integer> ints = IntStream.range(startInclusive, endExclusive).boxed().collect(Collectors.toList()); // TODO: Replace this shitty algorithm to the better one

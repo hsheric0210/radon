@@ -18,15 +18,6 @@
 
 package me.itzsomebody.radon.transformers.miscellaneous;
 
-import me.itzsomebody.radon.asm.ClassWrapper;
-import me.itzsomebody.radon.config.Configuration;
-import me.itzsomebody.radon.config.ConfigurationSetting;
-import me.itzsomebody.radon.exceptions.RadonException;
-import me.itzsomebody.radon.exclusions.ExclusionType;
-import me.itzsomebody.radon.transformers.Transformer;
-import org.objectweb.asm.*;
-import org.objectweb.asm.tree.ClassNode;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -38,6 +29,16 @@ import java.util.jar.Manifest;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPOutputStream;
+
+import org.objectweb.asm.*;
+import org.objectweb.asm.tree.ClassNode;
+
+import me.itzsomebody.radon.asm.ClassWrapper;
+import me.itzsomebody.radon.config.Configuration;
+import me.itzsomebody.radon.config.ConfigurationSetting;
+import me.itzsomebody.radon.exceptions.RadonException;
+import me.itzsomebody.radon.exclusions.ExclusionType;
+import me.itzsomebody.radon.transformers.Transformer;
 
 /**
  * Packs classes and resources into a stub file which is unpacked on runtime.

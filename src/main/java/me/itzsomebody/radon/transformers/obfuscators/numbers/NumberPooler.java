@@ -18,19 +18,20 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.numbers;
 
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.*;
+
 import me.itzsomebody.radon.asm.ClassWrapper;
 import me.itzsomebody.radon.asm.MethodWrapper;
 import me.itzsomebody.radon.dictionaries.WrappedDictionary;
 import me.itzsomebody.radon.utils.ASMUtils;
 import me.itzsomebody.radon.utils.Constants;
 import me.itzsomebody.radon.utils.RandomUtils;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.*;
-
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class NumberPooler extends NumberObfuscation
 {

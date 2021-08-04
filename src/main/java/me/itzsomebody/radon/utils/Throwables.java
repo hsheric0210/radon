@@ -15,6 +15,7 @@ public final class Throwables
 
 	public static final String NullPointerException;
 	public static final String IllegalArgumentException;
+	public static final String ClassCastException;
 
 	static
 	{
@@ -29,7 +30,7 @@ public final class Throwables
 		throwables.add(ArithmeticException.class.getName().replace('.', '/'));
 		throwables.add(ArrayIndexOutOfBoundsException.class.getName().replace('.', '/'));
 		throwables.add(ArrayStoreException.class.getName().replace('.', '/'));
-		throwables.add(ClassCastException.class.getName().replace('.', '/'));
+		throwables.add(ClassCastException = ClassCastException.class.getName().replace('.', '/'));
 		throwables.add(ClassNotFoundException.class.getName().replace('.', '/'));
 		throwables.add(CloneNotSupportedException.class.getName().replace('.', '/'));
 		throwables.add(EnumConstantNotPresentException.class.getName().replace('.', '/'));

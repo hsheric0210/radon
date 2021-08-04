@@ -18,12 +18,13 @@
 
 package me.itzsomebody.radon.transformers.shrinkers;
 
-import me.itzsomebody.radon.asm.ClassWrapper;
-import me.itzsomebody.radon.utils.Constants;
-import org.objectweb.asm.Attribute;
-
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
+
+import org.objectweb.asm.Attribute;
+
+import me.itzsomebody.radon.asm.ClassWrapper;
+import me.itzsomebody.radon.utils.Constants;
 
 /**
  * Removes all unknown attributes from the classes.

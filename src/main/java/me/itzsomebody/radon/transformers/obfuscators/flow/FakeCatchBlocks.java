@@ -18,14 +18,14 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.flow;
 
-import me.itzsomebody.radon.Main;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.objectweb.asm.tree.*;
+
 import me.itzsomebody.radon.asm.ClassWrapper;
 import me.itzsomebody.radon.utils.ASMUtils;
 import me.itzsomebody.radon.utils.RandomUtils;
 import me.itzsomebody.radon.utils.Throwables;
-import org.objectweb.asm.tree.*;
-
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Traps random instructions using a fake handler. Essentially the same thing as Zelix's exception obfuscation or Dasho's fake try catches.

@@ -33,7 +33,7 @@ public class VirtCall extends Handler
 	{
 		final String ownerName = (String) operands[0];
 		final String name = (String) operands[1];
-		final String[] paramsAsStrings = Constants.VIRTCALL_PARAMETER_DELIMITER_PATTERN.split(((String) operands[2]));
+		final String[] paramsAsStrings = Constants.VIRTCALL_PARAMETER_DELIMITER_PATTERN.split((String) operands[2]);
 		final Class[] params;
 		if ("\u0000\u0000\u0000".equals(paramsAsStrings[0]))
 			params = Constants.ZERO_LENGTH_CLASS_ARRAY;

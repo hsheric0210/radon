@@ -18,17 +18,7 @@
 
 package me.itzsomebody.radon.transformers.obfuscators;
 
-import me.itzsomebody.radon.asm.ClassTree;
-import me.itzsomebody.radon.asm.FieldWrapper;
-import me.itzsomebody.radon.asm.MemberRemapper;
-import me.itzsomebody.radon.asm.MethodWrapper;
-import me.itzsomebody.radon.config.Configuration;
-import me.itzsomebody.radon.exclusions.ExclusionType;
-import me.itzsomebody.radon.transformers.Transformer;
-import me.itzsomebody.radon.utils.FileUtils;
-import org.objectweb.asm.commons.ClassRemapper;
-import org.objectweb.asm.commons.Remapper;
-import org.objectweb.asm.tree.ClassNode;
+import static me.itzsomebody.radon.config.ConfigurationSetting.RENAMER;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -40,7 +30,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
-import static me.itzsomebody.radon.config.ConfigurationSetting.RENAMER;
+import org.objectweb.asm.commons.ClassRemapper;
+import org.objectweb.asm.commons.Remapper;
+import org.objectweb.asm.tree.ClassNode;
+
+import me.itzsomebody.radon.asm.ClassTree;
+import me.itzsomebody.radon.asm.FieldWrapper;
+import me.itzsomebody.radon.asm.MemberRemapper;
+import me.itzsomebody.radon.asm.MethodWrapper;
+import me.itzsomebody.radon.config.Configuration;
+import me.itzsomebody.radon.exclusions.ExclusionType;
+import me.itzsomebody.radon.transformers.Transformer;
+import me.itzsomebody.radon.utils.FileUtils;
 
 /**
  * Transformer which renames classes and their members.

@@ -18,10 +18,10 @@
 
 package me.itzsomebody.radon.transformers.optimizers;
 
-import org.objectweb.asm.tree.MethodNode;
-
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
+
+import org.objectweb.asm.tree.MethodNode;
 
 /**
  * Removes all NOPs found. Do note that ASM's MethodWriter will replace unreachable instructions with NOPs so you might find NOPs in your program even after you ran this transformer on it.

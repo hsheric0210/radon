@@ -18,16 +18,18 @@
 
 package me.itzsomebody.radon.transformers.obfuscators;
 
-import me.itzsomebody.radon.config.Configuration;
-import me.itzsomebody.radon.exclusions.ExclusionType;
-import me.itzsomebody.radon.transformers.Transformer;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
+
 import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
+import me.itzsomebody.radon.config.Configuration;
+import me.itzsomebody.radon.exclusions.ExclusionType;
+import me.itzsomebody.radon.transformers.Transformer;
 
 /**
  * Renames bundled JAR resources to make their purpose less obvious.
@@ -43,6 +45,7 @@ public class ResourceRenamer extends Transformer
 	{
 		mappings = new HashMap<>();
 		final AtomicInteger counter = new AtomicInteger();
+		final Set<String> resourceNames = getResources().keySet();
 
 		getClassWrappers().stream().filter(this::included).forEach(classWrapper -> classWrapper.getMethods().stream().filter(methodWrapper -> included(methodWrapper) && methodWrapper.hasInstructions()).forEach(methodWrapper ->
 		{
@@ -58,7 +61,7 @@ public class ResourceRenamer extends Transformer
 				else
 					resourceName = classWrapper.getOriginalName().substring(0, classWrapper.getOriginalName().lastIndexOf('/') + 1) + s;
 
-				if (getResources().containsKey(resourceName))
+				if (resourceNames.contains(resourceName))
 					if (mappings.containsKey(resourceName))
 						((LdcInsnNode) insn).cst = mappings.get(resourceName);
 					else

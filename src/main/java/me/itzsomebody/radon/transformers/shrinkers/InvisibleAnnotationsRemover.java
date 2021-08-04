@@ -18,9 +18,9 @@
 
 package me.itzsomebody.radon.transformers.shrinkers;
 
-import org.objectweb.asm.tree.ClassNode;
-
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.objectweb.asm.tree.ClassNode;
 
 /**
  * Removes annotations invisible to the runtime from classes, methods and fields.

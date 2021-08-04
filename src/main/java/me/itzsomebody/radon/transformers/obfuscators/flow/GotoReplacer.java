@@ -18,17 +18,19 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.flow;
 
-import me.itzsomebody.radon.utils.ASMUtils;
-import me.itzsomebody.radon.utils.BogusJumps;
-import me.itzsomebody.radon.utils.RandomUtils;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.*;
-
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.*;
+
+import me.itzsomebody.radon.utils.ASMUtils;
+import me.itzsomebody.radon.utils.BogusJumps;
+import me.itzsomebody.radon.utils.RandomUtils;
+
 /**
- * Replaces GOTO instructions with an expression which is always true. This does nothing more than adding a one more edge to a control flow graph for every GOTO instruction present.
+ * Replaces GOTO instructions with an expression which is always true.
+ * This does nothing more than adding a one more edge to a control flow graph for every GOTO instruction present.
  *
  * @author ItzSomebody
  */

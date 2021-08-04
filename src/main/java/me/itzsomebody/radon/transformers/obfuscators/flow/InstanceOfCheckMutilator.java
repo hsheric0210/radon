@@ -34,7 +34,7 @@ import me.itzsomebody.radon.utils.Throwables;
  *
  * @author ItzSomebody
  */
-public class NullCheckMutilator extends FlowObfuscation
+public class InstanceOfCheckMutilator extends FlowObfuscation
 {
 	@Override
 	public void transform()
@@ -63,45 +63,49 @@ public class NullCheckMutilator extends FlowObfuscation
 				if (leeway < 10000)
 					break;
 
-				if (insn.getOpcode() == IFNULL || insn.getOpcode() == IFNONNULL)
+				if (insn.getOpcode() == INSTANCEOF && insn.getNext() != null)
 				{
-					final JumpInsnNode jump = (JumpInsnNode) insn;
-					final LabelNode jumpTarget = jump.label;
+					final TypeInsnNode instCheck = (TypeInsnNode) insn;
 
-					if (!emptyAt.contains(jumpTarget))
-						// When an exception is caught, the stack is first cleared before pushing the exception instance
-						// when the instruction pointer is moved into the catch block. So we have to make sure the stack
-						// is empty at the jump site if we're gonna swap out the ifnull/ifnonnull with a try-catch
-						continue;
+					final int opcode = insn.getNext().getOpcode();
+					if (opcode == IFEQ || opcode == IFNE)
+					{
+						final JumpInsnNode jump = (JumpInsnNode) insn.getNext();
+						final LabelNode jumpTarget = jump.label;
 
-					final LabelNode trapStart = new LabelNode();
-					final LabelNode trapEnd = new LabelNode();
-					final LabelNode catchStart = new LabelNode();
-					final LabelNode catchEnd = new LabelNode();
+						if (!emptyAt.contains(jumpTarget))
+							continue;
 
-					final InsnList insns = new InsnList();
-					insns.add(trapStart);
-					insns.add(ASMUtils.createNPERaiser()); // Inject NPE Raiser
-					insns.add(new InsnNode(POP)); // Ignore the return value of method
-					insns.add(trapEnd);
+						final LabelNode trapStart = new LabelNode();
+						final LabelNode trapEnd = new LabelNode();
+						final LabelNode catchStart = new LabelNode();
+						final LabelNode catchEnd = new LabelNode();
 
-					insns.add(new JumpInsnNode(GOTO, insn.getOpcode() == IFNULL ? catchEnd : jumpTarget));
-					insns.add(catchStart);
-					insns.add(new InsnNode(POP)); // Ignore the catch block parameter
-					if (insn.getOpcode() == IFNULL)
-						insns.add(new JumpInsnNode(GOTO, jumpTarget));
-					insns.add(catchEnd);
+						final InsnList insns = new InsnList();
+						insns.add(trapStart);
+						insns.add(new TypeInsnNode(CHECKCAST, instCheck.desc));
+						insns.add(new InsnNode(POP)); // Ignore the return value of method
+						insns.add(trapEnd);
 
-					methodNode.instructions.insert(insn, insns);
-					methodNode.instructions.remove(insn);
-					methodNode.tryCatchBlocks.add(0, new TryCatchBlockNode(trapStart, trapEnd, catchStart, Throwables.NullPointerException));
+						insns.add(new JumpInsnNode(GOTO, opcode == IFEQ ? catchEnd : jumpTarget));
+						insns.add(catchStart);
+						insns.add(new InsnNode(POP)); // Ignore the catch block parameter
+						if (opcode == IFEQ)
+							insns.add(new JumpInsnNode(GOTO, jumpTarget));
+						insns.add(catchEnd);
 
-					counter.incrementAndGet();
-					leeway -= ASMUtils.evaluateMaxSize(insns);
+						methodNode.instructions.insert(insn, insns);
+						methodNode.instructions.remove(insn);
+						methodNode.instructions.remove(jump);
+						methodNode.tryCatchBlocks.add(0, new TryCatchBlockNode(trapStart, trapEnd, catchStart, Throwables.ClassCastException));
+
+						counter.incrementAndGet();
+						leeway -= ASMUtils.evaluateMaxSize(insns);
+					}
 				}
 			}
 		}));
 
-		info("+ Mutilated " + counter.get() + " null checks");
+		info("+ Mutilated " + counter.get() + " instanceof checks");
 	}
 }

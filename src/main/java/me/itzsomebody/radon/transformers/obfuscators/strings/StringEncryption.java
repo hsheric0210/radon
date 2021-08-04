@@ -18,17 +18,7 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.strings;
 
-import me.itzsomebody.radon.asm.ClassWrapper;
-import me.itzsomebody.radon.config.Configuration;
-import me.itzsomebody.radon.exclusions.ExclusionType;
-import me.itzsomebody.radon.transformers.Transformer;
-import me.itzsomebody.radon.utils.ASMUtils;
-import me.itzsomebody.radon.utils.ArrayUtils;
-import me.itzsomebody.radon.utils.RandomUtils;
-import org.objectweb.asm.FieldVisitor;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.tree.*;
+import static me.itzsomebody.radon.config.ConfigurationSetting.STRING_ENCRYPTION;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -36,7 +26,18 @@ import java.util.List;
 import java.util.StringJoiner;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static me.itzsomebody.radon.config.ConfigurationSetting.STRING_ENCRYPTION;
+import org.objectweb.asm.FieldVisitor;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.tree.*;
+
+import me.itzsomebody.radon.asm.ClassWrapper;
+import me.itzsomebody.radon.config.Configuration;
+import me.itzsomebody.radon.exclusions.ExclusionType;
+import me.itzsomebody.radon.transformers.Transformer;
+import me.itzsomebody.radon.utils.ASMUtils;
+import me.itzsomebody.radon.utils.ArrayUtils;
+import me.itzsomebody.radon.utils.RandomUtils;
 
 /**
  * Abstract class for string encryption transformers.

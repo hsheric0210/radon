@@ -18,17 +18,18 @@
 
 package me.itzsomebody.radon.transformers.obfuscators;
 
+import static me.itzsomebody.radon.config.ConfigurationSetting.ANTI_DEBUG;
+
+import java.util.Locale;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.objectweb.asm.tree.*;
+
 import me.itzsomebody.radon.asm.ClassWrapper;
 import me.itzsomebody.radon.config.Configuration;
 import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.transformers.Transformer;
 import me.itzsomebody.radon.utils.RandomUtils;
-import org.objectweb.asm.tree.*;
-
-import java.util.Locale;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static me.itzsomebody.radon.config.ConfigurationSetting.ANTI_DEBUG;
 
 /**
  * Blocks debugging options on the commandline.

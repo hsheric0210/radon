@@ -18,19 +18,20 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.strings;
 
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.*;
+
 import me.itzsomebody.radon.asm.ClassWrapper;
 import me.itzsomebody.radon.asm.MethodWrapper;
 import me.itzsomebody.radon.dictionaries.WrappedDictionary;
 import me.itzsomebody.radon.utils.ASMUtils;
 import me.itzsomebody.radon.utils.Constants;
 import me.itzsomebody.radon.utils.RandomUtils;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.*;
-
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 // TODO: Make more customizable(configurable)
 public class StringPooler extends StringEncryption
@@ -175,8 +176,13 @@ public class StringPooler extends StringEncryption
 	private void createInitializer(final List<String> mappings, final ClassWrapper classWrapper, final WrappedDictionary methodDictionary, final String fieldName)
 	{
 		final List<MethodNode> poolInits = createStringPoolMethod(classWrapper.getName(), methodDictionary, fieldName, mappings);
-		for (final MethodNode mn : poolInits)
+		for (int i = 0, poolInitsSize = poolInits.size(); i < poolInitsSize; i++)
+		{
+			final MethodNode mn = poolInits.get(i);
 			classWrapper.addMethod(mn);
+			final int finalI = i;
+			verboseInfo(() -> String.format("String pool initializer method #%d name: %s", finalI, mn.name));
+		}
 
 		final Optional<MethodNode> staticBlock = ASMUtils.findMethod(classWrapper.getClassNode(), "<clinit>", "()V");
 		if (staticBlock.isPresent())

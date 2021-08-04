@@ -18,13 +18,11 @@
 
 package me.itzsomebody.radon.transformers.obfuscators;
 
-import me.itzsomebody.radon.asm.ClassWrapper;
-import me.itzsomebody.radon.asm.MethodWrapper;
-import me.itzsomebody.radon.config.Configuration;
-import me.itzsomebody.radon.exceptions.RadonException;
-import me.itzsomebody.radon.exclusions.ExclusionType;
-import me.itzsomebody.radon.transformers.Transformer;
-import me.itzsomebody.radon.utils.RandomUtils;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
+
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
@@ -32,13 +30,17 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
+import me.itzsomebody.radon.asm.ClassWrapper;
+import me.itzsomebody.radon.asm.MethodWrapper;
+import me.itzsomebody.radon.config.Configuration;
+import me.itzsomebody.radon.exceptions.RadonException;
+import me.itzsomebody.radon.exclusions.ExclusionType;
+import me.itzsomebody.radon.transformers.Transformer;
+import me.itzsomebody.radon.utils.RandomUtils;
 
 /**
- * This applies passive integrity checking to the application with a special type of string encryption. todo: scrap and remake
+ * This applies passive integrity checking to the application with a special type of string encryption.
+ * todo: scrap and remake
  *
  * @author ItzSomebody
  */

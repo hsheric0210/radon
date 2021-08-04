@@ -18,14 +18,6 @@
 
 package me.itzsomebody.radon;
 
-import me.itzsomebody.radon.cli.CommandArgumentsParser;
-import me.itzsomebody.radon.config.Configuration;
-import me.itzsomebody.radon.config.ObfuscationConfiguration;
-import me.itzsomebody.radon.utils.Constants;
-import me.itzsomebody.radon.utils.CustomOutputStream;
-import me.itzsomebody.radon.utils.IOUtils;
-import me.itzsomebody.radon.utils.WatermarkUtils;
-
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
@@ -34,6 +26,14 @@ import java.util.Date;
 import java.util.Objects;
 import java.util.logging.*;
 import java.util.zip.ZipFile;
+
+import me.itzsomebody.radon.cli.CommandArgumentsParser;
+import me.itzsomebody.radon.config.Configuration;
+import me.itzsomebody.radon.config.ObfuscationConfiguration;
+import me.itzsomebody.radon.utils.Constants;
+import me.itzsomebody.radon.utils.CustomOutputStream;
+import me.itzsomebody.radon.utils.IOUtils;
+import me.itzsomebody.radon.utils.WatermarkUtils;
 
 /**
  * Main class of obfuscator. \o/
