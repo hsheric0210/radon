@@ -25,10 +25,12 @@ public enum FlowObfuscationSetting
 	INSERT_BOGUS_SWITCH_JUMPS(new BogusSwitchJumpInserter()),
 	INSERT_BOGUS_JUMPS(new BogusJumpInserter()),
 	MUTILATE_NULL_CHECK(new NullCheckMutilator()),
-	MUTILATE_INSTANCEOF_CHECK(new InstanceOfCheckMutilator()),
+	MUTILATE_INSTANCEOF_CHECK(new InstanceofCheckMutilator()),
 	SPLIT_BLOCKS(new BlockSplitter()),
 	FAKE_CATCH_BLOCKS(new FakeCatchBlocks()),
-	REPLACE_GOTO(new GotoReplacer());
+	REPLACE_GOTO(new GotoReplacer()),
+	MUTILATE_RETURN(new ReturnMutilator()),
+	MUTILATE_LOCAL_VARIABLES(new LocalVariableMutilator());
 
 	private final FlowObfuscation flowObfuscation;
 

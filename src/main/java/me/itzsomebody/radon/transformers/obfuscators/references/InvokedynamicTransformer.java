@@ -31,7 +31,7 @@ import me.itzsomebody.radon.utils.ASMUtils;
 import me.itzsomebody.radon.utils.Constants;
 
 /**
- * Hides method invocations and field accesses by swapping them out with an invokedynamic instruction.
+ * Hides INVOKESTATICs, INVOKEVIRTUALs, INVOKESPECIALs, GETSTATIC, PUTSTATIC, GETFIELD and PUTFIELD operations by swapping them out with an invokedynamic instruction.
  *
  * @author ItzSomebody
  */

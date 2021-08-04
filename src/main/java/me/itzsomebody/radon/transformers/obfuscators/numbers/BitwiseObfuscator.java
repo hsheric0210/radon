@@ -217,7 +217,7 @@ public class BitwiseObfuscator extends NumberObfuscation
 		builder.append(" [current: ").append(current).append(", delta: ").append(current - originalNum).append(']');
 		if (originalNum != current)
 		{
-			verboseWarn(builder.toString());
+			verboseWarn(builder::toString);
 			return ASMUtils.singletonList(ASMUtils.getNumberInsn(originalNum));
 		}
 
@@ -333,7 +333,7 @@ public class BitwiseObfuscator extends NumberObfuscation
 		builder.append(" [current: ").append(current).append(", delta: ").append(current - originalNum).append(']');
 		if (originalNum != current)
 		{
-			verboseWarn(builder.toString());
+			verboseWarn(builder::toString);
 			return ASMUtils.singletonList(ASMUtils.getNumberInsn(originalNum));
 		}
 

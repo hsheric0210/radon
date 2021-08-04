@@ -29,7 +29,7 @@ import me.itzsomebody.radon.utils.ASMUtils;
 import me.itzsomebody.radon.utils.RandomUtils;
 
 /**
- * Splits number constants into arithmetic operations.
+ * Splits number constants into random arithmetic operations.
  *
  * @author ItzSomebody
  */
@@ -199,7 +199,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 
 		if (originalNum != current)
 		{
-			verboseWarn(builder.toString());
+			verboseWarn(builder::toString);
 			return ASMUtils.singletonList(ASMUtils.getNumberInsn(originalNum));
 		}
 
@@ -301,7 +301,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 
 		if (originalNum != current)
 		{
-			verboseWarn(builder.toString());
+			verboseWarn(builder::toString);
 			return ASMUtils.singletonList(ASMUtils.getNumberInsn(originalNum));
 		}
 
@@ -416,7 +416,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 
 		if (!(Float.isNaN(originalNum) && Float.isNaN(current)) && originalNum - current > 0.000001F)
 		{
-			verboseWarn(builder.toString());
+			verboseWarn(builder::toString);
 			return ASMUtils.singletonList(ASMUtils.getNumberInsn(originalNum));
 		}
 
@@ -530,7 +530,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 
 		if (!(Double.isNaN(originalNum) && Double.isNaN(current)) && originalNum - current > 0.00000001)
 		{
-			verboseWarn(builder.toString());
+			verboseWarn(builder::toString);
 			return ASMUtils.singletonList(ASMUtils.getNumberInsn(originalNum));
 		}
 

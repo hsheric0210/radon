@@ -18,14 +18,14 @@
 
 package me.itzsomebody.radon.transformers.obfuscators;
 
-import static me.itzsomebody.radon.config.ConfigurationSetting.HIDE_CODE;
-
 import java.util.concurrent.atomic.AtomicInteger;
 
 import me.itzsomebody.radon.config.Configuration;
 import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.transformers.Transformer;
 import me.itzsomebody.radon.utils.ASMUtils;
+
+import static me.itzsomebody.radon.config.ConfigurationSetting.HIDE_CODE;
 
 /**
  * Adds a synthetic modifier and bridge modifier if possible to attempt to hide code against some lower-quality decompilers.

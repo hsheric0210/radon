@@ -29,7 +29,8 @@ import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.transformers.Transformer;
 
 /**
- * Adds {@code @} annotation to all methods Fernflower refuses to decompile the class. Java will crash on attempt to parse annotations
+ * Adds {@code @} annotation to all methods Fernflower refuses to decompile the class.
+ * WARNING: Java will crash on attempt to parse annotations.
  *
  * @author xDark
  */

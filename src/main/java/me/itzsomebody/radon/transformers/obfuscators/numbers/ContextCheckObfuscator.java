@@ -31,7 +31,8 @@ import me.itzsomebody.radon.utils.ASMUtils;
 import me.itzsomebody.radon.utils.RandomUtils;
 
 /**
- * XORs number constants using stacktrace variables as keys. Be super careful with this because it WILL SLOW STUFF DOWN BY A LOT.
+ * XORs number constants using stacktrace variables as keys.
+ * Be super careful with this because it WILL SLOW STUFF DOWN BY A LOT.
  *
  * @author ItzSomebody
  */

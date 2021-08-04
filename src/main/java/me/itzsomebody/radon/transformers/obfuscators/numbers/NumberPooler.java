@@ -206,7 +206,7 @@ public class NumberPooler extends NumberObfuscation
 								counter.incrementAndGet();
 							}
 							else
-								verboseWarn(String.format("! Integer %d not registered in integerMappings! This can't be happened!!!", value));
+								verboseWarn(() -> String.format("! Integer %d not registered in integerMappings! This can't be happened!!!", value));
 						});
 
 					if (poolLongs)
@@ -224,7 +224,7 @@ public class NumberPooler extends NumberObfuscation
 								counter.incrementAndGet();
 							}
 							else
-								verboseWarn(String.format("! Long %d not registered in integerMappings! This can't be happened!!!", value));
+								verboseWarn(() -> String.format("! Long %d not registered in integerMappings! This can't be happened!!!", value));
 						});
 
 					if (poolFloats)
@@ -242,7 +242,7 @@ public class NumberPooler extends NumberObfuscation
 								counter.incrementAndGet();
 							}
 							else
-								verboseWarn(String.format("! Float %.6f not registered in integerMappings! This can't be happened!!!", value));
+								verboseWarn(() -> String.format("! Float %.6f not registered in integerMappings! This can't be happened!!!", value));
 						});
 
 					if (poolDoubles)
@@ -260,7 +260,7 @@ public class NumberPooler extends NumberObfuscation
 								counter.incrementAndGet();
 							}
 							else
-								verboseWarn(String.format("! Float %.16f not registered in integerMappings! This can't be happened!!!", value));
+								verboseWarn(() -> String.format("! Float %.16f not registered in integerMappings! This can't be happened!!!", value));
 						});
 				});
 			});
@@ -420,7 +420,7 @@ public class NumberPooler extends NumberObfuscation
 								counter.incrementAndGet();
 							}
 							else
-								verboseWarn(String.format("! Integer %d not registered in integerMappings! This can't be happened!!!", value));
+								verboseWarn(() -> String.format("! Integer %d not registered in integerMappings! This can't be happened!!!", value));
 						});
 
 					if (poolLongs)
@@ -438,7 +438,7 @@ public class NumberPooler extends NumberObfuscation
 								counter.incrementAndGet();
 							}
 							else
-								verboseWarn(String.format("! Long %d not registered in integerMappings! This can't be happened!!!", value));
+								verboseWarn(() -> String.format("! Long %d not registered in integerMappings! This can't be happened!!!", value));
 						});
 
 					if (poolFloats)
@@ -456,7 +456,7 @@ public class NumberPooler extends NumberObfuscation
 								counter.incrementAndGet();
 							}
 							else
-								verboseWarn(String.format("! Integer %.6f not registered in integerMappings! This can't be happened!!!", value));
+								verboseWarn(() -> String.format("! Integer %.6f not registered in integerMappings! This can't be happened!!!", value));
 						});
 
 					if (poolDoubles)
@@ -474,7 +474,7 @@ public class NumberPooler extends NumberObfuscation
 								counter.incrementAndGet();
 							}
 							else
-								verboseWarn(String.format("! Integer %.16f not registered in integerMappings! This can't be happened!!!", value));
+								verboseWarn(() -> String.format("! Integer %.16f not registered in integerMappings! This can't be happened!!!", value));
 						});
 				});
 
@@ -489,13 +489,8 @@ public class NumberPooler extends NumberObfuscation
 	{
 		final List<MethodNode> poolInits = createNumberPoolMethod(integerMappings, longMappings, floatMappings, doubleMappings, classWrapper, methodDictionary, integerPoolFieldName, longPoolFieldName, floatPoolFieldName, doublePoolFieldName);
 
-		for (int i = 0, poolInitsSize = poolInits.size(); i < poolInitsSize; i++)
-		{
-			final MethodNode mn = poolInits.get(i);
+		for (final MethodNode mn : poolInits)
 			classWrapper.addMethod(mn);
-			final int finalI = i;
-			verboseInfo(() -> String.format("Number pool initializer method #%d name: %s", finalI, mn.name));
-		}
 
 		final Optional<MethodNode> staticBlock = ASMUtils.findMethod(classWrapper.getClassNode(), "<clinit>", "()V");
 		if (staticBlock.isPresent())

@@ -35,6 +35,10 @@ import me.itzsomebody.radon.utils.ASMUtils;
 import me.itzsomebody.radon.utils.Constants;
 import me.itzsomebody.radon.utils.RandomUtils;
 
+/**
+ * Essentially the same thing as ADSS (https://www.sable.mcgill.ca/JBCO/examples.html#ADSS)
+ */
+
 public class BogusSwitchJumpInserter extends FlowObfuscation
 {
 	private static final int CLASS_PRED_ACCESS = ACC_PRIVATE | ACC_STATIC | ACC_FINAL | ACC_SYNTHETIC;
@@ -120,5 +124,11 @@ public class BogusSwitchJumpInserter extends FlowObfuscation
 		});
 
 		info("+ Inserted " + counter.get() + " bogus switch jumps");
+	}
+
+	@Override
+	public String getName()
+	{
+		return "Bogus Switch Jump Inserter";
 	}
 }

@@ -140,10 +140,10 @@ public abstract class Transformer implements Opcodes
 				Main.info(String.format("[VERBOSE] [%1$s] %2$s", getName(), message));
 	}
 
-	protected final void verboseWarn(final String verboseMessage)
+	protected final void verboseWarn(final Supplier<String> verboseMessage)
 	{
 		if (enableVerboseLogging())
-			Main.warn(String.format("[VERBOSE] [%1$s] %2$s", getName(), verboseMessage));
+			Main.warn(String.format("[VERBOSE] [%1$s] %2$s", getName(), verboseMessage.get()));
 	}
 
 	protected final void info(final String message)

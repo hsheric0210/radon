@@ -49,7 +49,9 @@ import me.itzsomebody.vm.datatypes.JObject;
 import me.itzsomebody.vm.datatypes.JWrapper;
 
 /**
- * Translates Java bytecode into a custom bytecode instruction set. Piece of trash and hackiest thing ever. TODO: rewrite
+ * Translates Java bytecode into a custom bytecode instruction set.
+ * Piece of trash and hackiest thing ever.
+ * TODO: rewrite
  *
  * @author ItzSomebody
  */

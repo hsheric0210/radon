@@ -404,6 +404,37 @@ public final class ASMUtils implements Opcodes
 		return Objects.requireNonNull(classNode, "classNode").methods.stream().filter(methodNode -> methodName.equals(methodNode.name) && methodDescriptor.equals(methodNode.desc)).findFirst();
 	}
 
+	public static Type getType(final VarInsnNode abstractInsnNode)
+	{
+		final int offset;
+
+		final int opcode = abstractInsnNode.getOpcode();
+		if (opcode >= ISTORE && opcode <= ASTORE)
+			offset = opcode - ISTORE;
+		else if (opcode >= ILOAD && opcode <= ALOAD)
+			offset = opcode - ILOAD;
+		else if (opcode == RET)
+			throw new UnsupportedOperationException("RET is not supported");
+		else
+			throw new UnsupportedOperationException("VarInsnNode has unknown opcode: " + opcode);
+
+		switch (offset)
+		{
+			case 0:
+				return Type.INT_TYPE;
+			case 1:
+				return Type.LONG_TYPE;
+			case 2:
+				return Type.FLOAT_TYPE;
+			case 3:
+				return Type.DOUBLE_TYPE;
+			case 4:
+				return Type.getType("Ljava/lang/Object;");
+		}
+
+		throw new UnsupportedOperationException("Unknown offset: " + offset);
+	}
+
 	private ASMUtils()
 	{
 	}

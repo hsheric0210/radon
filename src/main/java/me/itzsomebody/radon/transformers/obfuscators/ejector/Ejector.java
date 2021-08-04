@@ -18,8 +18,6 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.ejector;
 
-import static me.itzsomebody.radon.config.ConfigurationSetting.EJECTOR;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -36,6 +34,8 @@ import me.itzsomebody.radon.transformers.Transformer;
 import me.itzsomebody.radon.transformers.obfuscators.ejector.phases.AbstractEjectPhase;
 import me.itzsomebody.radon.transformers.obfuscators.ejector.phases.FieldSetEjector;
 import me.itzsomebody.radon.transformers.obfuscators.ejector.phases.MethodCallEjector;
+
+import static me.itzsomebody.radon.config.ConfigurationSetting.EJECTOR;
 
 /**
  * Extracts parts of code to individual methods.
@@ -76,6 +76,13 @@ public class Ejector extends Transformer
 			final EjectorContext ejectorContext = new EjectorContext(counter, classWrapper, junkArguments, junkArgumentStrength);
 			getPhases(ejectorContext).forEach(ejectPhase ->
 			{
+				// Original author of this workaround: superblaubeere27
+				// https://github.com/superblaubeere27/obfuscator/blob/master/obfuscator-core/src/main/java/me/superblaubeere27/jobf/processors/flowObfuscation/LocalVariableMangler.java
+				final int maxStack = methodWrapper.getMaxStack();
+				final int maxLocals = methodWrapper.getMaxLocals();
+				methodWrapper.setMaxStack(1000);
+				methodWrapper.setMaxLocals(1000);
+
 				final ConstantAnalyzer constantAnalyzer = new ConstantAnalyzer();
 				try
 				{
@@ -88,6 +95,9 @@ public class Ejector extends Transformer
 				{
 					warn("Can't analyze method: " + classWrapper.getOriginalName() + "::" + methodWrapper.getOriginalName() + methodWrapper.getOriginalDescription(), e);
 				}
+
+				methodWrapper.setMaxStack(maxStack);
+				methodWrapper.setMaxLocals(maxLocals);
 			});
 		});
 	}

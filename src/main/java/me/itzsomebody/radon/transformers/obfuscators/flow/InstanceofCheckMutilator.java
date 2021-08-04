@@ -30,11 +30,11 @@ import me.itzsomebody.radon.utils.ASMUtils;
 import me.itzsomebody.radon.utils.Throwables;
 
 /**
- * Replaces IFNONNULL and IFNULL with a semantically equivalent try-catch block. This relies on the fact that {@link NullPointerException} is thrown when a method is invoked upon null. Very similar to https://www.sable.mcgill.ca/JBCO/examples.html#RIITCB
+ * Replaces INSTANCEOF + IF<EQ/NE> with a semantically equivalent try-catch block.
  *
- * @author ItzSomebody
+ * @author ItzSomebody, hsheric0210
  */
-public class InstanceOfCheckMutilator extends FlowObfuscation
+public class InstanceofCheckMutilator extends FlowObfuscation
 {
 	@Override
 	public void transform()
@@ -107,5 +107,11 @@ public class InstanceOfCheckMutilator extends FlowObfuscation
 		}));
 
 		info("+ Mutilated " + counter.get() + " instanceof checks");
+	}
+
+	@Override
+	public String getName()
+	{
+		return "Instanceof Check Mutilator";
 	}
 }

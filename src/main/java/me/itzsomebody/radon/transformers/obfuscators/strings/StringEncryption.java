@@ -18,8 +18,6 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.strings;
 
-import static me.itzsomebody.radon.config.ConfigurationSetting.STRING_ENCRYPTION;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -38,6 +36,8 @@ import me.itzsomebody.radon.transformers.Transformer;
 import me.itzsomebody.radon.utils.ASMUtils;
 import me.itzsomebody.radon.utils.ArrayUtils;
 import me.itzsomebody.radon.utils.RandomUtils;
+
+import static me.itzsomebody.radon.config.ConfigurationSetting.STRING_ENCRYPTION;
 
 /**
  * Abstract class for string encryption transformers.
@@ -104,7 +104,8 @@ public class StringEncryption extends Transformer
 			{
 				if (leeway < 10000)
 				{
-					verboseWarn("! Skipped method " + methodWrapper.getOriginalName() + " because of insufficient leeway (leeway: " + leeway + ")");
+					final int finalLeeway = leeway;
+					verboseWarn(() -> "! Skipped method " + methodWrapper.getOriginalName() + " because of insufficient leeway (leeway: " + finalLeeway + ")");
 					break;
 				}
 

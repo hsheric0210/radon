@@ -26,7 +26,7 @@ import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.transformers.Transformer;
 
 /**
- * Removes tableswitch and *const_*
+ * Removes tableswitches and *const_*
  */
 public class InstructionSetReducer extends Transformer
 {

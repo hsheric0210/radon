@@ -36,7 +36,8 @@ import me.itzsomebody.radon.utils.RandomUtils;
  */
 public class GotoReplacer extends FlowObfuscation
 {
-	private static final int PRED_ACCESS = ACC_PUBLIC | ACC_STATIC | ACC_FINAL;
+	private static final int CLASS_PRED_ACCESS = ACC_PRIVATE | ACC_STATIC | ACC_FINAL | ACC_SYNTHETIC;
+	private static final int INTERFACE_PRED_ACCESS = ACC_PUBLIC | ACC_STATIC | ACC_FINAL;
 
 	@Override
 	public void transform()
@@ -51,7 +52,7 @@ public class GotoReplacer extends FlowObfuscation
 			final String predicateDescriptor = predicateType.getDescriptor();
 			final Object predicateInitialValue = RandomUtils.getRandomBoolean() ? RandomUtils.getRandomValue(predicateType) : null;
 
-			final FieldNode predicate = new FieldNode(PRED_ACCESS, fieldDictionary.uniqueRandomString(), predicateDescriptor, null, predicateInitialValue);
+			final FieldNode predicate = new FieldNode((cw.getAccessFlags() & ACC_INTERFACE) != 0 ? INTERFACE_PRED_ACCESS : CLASS_PRED_ACCESS, fieldDictionary.uniqueRandomString(), predicateDescriptor, null, predicateInitialValue);
 
 			cw.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
 			{
@@ -107,5 +108,11 @@ public class GotoReplacer extends FlowObfuscation
 		});
 
 		info("+ Swapped " + counter.get() + " GOTO instructions");
+	}
+
+	@Override
+	public String getName()
+	{
+		return "GOTO Replacer";
 	}
 }

@@ -173,6 +173,16 @@ public class MethodWrapper
 		methodNode.maxLocals = maxLocals;
 	}
 
+	public int getMaxStack()
+	{
+		return methodNode.maxStack;
+	}
+
+	public void setMaxStack(final int maxStack)
+	{
+		methodNode.maxStack = maxStack;
+	}
+
 	/**
 	 * @return true if the wrapped {@link MethodNode} represented by this wrapper contains instructions.
 	 */

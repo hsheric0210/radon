@@ -33,7 +33,6 @@ import me.itzsomebody.radon.utils.ASMUtils;
 import me.itzsomebody.radon.utils.Constants;
 import me.itzsomebody.radon.utils.RandomUtils;
 
-// TODO: Make more customizable(configurable)
 public class StringPooler extends StringEncryption
 {
 	private final StringEncryption master;
@@ -104,7 +103,7 @@ public class StringPooler extends StringEncryption
 					counter.incrementAndGet();
 				}
 				else
-					verboseWarn(String.format("! String %s not registered in mappings! This can't be happened!!!", ldc.cst));
+					verboseWarn(() -> String.format("! String %s not registered in mappings! This can't be happened!!!", ldc.cst));
 			})));
 
 			if (!reverseMappings.isEmpty())

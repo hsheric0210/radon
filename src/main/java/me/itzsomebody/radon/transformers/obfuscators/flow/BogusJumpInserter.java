@@ -33,8 +33,9 @@ import me.itzsomebody.radon.utils.BogusJumps;
 import me.itzsomebody.radon.utils.RandomUtils;
 
 /**
- * Inserts opaque predicates which always evaluate to false but are meant to insert significantly more edges to a control flow graph. To determine where we should insert the conditions, we use an analyzer to determine where the stack is empty. This leads
- * to less complication when applying obfuscation.
+ * Inserts opaque predicates which always evaluate to false but are meant to insert significantly more edges to a control flow graph.
+ * To determine where we should insert the conditions, we use an analyzer to determine where the stack is empty.
+ * This leads to less complication when applying obfuscation.
  *
  * @author ItzSomebody
  */
@@ -48,7 +49,7 @@ public class BogusJumpInserter extends FlowObfuscation
 	{
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(this::included).forEach(classWrapper ->
+		getClassWrappers().stream().filter(this::included).forEach(cw ->
 		{
 			final AtomicBoolean shouldAdd = new AtomicBoolean();
 
@@ -56,9 +57,9 @@ public class BogusJumpInserter extends FlowObfuscation
 			final String predicateDescriptor = predicateType.getDescriptor();
 			final Object predicateInitialValue = RandomUtils.getRandomFloat() > 0.2F ? RandomUtils.getRandomValue(predicateType) : null;
 
-			final FieldNode predicate = new FieldNode((classWrapper.getAccessFlags() & ACC_INTERFACE) != 0 ? INTERFACE_PRED_ACCESS : CLASS_PRED_ACCESS, fieldDictionary.uniqueRandomString(), predicateDescriptor, null, predicateInitialValue);
+			final FieldNode predicate = new FieldNode((cw.getAccessFlags() & ACC_INTERFACE) != 0 ? INTERFACE_PRED_ACCESS : CLASS_PRED_ACCESS, fieldDictionary.uniqueRandomString(), predicateDescriptor, null, predicateInitialValue);
 
-			classWrapper.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
+			cw.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
 			{
 				final InsnList insns = mw.getInstructions();
 
@@ -78,7 +79,7 @@ public class BogusJumpInserter extends FlowObfuscation
 				catch (final StackEmulationException e)
 				{
 					e.printStackTrace();
-					throw new RadonException(String.format("Error happened while trying to emulate the stack of %s.%s%s", classWrapper.getName(), mw.getName(), mw.getDescription()));
+					throw new RadonException(String.format("Error happened while trying to emulate the stack of %s.%s%s", cw.getName(), mw.getName(), mw.getDescription()));
 				}
 
 				final Set<AbstractInsnNode> emptyAt = shzf.getEmptyAt();
@@ -147,15 +148,21 @@ public class BogusJumpInserter extends FlowObfuscation
 							break;
 					}
 
-					insns.insert(new FieldInsnNode(GETSTATIC, classWrapper.getName(), predicate.name, predicateDescriptor));
+					insns.insert(new FieldInsnNode(GETSTATIC, cw.getName(), predicate.name, predicateDescriptor));
 				}
 			});
 
 			if (shouldAdd.get())
-				classWrapper.addField(predicate);
+				cw.addField(predicate);
 		});
 
 		info(String.format("+ Inserted %d bogus jumps", counter.get()));
+	}
+
+	@Override
+	public String getName()
+	{
+		return "Bogus Jump Inserter";
 	}
 
 	/**
