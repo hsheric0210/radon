@@ -127,7 +127,7 @@ public class BitwiseObfuscator extends NumberObfuscation
 					operand = randomInt(current);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
-					insns.add(new InsnNode(Opcodes.IAND));
+					insns.add(new InsnNode(IAND));
 					current &= operand;
 					builder.append(" & ").append(operand);
 					break;
@@ -137,7 +137,7 @@ public class BitwiseObfuscator extends NumberObfuscation
 					operand = randomInt(current);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
-					insns.add(new InsnNode(Opcodes.IOR));
+					insns.add(new InsnNode(IOR));
 					current |= operand;
 					builder.append(" | ").append(operand);
 					break;
@@ -147,15 +147,15 @@ public class BitwiseObfuscator extends NumberObfuscation
 					operand = randomInt(current);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
-					insns.add(new InsnNode(Opcodes.IXOR));
+					insns.add(new InsnNode(IXOR));
 					current ^= operand;
 					builder.append(" ^ ").append(operand);
 					break;
 				}
 				case 3:
 				{
-					insns.add(new InsnNode(Opcodes.ICONST_M1));
-					insns.add(new InsnNode(Opcodes.IXOR));
+					insns.add(new InsnNode(ICONST_M1));
+					insns.add(new InsnNode(IXOR));
 
 					current = ~current;
 					builder.append(" ^ ").append(-1);
@@ -170,7 +170,7 @@ public class BitwiseObfuscator extends NumberObfuscation
 					operand = RandomUtils.getRandomInt(1, j > 0 ? j : 0x1E);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
-					insns.add(new InsnNode(Opcodes.ISHL));
+					insns.add(new InsnNode(ISHL));
 					current <<= operand;
 					builder.append(" << ").append(operand);
 					break;
@@ -184,7 +184,7 @@ public class BitwiseObfuscator extends NumberObfuscation
 					operand = RandomUtils.getRandomInt(1, j > 0 ? j : 0x1E);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
-					insns.add(new InsnNode(Opcodes.ISHR));
+					insns.add(new InsnNode(ISHR));
 					current >>= operand;
 					builder.append(" >> ").append(operand);
 					break;
@@ -198,7 +198,7 @@ public class BitwiseObfuscator extends NumberObfuscation
 					operand = RandomUtils.getRandomInt(1, j > 0 ? j : 0x1E);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
-					insns.add(new InsnNode(Opcodes.IUSHR));
+					insns.add(new InsnNode(IUSHR));
 					current >>>= operand;
 					builder.append(" >>> ").append(operand);
 					break;
@@ -208,7 +208,7 @@ public class BitwiseObfuscator extends NumberObfuscation
 
 		final int correctionOperand = originalNum ^ current;
 		insns.add(ASMUtils.getNumberInsn(correctionOperand));
-		insns.add(new InsnNode(Opcodes.IXOR));
+		insns.add(new InsnNode(IXOR));
 
 		builder.append(" ^ ").append(correctionOperand).append('\'');
 
@@ -245,7 +245,7 @@ public class BitwiseObfuscator extends NumberObfuscation
 					operand = randomLong(current);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
-					insns.add(new InsnNode(Opcodes.LAND));
+					insns.add(new InsnNode(LAND));
 					current &= operand;
 					builder.append(" & ").append(operand);
 					break;
@@ -255,7 +255,7 @@ public class BitwiseObfuscator extends NumberObfuscation
 					operand = randomLong(current);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
-					insns.add(new InsnNode(Opcodes.LOR));
+					insns.add(new InsnNode(LOR));
 					current |= operand;
 					builder.append(" | ").append(operand);
 					break;
@@ -264,7 +264,7 @@ public class BitwiseObfuscator extends NumberObfuscation
 				{
 					operand = randomLong(current);
 					insns.add(ASMUtils.getNumberInsn(operand));
-					insns.add(new InsnNode(Opcodes.LXOR));
+					insns.add(new InsnNode(LXOR));
 					current ^= operand;
 					builder.append(" ^ ").append(operand);
 					break;
@@ -272,7 +272,7 @@ public class BitwiseObfuscator extends NumberObfuscation
 				case 3:
 				{
 					insns.add(new LdcInsnNode(-1L));
-					insns.add(new InsnNode(Opcodes.LXOR));
+					insns.add(new InsnNode(LXOR));
 					current = ~current;
 					builder.append(" ^ ").append(-1);
 					break;
@@ -286,7 +286,7 @@ public class BitwiseObfuscator extends NumberObfuscation
 					operand = RandomUtils.getRandomInt(1, j > 0 ? j : 0x3F);
 
 					insns.add(ASMUtils.getNumberInsn((int) operand));
-					insns.add(new InsnNode(Opcodes.LSHL));
+					insns.add(new InsnNode(LSHL));
 					current <<= operand;
 					builder.append(" << ").append(operand);
 					break;
@@ -300,7 +300,7 @@ public class BitwiseObfuscator extends NumberObfuscation
 					operand = RandomUtils.getRandomInt(1, j > 0 ? j : 0x3F);
 
 					insns.add(ASMUtils.getNumberInsn((int) operand));
-					insns.add(new InsnNode(Opcodes.LSHR));
+					insns.add(new InsnNode(LSHR));
 					current >>= operand;
 					builder.append(" >> ").append(operand);
 					break;
@@ -314,7 +314,7 @@ public class BitwiseObfuscator extends NumberObfuscation
 					operand = RandomUtils.getRandomInt(1, j > 0 ? j : 0x3F);
 
 					insns.add(ASMUtils.getNumberInsn((int) operand));
-					insns.add(new InsnNode(Opcodes.LUSHR));
+					insns.add(new InsnNode(LUSHR));
 					current >>>= operand;
 					builder.append(" >>> ").append(operand);
 					break;
@@ -324,7 +324,7 @@ public class BitwiseObfuscator extends NumberObfuscation
 
 		final long correctionOperand = originalNum ^ current;
 		insns.add(ASMUtils.getNumberInsn(correctionOperand));
-		insns.add(new InsnNode(Opcodes.LXOR));
+		insns.add(new InsnNode(LXOR));
 
 		builder.append(" ^ ").append(correctionOperand).append('\'');
 

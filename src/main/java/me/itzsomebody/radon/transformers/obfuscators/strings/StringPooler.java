@@ -158,9 +158,9 @@ public class StringPooler extends StringEncryption
 
 					if (mappings.containsKey(stringToPool))
 					{
-						insnList.insertBefore(insn, new FieldInsnNode(Opcodes.GETSTATIC, cw.getName(), fieldName, "[Ljava/lang/String;"));
+						insnList.insertBefore(insn, new FieldInsnNode(GETSTATIC, cw.getName(), fieldName, "[Ljava/lang/String;"));
 						insnList.insertBefore(insn, ASMUtils.getNumberInsn(mappings.get(stringToPool)));
-						insnList.set(insn, new InsnNode(Opcodes.AALOAD));
+						insnList.set(insn, new InsnNode(AALOAD));
 						counter.incrementAndGet();
 					}
 				}));
@@ -189,16 +189,16 @@ public class StringPooler extends StringEncryption
 			final InsnList insns = staticBlock.get().instructions;
 			final InsnList init = new InsnList();
 			for (final MethodNode mn : poolInits)
-				init.add(new MethodInsnNode(Opcodes.INVOKESTATIC, classWrapper.getName(), mn.name, "()V", false));
+				init.add(new MethodInsnNode(INVOKESTATIC, classWrapper.getName(), mn.name, "()V", false));
 			insns.insertBefore(insns.getFirst(), init);
 		}
 		else
 		{
-			final MethodNode newStaticBlock = new MethodNode(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC, "<clinit>", "()V", null, null);
+			final MethodNode newStaticBlock = new MethodNode(ACC_PRIVATE | ACC_STATIC | ACC_SYNTHETIC, "<clinit>", "()V", null, null);
 			final InsnList insnList = new InsnList();
 			for (final MethodNode mn : poolInits)
-				insnList.add(new MethodInsnNode(Opcodes.INVOKESTATIC, classWrapper.getName(), mn.name, "()V", false));
-			insnList.add(new InsnNode(Opcodes.RETURN));
+				insnList.add(new MethodInsnNode(INVOKESTATIC, classWrapper.getName(), mn.name, "()V", false));
+			insnList.add(new InsnNode(RETURN));
 			newStaticBlock.instructions = insnList;
 			classWrapper.addMethod(newStaticBlock);
 		}
@@ -215,7 +215,7 @@ public class StringPooler extends StringEncryption
 
 		while (true)
 		{
-			final MethodNode mv = new MethodNode(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC | Opcodes.ACC_BRIDGE, methodDictionary.uniqueRandomString(), "()V", null, null);
+			final MethodNode mv = new MethodNode(ACC_PRIVATE | ACC_STATIC | ACC_SYNTHETIC | ACC_BRIDGE, methodDictionary.uniqueRandomString(), "()V", null, null);
 
 			mv.visitCode();
 
@@ -227,21 +227,21 @@ public class StringPooler extends StringEncryption
 				rngExclusions = new HashSet<>(numberOfStrings);
 
 				ASMUtils.getNumberInsn(numberOfStrings).accept(mv);
-				mv.visitTypeInsn(Opcodes.ANEWARRAY, "java/lang/String");
+				mv.visitTypeInsn(ANEWARRAY, "java/lang/String");
 
 				flags |= INITIALIZED;
 			}
 			else
-				mv.visitFieldInsn(Opcodes.GETSTATIC, className, fieldName, "[Ljava/lang/String;");
+				mv.visitFieldInsn(GETSTATIC, className, fieldName, "[Ljava/lang/String;");
 
 			while (rngExclusions.size() < numberOfStrings)
 			{
 				final int i = RandomUtils.getRandomIntWithExclusion(0, numberOfStrings, rngExclusions);
 
-				mv.visitInsn(Opcodes.DUP);
+				mv.visitInsn(DUP);
 				ASMUtils.getNumberInsn(i).accept(mv);
 				mv.visitLdcInsn(mappings.get(i));
-				mv.visitInsn(Opcodes.AASTORE);
+				mv.visitInsn(AASTORE);
 
 				rngExclusions.add(i);
 				leeway -= ASMUtils.evaluateMaxSize(mv);
@@ -251,8 +251,8 @@ public class StringPooler extends StringEncryption
 					break;
 				}
 			}
-			mv.visitFieldInsn(Opcodes.PUTSTATIC, className, fieldName, "[Ljava/lang/String;");
-			mv.visitInsn(Opcodes.RETURN);
+			mv.visitFieldInsn(PUTSTATIC, className, fieldName, "[Ljava/lang/String;");
+			mv.visitInsn(RETURN);
 			mv.visitMaxs(3, 0);
 			mv.visitEnd();
 

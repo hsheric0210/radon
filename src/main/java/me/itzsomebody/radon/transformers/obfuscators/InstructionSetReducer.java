@@ -18,7 +18,6 @@
 
 package me.itzsomebody.radon.transformers.obfuscators;
 
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
 
 import me.itzsomebody.radon.config.Configuration;
@@ -42,10 +41,10 @@ public class InstructionSetReducer extends Transformer
 				if (abstractInsnNode instanceof TableSwitchInsnNode)
 				{
 					final LabelNode trampolineStart = new LabelNode();
-					final InsnNode cleanStack = new InsnNode(Opcodes.POP);
-					final JumpInsnNode jmpDefault = new JumpInsnNode(Opcodes.GOTO, ((TableSwitchInsnNode) abstractInsnNode).dflt);
+					final InsnNode cleanStack = new InsnNode(POP);
+					final JumpInsnNode jmpDefault = new JumpInsnNode(GOTO, ((TableSwitchInsnNode) abstractInsnNode).dflt);
 					final LabelNode endOfTrampoline = new LabelNode();
-					final JumpInsnNode skipTrampoline = new JumpInsnNode(Opcodes.GOTO, endOfTrampoline);
+					final JumpInsnNode skipTrampoline = new JumpInsnNode(GOTO, endOfTrampoline);
 
 					// Goto default trampoline
 					newInsns.add(skipTrampoline);
@@ -56,79 +55,79 @@ public class InstructionSetReducer extends Transformer
 
 					// < min
 					// I(val)
-					newInsns.add(new InsnNode(Opcodes.DUP));
+					newInsns.add(new InsnNode(DUP));
 					// I(val) I(val)
 					newInsns.add(new LdcInsnNode(-((TableSwitchInsnNode) abstractInsnNode).min));
 					// I(val) I(val) I(-min)
-					newInsns.add(new InsnNode(Opcodes.IADD));
+					newInsns.add(new InsnNode(IADD));
 					// I(val) I(val-min)
-					newInsns.add(new JumpInsnNode(Opcodes.IFLT, trampolineStart));
+					newInsns.add(new JumpInsnNode(IFLT, trampolineStart));
 					// I(val)
 					// > max
-					newInsns.add(new InsnNode(Opcodes.DUP));
+					newInsns.add(new InsnNode(DUP));
 					// I(val) I(val)
 					newInsns.add(new LdcInsnNode(-((TableSwitchInsnNode) abstractInsnNode).max));
 					// I(val) I(val) I(-max)
-					newInsns.add(new InsnNode(Opcodes.IADD));
+					newInsns.add(new InsnNode(IADD));
 					// I(val) I(val-max)
-					newInsns.add(new JumpInsnNode(Opcodes.IFGT, trampolineStart));
+					newInsns.add(new JumpInsnNode(IFGT, trampolineStart));
 					// I(val)
 					// = VAL
-					newInsns.add(new InsnNode(Opcodes.DUP));
+					newInsns.add(new InsnNode(DUP));
 					// I(val) I(val)
 					newInsns.add(new LdcInsnNode(-((TableSwitchInsnNode) abstractInsnNode).min));
 					// I(val) I(val) I(-min)
-					newInsns.add(new InsnNode(Opcodes.IADD));
+					newInsns.add(new InsnNode(IADD));
 					// I(val) I(val-min) => 0 = first label, 1 = second label...
 
 					int labelIndex = 0;
 					for (final LabelNode label : ((TableSwitchInsnNode) abstractInsnNode).labels)
 					{
 						final LabelNode nextBranch = new LabelNode();
-						newInsns.add(new InsnNode(Opcodes.DUP));
-						newInsns.add(new JumpInsnNode(Opcodes.IFNE, nextBranch));
-						newInsns.add(new InsnNode(Opcodes.POP));
-						newInsns.add(new InsnNode(Opcodes.POP));
-						newInsns.add(new JumpInsnNode(Opcodes.GOTO, label));
+						newInsns.add(new InsnNode(DUP));
+						newInsns.add(new JumpInsnNode(IFNE, nextBranch));
+						newInsns.add(new InsnNode(POP));
+						newInsns.add(new InsnNode(POP));
+						newInsns.add(new JumpInsnNode(GOTO, label));
 
 						newInsns.add(nextBranch);
 						if (labelIndex + 1 != ((TableSwitchInsnNode) abstractInsnNode).labels.size())
 						{
 							newInsns.add(new LdcInsnNode(-1));
-							newInsns.add(new InsnNode(Opcodes.IADD));
+							newInsns.add(new InsnNode(IADD));
 						}
 
 						labelIndex++;
 					}
 					// I(val) I(val-min-totalN)
-					newInsns.add(new InsnNode(Opcodes.POP));
-					// newInsns.add(new InsnNode(Opcodes.POP));
-					newInsns.add(new JumpInsnNode(Opcodes.GOTO, trampolineStart));
+					newInsns.add(new InsnNode(POP));
+					// newInsns.add(new InsnNode(POP));
+					newInsns.add(new JumpInsnNode(GOTO, trampolineStart));
 					// I(val)
 				}
 				else
 					switch (abstractInsnNode.getOpcode())
 					{
-						case Opcodes.ICONST_M1:
-						case Opcodes.ICONST_0:
-						case Opcodes.ICONST_1:
-						case Opcodes.ICONST_2:
-						case Opcodes.ICONST_3:
-						case Opcodes.ICONST_4:
-						case Opcodes.ICONST_5:
+						case ICONST_M1:
+						case ICONST_0:
+						case ICONST_1:
+						case ICONST_2:
+						case ICONST_3:
+						case ICONST_4:
+						case ICONST_5:
 							newInsns.add(new LdcInsnNode(abstractInsnNode.getOpcode() - 3));
 							continue insn;
-						case Opcodes.LCONST_0:
-						case Opcodes.LCONST_1:
+						case LCONST_0:
+						case LCONST_1:
 							newInsns.add(new LdcInsnNode(abstractInsnNode.getOpcode() - 9L));
 							continue insn;
-						case Opcodes.FCONST_0:
-						case Opcodes.FCONST_1:
-						case Opcodes.FCONST_2:
+						case FCONST_0:
+						case FCONST_1:
+						case FCONST_2:
 							newInsns.add(new LdcInsnNode(abstractInsnNode.getOpcode() - 11.0F));
 							continue insn;
-						case Opcodes.DCONST_0:
-						case Opcodes.DCONST_1:
+						case DCONST_0:
+						case DCONST_1:
 							newInsns.add(new LdcInsnNode(abstractInsnNode.getOpcode() - 14.0D));
 							continue insn;
 					}

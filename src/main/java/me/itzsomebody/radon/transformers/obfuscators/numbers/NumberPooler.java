@@ -200,9 +200,9 @@ public class NumberPooler extends NumberObfuscation
 							{
 								final int index = integerMappings.get(value);
 
-								insnList.insertBefore(insn, new FieldInsnNode(Opcodes.GETSTATIC, classWrapper.getName(), integerPoolFieldName, "[I"));
+								insnList.insertBefore(insn, new FieldInsnNode(GETSTATIC, classWrapper.getName(), integerPoolFieldName, "[I"));
 								insnList.insertBefore(insn, ASMUtils.getNumberInsn(index));
-								insnList.set(insn, new InsnNode(Opcodes.IALOAD));
+								insnList.set(insn, new InsnNode(IALOAD));
 								counter.incrementAndGet();
 							}
 							else
@@ -218,9 +218,9 @@ public class NumberPooler extends NumberObfuscation
 							{
 								final int index = longMappings.get(value);
 
-								insnList.insertBefore(insn, new FieldInsnNode(Opcodes.GETSTATIC, classWrapper.getName(), longPoolFieldName, "[J"));
+								insnList.insertBefore(insn, new FieldInsnNode(GETSTATIC, classWrapper.getName(), longPoolFieldName, "[J"));
 								insnList.insertBefore(insn, ASMUtils.getNumberInsn(index));
-								insnList.set(insn, new InsnNode(Opcodes.LALOAD));
+								insnList.set(insn, new InsnNode(LALOAD));
 								counter.incrementAndGet();
 							}
 							else
@@ -236,9 +236,9 @@ public class NumberPooler extends NumberObfuscation
 							{
 								final int index = floatMappings.get(value);
 
-								insnList.insertBefore(insn, new FieldInsnNode(Opcodes.GETSTATIC, classWrapper.getName(), floatPoolFieldName, "[F"));
+								insnList.insertBefore(insn, new FieldInsnNode(GETSTATIC, classWrapper.getName(), floatPoolFieldName, "[F"));
 								insnList.insertBefore(insn, ASMUtils.getNumberInsn(index));
-								insnList.set(insn, new InsnNode(Opcodes.FALOAD));
+								insnList.set(insn, new InsnNode(FALOAD));
 								counter.incrementAndGet();
 							}
 							else
@@ -254,9 +254,9 @@ public class NumberPooler extends NumberObfuscation
 							{
 								final int index = doubleMappings.get(value);
 
-								insnList.insertBefore(insn, new FieldInsnNode(Opcodes.GETSTATIC, classWrapper.getName(), doublePoolFieldName, "[D"));
+								insnList.insertBefore(insn, new FieldInsnNode(GETSTATIC, classWrapper.getName(), doublePoolFieldName, "[D"));
 								insnList.insertBefore(insn, ASMUtils.getNumberInsn(index));
-								insnList.set(insn, new InsnNode(Opcodes.DALOAD));
+								insnList.set(insn, new InsnNode(DALOAD));
 								counter.incrementAndGet();
 							}
 							else
@@ -414,9 +414,9 @@ public class NumberPooler extends NumberObfuscation
 							{
 								final int index = integerMappings.get(value);
 
-								insnList.insertBefore(insn, new FieldInsnNode(Opcodes.GETSTATIC, cw.getName(), integerPoolFieldName, "[I"));
+								insnList.insertBefore(insn, new FieldInsnNode(GETSTATIC, cw.getName(), integerPoolFieldName, "[I"));
 								insnList.insertBefore(insn, ASMUtils.getNumberInsn(index));
-								insnList.set(insn, new InsnNode(Opcodes.IALOAD));
+								insnList.set(insn, new InsnNode(IALOAD));
 								counter.incrementAndGet();
 							}
 							else
@@ -432,9 +432,9 @@ public class NumberPooler extends NumberObfuscation
 							{
 								final int index = longMappings.get(value);
 
-								insnList.insertBefore(insn, new FieldInsnNode(Opcodes.GETSTATIC, cw.getName(), longPoolFieldName, "[J"));
+								insnList.insertBefore(insn, new FieldInsnNode(GETSTATIC, cw.getName(), longPoolFieldName, "[J"));
 								insnList.insertBefore(insn, ASMUtils.getNumberInsn(index));
-								insnList.set(insn, new InsnNode(Opcodes.LALOAD));
+								insnList.set(insn, new InsnNode(LALOAD));
 								counter.incrementAndGet();
 							}
 							else
@@ -450,9 +450,9 @@ public class NumberPooler extends NumberObfuscation
 							{
 								final int index = floatMappings.get(value);
 
-								insnList.insertBefore(insn, new FieldInsnNode(Opcodes.GETSTATIC, cw.getName(), floatPoolFieldName, "[F"));
+								insnList.insertBefore(insn, new FieldInsnNode(GETSTATIC, cw.getName(), floatPoolFieldName, "[F"));
 								insnList.insertBefore(insn, ASMUtils.getNumberInsn(index));
-								insnList.set(insn, new InsnNode(Opcodes.FALOAD));
+								insnList.set(insn, new InsnNode(FALOAD));
 								counter.incrementAndGet();
 							}
 							else
@@ -468,9 +468,9 @@ public class NumberPooler extends NumberObfuscation
 							{
 								final int index = doubleMappings.get(value);
 
-								insnList.insertBefore(insn, new FieldInsnNode(Opcodes.GETSTATIC, cw.getName(), doublePoolFieldName, "[D"));
+								insnList.insertBefore(insn, new FieldInsnNode(GETSTATIC, cw.getName(), doublePoolFieldName, "[D"));
 								insnList.insertBefore(insn, ASMUtils.getNumberInsn(index));
-								insnList.set(insn, new InsnNode(Opcodes.DALOAD));
+								insnList.set(insn, new InsnNode(DALOAD));
 								counter.incrementAndGet();
 							}
 							else
@@ -498,16 +498,16 @@ public class NumberPooler extends NumberObfuscation
 			final InsnList insns = staticBlock.get().instructions;
 			final InsnList init = new InsnList();
 			for (final MethodNode mn : poolInits)
-				init.add(new MethodInsnNode(Opcodes.INVOKESTATIC, classWrapper.getName(), mn.name, "()V", false));
+				init.add(new MethodInsnNode(INVOKESTATIC, classWrapper.getName(), mn.name, "()V", false));
 			insns.insertBefore(insns.getFirst(), init);
 		}
 		else
 		{
-			final MethodNode newStaticBlock = new MethodNode(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC, "<clinit>", "()V", null, null);
+			final MethodNode newStaticBlock = new MethodNode(ACC_PRIVATE | ACC_STATIC | ACC_SYNTHETIC, "<clinit>", "()V", null, null);
 			final InsnList insnList = new InsnList();
 			for (final MethodNode mn : poolInits)
-				insnList.add(new MethodInsnNode(Opcodes.INVOKESTATIC, classWrapper.getName(), mn.name, "()V", false));
-			insnList.add(new InsnNode(Opcodes.RETURN));
+				insnList.add(new MethodInsnNode(INVOKESTATIC, classWrapper.getName(), mn.name, "()V", false));
+			insnList.add(new InsnNode(RETURN));
 			newStaticBlock.instructions = insnList;
 			classWrapper.getClassNode().methods.add(newStaticBlock);
 		}
@@ -524,7 +524,7 @@ public class NumberPooler extends NumberObfuscation
 
 		while (true)
 		{
-			final MethodNode mv = new MethodNode(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC /* | Opcodes.ACC_SYNTHETIC | Opcodes.ACC_BRIDGE */, methodDictionary.uniqueRandomString(), "()V", null, null);
+			final MethodNode mv = new MethodNode(ACC_PRIVATE | ACC_STATIC /* | ACC_SYNTHETIC | ACC_BRIDGE */, methodDictionary.uniqueRandomString(), "()V", null, null);
 			mv.visitCode();
 
 			long leeway = Constants.MAX_CODE_SIZE;
@@ -537,23 +537,23 @@ public class NumberPooler extends NumberObfuscation
 					intIndexRNGExclusions = new HashSet<>(numberOfIntegers);
 
 					ASMUtils.getNumberInsn(numberOfIntegers).accept(mv);
-					mv.visitIntInsn(Opcodes.NEWARRAY, Opcodes.T_INT);
+					mv.visitIntInsn(NEWARRAY, T_INT);
 
 					final FieldNode fieldNode = new FieldNode(POOL_FIELD_ACCESS, integerPoolFieldName, "[I", null, null);
 					classWrapper.addField(fieldNode);
 					flags |= INPOOL_INITIALIZED;
 				}
 				else
-					mv.visitFieldInsn(Opcodes.GETSTATIC, classWrapper.getName(), integerPoolFieldName, "[I");
+					mv.visitFieldInsn(GETSTATIC, classWrapper.getName(), integerPoolFieldName, "[I");
 
 				while (intIndexRNGExclusions.size() < numberOfIntegers)
 				{
 					final int index = RandomUtils.getRandomIntWithExclusion(0, numberOfIntegers, intIndexRNGExclusions);
 
-					mv.visitInsn(Opcodes.DUP);
+					mv.visitInsn(DUP);
 					ASMUtils.getNumberInsn(index).accept(mv);
 					ASMUtils.getNumberInsn(integerMappings.get(index)).accept(mv);
-					mv.visitInsn(Opcodes.IASTORE);
+					mv.visitInsn(IASTORE);
 
 					intIndexRNGExclusions.add(index);
 					leeway -= ASMUtils.evaluateMaxSize(mv);
@@ -563,7 +563,7 @@ public class NumberPooler extends NumberObfuscation
 						break;
 					}
 				}
-				mv.visitFieldInsn(Opcodes.PUTSTATIC, classWrapper.getName(), integerPoolFieldName, "[I");
+				mv.visitFieldInsn(PUTSTATIC, classWrapper.getName(), integerPoolFieldName, "[I");
 			}
 
 			if (longMappings != null && !longMappings.isEmpty() && leeway >= 30000)
@@ -575,23 +575,23 @@ public class NumberPooler extends NumberObfuscation
 					longIndexRNGExclusions = new HashSet<>(numberOfLongs);
 
 					ASMUtils.getNumberInsn(numberOfLongs).accept(mv);
-					mv.visitIntInsn(Opcodes.NEWARRAY, Opcodes.T_LONG);
+					mv.visitIntInsn(NEWARRAY, T_LONG);
 
 					final FieldNode fieldNode = new FieldNode(POOL_FIELD_ACCESS, longPoolFieldName, "[J", null, null);
 					classWrapper.addField(fieldNode);
 					flags |= LONGPOOL_INITIALIZED;
 				}
 				else
-					mv.visitFieldInsn(Opcodes.GETSTATIC, classWrapper.getName(), longPoolFieldName, "[J");
+					mv.visitFieldInsn(GETSTATIC, classWrapper.getName(), longPoolFieldName, "[J");
 
 				while (longIndexRNGExclusions.size() < numberOfLongs)
 				{
 					final int index = RandomUtils.getRandomIntWithExclusion(0, numberOfLongs, longIndexRNGExclusions);
 
-					mv.visitInsn(Opcodes.DUP);
+					mv.visitInsn(DUP);
 					ASMUtils.getNumberInsn(index).accept(mv);
 					ASMUtils.getNumberInsn(longMappings.get(index)).accept(mv);
-					mv.visitInsn(Opcodes.LASTORE);
+					mv.visitInsn(LASTORE);
 
 					longIndexRNGExclusions.add(index);
 					leeway -= ASMUtils.evaluateMaxSize(mv);
@@ -601,7 +601,7 @@ public class NumberPooler extends NumberObfuscation
 						break;
 					}
 				}
-				mv.visitFieldInsn(Opcodes.PUTSTATIC, classWrapper.getName(), longPoolFieldName, "[J");
+				mv.visitFieldInsn(PUTSTATIC, classWrapper.getName(), longPoolFieldName, "[J");
 			}
 
 			if (floatMappings != null && !floatMappings.isEmpty() && leeway >= 30000)
@@ -613,23 +613,23 @@ public class NumberPooler extends NumberObfuscation
 					floatIndexRNGExclusions = new HashSet<>(numberOfFloats);
 
 					ASMUtils.getNumberInsn(numberOfFloats).accept(mv);
-					mv.visitIntInsn(Opcodes.NEWARRAY, Opcodes.T_FLOAT);
+					mv.visitIntInsn(NEWARRAY, T_FLOAT);
 
 					final FieldNode fieldNode = new FieldNode(POOL_FIELD_ACCESS, floatPoolFieldName, "[F", null, null);
 					classWrapper.addField(fieldNode);
 					flags |= FLOATPOOL_INITIALIZED;
 				}
 				else
-					mv.visitFieldInsn(Opcodes.GETSTATIC, classWrapper.getName(), floatPoolFieldName, "[F");
+					mv.visitFieldInsn(GETSTATIC, classWrapper.getName(), floatPoolFieldName, "[F");
 
 				while (floatIndexRNGExclusions.size() < numberOfFloats)
 				{
 					final int index = RandomUtils.getRandomIntWithExclusion(0, numberOfFloats, floatIndexRNGExclusions);
 
-					mv.visitInsn(Opcodes.DUP);
+					mv.visitInsn(DUP);
 					ASMUtils.getNumberInsn(index).accept(mv);
 					ASMUtils.getNumberInsn(floatMappings.get(index)).accept(mv);
-					mv.visitInsn(Opcodes.FASTORE);
+					mv.visitInsn(FASTORE);
 
 					floatIndexRNGExclusions.add(index);
 					leeway -= ASMUtils.evaluateMaxSize(mv);
@@ -639,7 +639,7 @@ public class NumberPooler extends NumberObfuscation
 						break;
 					}
 				}
-				mv.visitFieldInsn(Opcodes.PUTSTATIC, classWrapper.getName(), floatPoolFieldName, "[F");
+				mv.visitFieldInsn(PUTSTATIC, classWrapper.getName(), floatPoolFieldName, "[F");
 			}
 
 			if (doubleMappings != null && !doubleMappings.isEmpty() && leeway >= 30000)
@@ -651,23 +651,23 @@ public class NumberPooler extends NumberObfuscation
 					doubleIndexRNGExclusions = new HashSet<>(numberOfDoubles);
 
 					ASMUtils.getNumberInsn(numberOfDoubles).accept(mv);
-					mv.visitIntInsn(Opcodes.NEWARRAY, Opcodes.T_DOUBLE);
+					mv.visitIntInsn(NEWARRAY, T_DOUBLE);
 
 					final FieldNode fieldNode = new FieldNode(POOL_FIELD_ACCESS, doublePoolFieldName, "[D", null, null);
 					classWrapper.addField(fieldNode);
 					flags |= DOUBLEPOOL_INITIALIZED;
 				}
 				else
-					mv.visitFieldInsn(Opcodes.GETSTATIC, classWrapper.getName(), floatPoolFieldName, "[D");
+					mv.visitFieldInsn(GETSTATIC, classWrapper.getName(), floatPoolFieldName, "[D");
 
 				while (doubleIndexRNGExclusions.size() < numberOfDoubles)
 				{
 					final int index = RandomUtils.getRandomIntWithExclusion(0, numberOfDoubles, doubleIndexRNGExclusions);
 
-					mv.visitInsn(Opcodes.DUP);
+					mv.visitInsn(DUP);
 					ASMUtils.getNumberInsn(index).accept(mv);
 					ASMUtils.getNumberInsn(doubleMappings.get(index)).accept(mv);
-					mv.visitInsn(Opcodes.DASTORE);
+					mv.visitInsn(DASTORE);
 
 					doubleIndexRNGExclusions.add(index);
 					leeway -= ASMUtils.evaluateMaxSize(mv);
@@ -677,10 +677,10 @@ public class NumberPooler extends NumberObfuscation
 						break;
 					}
 				}
-				mv.visitFieldInsn(Opcodes.PUTSTATIC, classWrapper.getName(), doublePoolFieldName, "[D");
+				mv.visitFieldInsn(PUTSTATIC, classWrapper.getName(), doublePoolFieldName, "[D");
 			}
 
-			mv.visitInsn(Opcodes.RETURN);
+			mv.visitInsn(RETURN);
 			mv.visitMaxs(3, 0);
 			mv.visitEnd();
 
@@ -697,5 +697,5 @@ public class NumberPooler extends NumberObfuscation
 	public static final int FLOATPOOL_INITIALIZED = 0b0000000000100;
 	public static final int DOUBLEPOOL_INITIALIZED = 0b0000000001000;
 	public static final int LOOP_REQUIERD = 0b0000000010000;
-	public static final int POOL_FIELD_ACCESS = Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL | Opcodes.ACC_SYNTHETIC;
+	public static final int POOL_FIELD_ACCESS = ACC_PUBLIC | ACC_STATIC | ACC_FINAL | ACC_SYNTHETIC;
 }

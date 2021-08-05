@@ -276,7 +276,7 @@ public final class ASMUtils implements Opcodes
 
 	public static Type getRandomType()
 	{
-		switch (RandomUtils.getRandomInt(5)) // was 8
+		switch (RandomUtils.getRandomInt(7))
 		{
 			case 0:
 				return Type.BOOLEAN_TYPE;
@@ -433,6 +433,13 @@ public final class ASMUtils implements Opcodes
 		}
 
 		throw new UnsupportedOperationException("Unknown offset: " + offset);
+	}
+
+	public static boolean isSuperCall(final MethodNode mn, final AbstractInsnNode insn)
+	{
+		return "<init>".equals(mn.name) // Check if the current method is constructor
+				&& insn != null && insn.getOpcode() == INVOKESPECIAL && "<init>".equals(((MethodInsnNode) insn).name) // Check if the current instruction is INVOKESPECIAL which calling <init>
+				&& insn.getPrevious() != null && insn.getPrevious().getOpcode() == ALOAD && ((VarInsnNode) insn.getPrevious()).var == 0; // Check if the previous instruction is ALOAD_0 (Reference to self)
 	}
 
 	private ASMUtils()

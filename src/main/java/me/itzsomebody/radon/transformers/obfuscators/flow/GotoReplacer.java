@@ -60,20 +60,32 @@ public class GotoReplacer extends FlowObfuscation
 
 				int leeway = mw.getLeewaySize();
 				final int varIndex = mw.getMaxLocals();
-				mw.getMethodNode().maxLocals++; // Prevents breaking of other transformers which rely on this field.
+				mw.getMethodNode().maxLocals += predicateType.getSize(); // Prevents breaking of other transformers which rely on this field.
 
+				final boolean isCtor = "<init>".equals(mw.getName());
+				AbstractInsnNode superCall = null;
+				boolean calledSuper = false;
 				for (final AbstractInsnNode insn : insns.toArray())
 				{
 					if (leeway < 10000)
 						break;
 
-					if (insn.getOpcode() == GOTO)
+					// Bad way of detecting if this class was instantiated
+					if (isCtor && !calledSuper)
 					{
-						insns.insertBefore(insn, BogusJumps.createBogusJump(varIndex, predicateType, predicateInitialValue, ((JumpInsnNode) insn).label, true));
-						insns.insert(insn, BogusJumps.createBogusExit(mw.getMethodNode()));
+						calledSuper = ASMUtils.isSuperCall(mw.getMethodNode(), insn);
+						superCall = insn;
+					}
+
+					if (insn.getOpcode() == GOTO && !(isCtor && !calledSuper))
+					{
+						final InsnList bogusJump = new InsnList();
+						bogusJump.add(BogusJumps.createBogusJump(varIndex, predicateType, predicateInitialValue, ((JumpInsnNode) insn).label, true));
+						bogusJump.add(BogusJumps.createBogusExit(mw.getMethodNode()));
+						insns.insert(insn, bogusJump);
 						insns.remove(insn);
 
-						leeway -= 16;
+						leeway -= ASMUtils.evaluateMaxSize(bogusJump);
 
 						counter.incrementAndGet();
 						shouldAdd.set(true);
@@ -82,24 +94,28 @@ public class GotoReplacer extends FlowObfuscation
 
 				if (shouldAdd.get())
 				{
-//					insnList.insert(new VarInsnNode(ISTORE, varIndex));
+					final InsnList initializer = new InsnList();
+					initializer.add(new FieldInsnNode(GETSTATIC, cw.getName(), predicate.name, predicateDescriptor));
 					switch (predicateType.getSort())
 					{
 						case Type.FLOAT:
-							insns.insert(new VarInsnNode(FSTORE, varIndex));
+							initializer.add(new VarInsnNode(FSTORE, varIndex));
 							break;
 						case Type.LONG:
-							insns.insert(new VarInsnNode(LSTORE, varIndex));
+							initializer.add(new VarInsnNode(LSTORE, varIndex));
 							break;
 						case Type.DOUBLE:
-							insns.insert(new VarInsnNode(DSTORE, varIndex));
+							initializer.add(new VarInsnNode(DSTORE, varIndex));
 							break;
 						default:
-							insns.insert(new VarInsnNode(ISTORE, varIndex));
+							initializer.add(new VarInsnNode(ISTORE, varIndex));
 							break;
 					}
 
-					insns.insert(new FieldInsnNode(GETSTATIC, cw.getName(), predicate.name, predicateDescriptor));
+					if (superCall == null)
+						insns.insert(initializer);
+					else
+						insns.insert(superCall, initializer);
 				}
 			});
 

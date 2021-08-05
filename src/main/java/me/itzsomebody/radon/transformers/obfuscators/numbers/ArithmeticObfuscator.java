@@ -125,7 +125,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 					operand = randomInt(current);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
-					insns.add(new InsnNode(Opcodes.IADD));
+					insns.add(new InsnNode(IADD));
 					current += operand;
 					builder.append(" + ").append(operand);
 					break;
@@ -135,7 +135,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 					operand = randomInt(current);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
-					insns.add(new InsnNode(Opcodes.ISUB));
+					insns.add(new InsnNode(ISUB));
 					current -= operand;
 					builder.append(" - ").append(operand);
 					break;
@@ -145,7 +145,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 					operand = RandomUtils.getRandomInt(1, 255);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
-					insns.add(new InsnNode(Opcodes.IMUL));
+					insns.add(new InsnNode(IMUL));
 					current *= operand;
 					builder.append(" * ").append(operand);
 					break;
@@ -155,7 +155,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 					operand = RandomUtils.getRandomInt(1, 255);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
-					insns.add(new InsnNode(Opcodes.IDIV));
+					insns.add(new InsnNode(IDIV));
 					current /= operand;
 					builder.append(" / ").append(operand);
 					break;
@@ -165,7 +165,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 					operand = RandomUtils.getRandomInt(1, 255);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
-					insns.add(new InsnNode(Opcodes.IREM));
+					insns.add(new InsnNode(IREM));
 					current %= operand;
 					builder.append(" % ").append(operand);
 					break;
@@ -177,7 +177,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 		if (RandomUtils.getRandomBoolean())
 		{
 			insns.add(ASMUtils.getNumberInsn(correctionOperand));
-			insns.add(new InsnNode(Opcodes.IADD));
+			insns.add(new InsnNode(IADD));
 			builder.append(" + ").append(correctionOperand).append('\'');
 		}
 		else
@@ -187,10 +187,10 @@ public class ArithmeticObfuscator extends NumberObfuscation
 			else
 			{
 				insns.add(ASMUtils.getNumberInsn(correctionOperand));
-				insns.add(new InsnNode(Opcodes.INEG)); // Negate by the opcode
+				insns.add(new InsnNode(INEG)); // Negate by the opcode
 			}
 
-			insns.add(new InsnNode(Opcodes.ISUB));
+			insns.add(new InsnNode(ISUB));
 			builder.append(" - ").append(-correctionOperand).append('\'');
 		}
 		current += correctionOperand;
@@ -227,7 +227,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 					operand = randomLong(current);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
-					insns.add(new InsnNode(Opcodes.LADD));
+					insns.add(new InsnNode(LADD));
 					current += operand;
 					builder.append(" + ").append(operand);
 					break;
@@ -237,7 +237,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 					operand = randomLong(current);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
-					insns.add(new InsnNode(Opcodes.LSUB));
+					insns.add(new InsnNode(LSUB));
 					current -= operand;
 					builder.append(" - ").append(operand);
 					break;
@@ -247,7 +247,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 					operand = RandomUtils.getRandomInt(1, 65535);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
-					insns.add(new InsnNode(Opcodes.LMUL));
+					insns.add(new InsnNode(LMUL));
 					current *= operand;
 					builder.append(" * ").append(operand);
 					break;
@@ -257,7 +257,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 					operand = RandomUtils.getRandomInt(1, 65535);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
-					insns.add(new InsnNode(Opcodes.LDIV));
+					insns.add(new InsnNode(LDIV));
 					current /= operand;
 					builder.append(" / ").append(operand);
 					break;
@@ -267,7 +267,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 					operand = RandomUtils.getRandomInt(1, 255);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
-					insns.add(new InsnNode(Opcodes.LREM));
+					insns.add(new InsnNode(LREM));
 					current %= operand;
 					builder.append(" % ").append(operand);
 					break;
@@ -279,7 +279,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 		if (RandomUtils.getRandomBoolean())
 		{
 			insns.add(ASMUtils.getNumberInsn(correctionOperand));
-			insns.add(new InsnNode(Opcodes.LADD));
+			insns.add(new InsnNode(LADD));
 			builder.append(" + ").append(correctionOperand).append('\'');
 		}
 		else
@@ -289,9 +289,9 @@ public class ArithmeticObfuscator extends NumberObfuscation
 			else
 			{
 				insns.add(ASMUtils.getNumberInsn(correctionOperand));
-				insns.add(new InsnNode(Opcodes.LNEG));
+				insns.add(new InsnNode(LNEG));
 			}
-			insns.add(new InsnNode(Opcodes.LSUB));
+			insns.add(new InsnNode(LSUB));
 
 			builder.append(" - ").append(-correctionOperand).append('\'');
 		}
@@ -329,7 +329,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 					operand = Float.isInfinite(current * 2) || current + (current - 1.0F) >= Float.MAX_VALUE ? randomFloat(Float.MAX_VALUE - current - 1.0F) : randomFloat(current);
 
 					insnList.add(ASMUtils.getNumberInsn(operand));
-					insnList.add(new InsnNode(Opcodes.FADD));
+					insnList.add(new InsnNode(FADD));
 					current += operand;
 					builder.append(" + ").append(operand);
 					break;
@@ -339,7 +339,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 					operand = Float.isInfinite(current - (current - 1.0F)) || current + (current - 1.0F) <= Float.MIN_VALUE ? randomFloat(Float.MIN_VALUE + current + 1.0F) : randomFloat(current);
 
 					insnList.add(ASMUtils.getNumberInsn(operand));
-					insnList.add(new InsnNode(Opcodes.FSUB));
+					insnList.add(new InsnNode(FSUB));
 					current -= operand;
 					builder.append(" - ").append(operand);
 					break;
@@ -361,7 +361,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 						operand = RandomUtils.getRandomInt(2, operandLimit);
 
 					insnList.add(ASMUtils.getNumberInsn(operand));
-					insnList.add(new InsnNode(Opcodes.FMUL));
+					insnList.add(new InsnNode(FMUL));
 					current *= operand;
 					builder.append(" * ").append(operand);
 					break;
@@ -371,7 +371,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 					operand = RandomUtils.getRandomInt(2, 65535);
 
 					insnList.add(ASMUtils.getNumberInsn(operand));
-					insnList.add(new InsnNode(Opcodes.FDIV));
+					insnList.add(new InsnNode(FDIV));
 					current /= operand;
 					builder.append(" / ").append(operand);
 					break;
@@ -381,7 +381,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 					operand = RandomUtils.getRandomInt(1, 255);
 
 					insnList.add(ASMUtils.getNumberInsn(operand));
-					insnList.add(new InsnNode(Opcodes.FREM));
+					insnList.add(new InsnNode(FREM));
 					current %= operand;
 					builder.append(" % ").append(operand);
 					break;
@@ -393,7 +393,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 		if (RandomUtils.getRandomBoolean())
 		{
 			insnList.add(ASMUtils.getNumberInsn(correctionOperand));
-			insnList.add(new InsnNode(Opcodes.FADD));
+			insnList.add(new InsnNode(FADD));
 			builder.append(" + ").append(correctionOperand).append('\'');
 		}
 		else
@@ -404,10 +404,10 @@ public class ArithmeticObfuscator extends NumberObfuscation
 			{
 				// Negate by opcode FNEG
 				insnList.add(ASMUtils.getNumberInsn(correctionOperand));
-				insnList.add(new InsnNode(Opcodes.FNEG));
+				insnList.add(new InsnNode(FNEG));
 			}
 
-			insnList.add(new InsnNode(Opcodes.FSUB));
+			insnList.add(new InsnNode(FSUB));
 			builder.append(" - ").append(-correctionOperand).append('\'');
 		}
 		current += correctionOperand;
@@ -444,7 +444,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 					operand = Double.isInfinite(current + (current - 1.0)) || current + (current - 1.0) >= Double.MAX_VALUE ? randomDouble(Double.MAX_VALUE - current - 1.0) : randomDouble(current);
 
 					insnList.add(ASMUtils.getNumberInsn(operand));
-					insnList.add(new InsnNode(Opcodes.DADD));
+					insnList.add(new InsnNode(DADD));
 					current += operand;
 					builder.append(" + ").append(operand);
 					break;
@@ -454,7 +454,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 					operand = Double.isInfinite(current - (current - 1.0)) || current + (current - 1) <= Double.MIN_VALUE ? randomDouble(Double.MIN_VALUE + current + 1.0) : randomDouble(current);
 
 					insnList.add(ASMUtils.getNumberInsn(operand));
-					insnList.add(new InsnNode(Opcodes.DSUB));
+					insnList.add(new InsnNode(DSUB));
 					current -= operand;
 					builder.append(" - ").append(operand);
 					break;
@@ -476,7 +476,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 						operand = RandomUtils.getRandomInt(2, operandLimit);
 
 					insnList.add(ASMUtils.getNumberInsn(operand));
-					insnList.add(new InsnNode(Opcodes.DMUL));
+					insnList.add(new InsnNode(DMUL));
 					current *= operand;
 					builder.append(" * ").append(operand);
 					break;
@@ -486,7 +486,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 					operand = RandomUtils.getRandomInt(2, 65535);
 
 					insnList.add(ASMUtils.getNumberInsn(operand));
-					insnList.add(new InsnNode(Opcodes.DDIV));
+					insnList.add(new InsnNode(DDIV));
 					current /= operand;
 					builder.append(" / ").append(operand);
 					break;
@@ -496,7 +496,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 					operand = RandomUtils.getRandomInt(1, 255);
 
 					insnList.add(ASMUtils.getNumberInsn(operand));
-					insnList.add(new InsnNode(Opcodes.DREM));
+					insnList.add(new InsnNode(DREM));
 					current %= operand;
 					builder.append(" % ").append(operand);
 					break;
@@ -508,7 +508,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 		if (RandomUtils.getRandomBoolean())
 		{
 			insnList.add(ASMUtils.getNumberInsn(correctionOperand));
-			insnList.add(new InsnNode(Opcodes.DADD));
+			insnList.add(new InsnNode(DADD));
 			builder.append(" + ").append(correctionOperand).append('\'');
 		}
 		else
@@ -518,10 +518,10 @@ public class ArithmeticObfuscator extends NumberObfuscation
 			else
 			{
 				insnList.add(ASMUtils.getNumberInsn(correctionOperand));
-				insnList.add(new InsnNode(Opcodes.DNEG));
+				insnList.add(new InsnNode(DNEG));
 			}
 
-			insnList.add(new InsnNode(Opcodes.DSUB));
+			insnList.add(new InsnNode(DSUB));
 			builder.append(" - ").append(-correctionOperand).append('\'');
 		}
 		current += correctionOperand;

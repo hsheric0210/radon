@@ -28,6 +28,7 @@ public enum FlowObfuscationSetting
 	MUTILATE_INSTANCEOF_CHECK(new InstanceofCheckMutilator()),
 	SPLIT_BLOCKS(new BlockSplitter()),
 	FAKE_CATCH_BLOCKS(new FakeCatchBlocks()),
+	INSERT_BAD_POPS(new BadPopInserter()),
 	REPLACE_GOTO(new GotoReplacer()),
 	MUTILATE_RETURN(new ReturnMutilator()),
 	MUTILATE_LOCAL_VARIABLES(new LocalVariableMutilator());

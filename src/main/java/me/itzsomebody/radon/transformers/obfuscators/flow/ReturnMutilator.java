@@ -24,8 +24,6 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 
-// TODO: https://github.com/superblaubeere27/obfuscator/blob/master/obfuscator-core/src/main/java/me/superblaubeere27/jobf/processors/flowObfuscation/LocalVariableMangler.java
-
 /**
  * Separate return from computation(s) of return value
  * Original source code: https://github.com/superblaubeere27/obfuscator/blob/master/obfuscator-core/src/main/java/me/superblaubeere27/jobf/processors/flowObfuscation/ReturnMangler.java
@@ -53,26 +51,28 @@ public class ReturnMutilator extends FlowObfuscation
 
 			final InsnList insns = mn.instructions;
 			for (final AbstractInsnNode insn : insns.toArray())
-				if (insn.getOpcode() >= Opcodes.IRETURN && insn.getOpcode() <= Opcodes.RETURN)
+				if (insn.getOpcode() >= IRETURN && insn.getOpcode() <= RETURN)
 				{
 					final InsnList insnList = new InsnList();
 
 					if (!isVoidType)
-						insnList.add(new VarInsnNode(returnType.getOpcode(Opcodes.ISTORE), returnSlot));
+						insnList.add(new VarInsnNode(returnType.getOpcode(ISTORE), returnSlot));
 
-					insnList.add(new JumpInsnNode(Opcodes.GOTO, returnLabel));
+					insnList.add(new JumpInsnNode(GOTO, returnLabel));
 
 					insns.insert(insn, insnList);
 					insns.remove(insn);
+
+					counter.incrementAndGet();
 				}
 
 			insns.add(returnLabel);
 			if (isVoidType)
-				insns.add(new InsnNode(Opcodes.RETURN));
+				insns.add(new InsnNode(RETURN));
 			else
 			{
-				insns.add(new VarInsnNode(returnType.getOpcode(Opcodes.ILOAD), returnSlot));
-				insns.add(new InsnNode(returnType.getOpcode(Opcodes.IRETURN)));
+				insns.add(new VarInsnNode(returnType.getOpcode(ILOAD), returnSlot));
+				insns.add(new InsnNode(returnType.getOpcode(IRETURN)));
 			}
 		}));
 

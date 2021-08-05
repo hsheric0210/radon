@@ -201,12 +201,12 @@ public class Packer extends Transformer
 			mv.visitMethodInsn(INVOKESPECIAL, "java/lang/ClassLoader", "<init>", "()V", false);
 			final Label l1 = new Label();
 			mv.visitLabel(l1);
-			mv.visitTypeInsn(Opcodes.NEW, packWithGZIP ? "java/util/zip/GZIPInputStream" : "java/util/zip/InflaterInputStream");
+			mv.visitTypeInsn(NEW, packWithGZIP ? "java/util/zip/GZIPInputStream" : "java/util/zip/InflaterInputStream");
 			mv.visitInsn(DUP);
 			mv.visitLdcInsn(Type.getType("L" + memberNames.className + ";"));
 			mv.visitLdcInsn(memberNames.stubName);
 			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Class", "getResourceAsStream", "(Ljava/lang/String;)Ljava/io/InputStream;", false);
-			mv.visitMethodInsn(Opcodes.INVOKESPECIAL, packWithGZIP ? "java/util/zip/GZIPInputStream" : "java/util/zip/InflaterInputStream", "<init>", "(Ljava/io/InputStream;)V", false);
+			mv.visitMethodInsn(INVOKESPECIAL, packWithGZIP ? "java/util/zip/GZIPInputStream" : "java/util/zip/InflaterInputStream", "<init>", "(Ljava/io/InputStream;)V", false);
 			mv.visitVarInsn(ASTORE, 1);
 			final Label l2 = new Label();
 			mv.visitLabel(l2);

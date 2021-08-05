@@ -65,11 +65,10 @@ public class BogusJumpInserter extends FlowObfuscation
 
 				int leeway = mw.getLeewaySize();
 				final int varIndex = mw.getMaxLocals();
-				mw.getMethodNode().maxLocals++; // Prevents breaking of other transformers which rely on this field.
+				mw.getMethodNode().maxLocals += predicateType.getSize(); // Prevents breaking of other transformers which rely on this field.
 
 				final AbstractInsnNode[] untouchedList = insns.toArray();
 				final LabelNode jumpTo = createBogusJumpTarget(mw.getMethodNode());
-				boolean calledSuper = false;
 
 				final StackHeightZeroFinder shzf = new StackHeightZeroFinder(mw.getMethodNode(), insns.getLast());
 				try
@@ -81,20 +80,28 @@ public class BogusJumpInserter extends FlowObfuscation
 					e.printStackTrace();
 					throw new RadonException(String.format("Error happened while trying to emulate the stack of %s.%s%s", cw.getName(), mw.getName(), mw.getDescription()));
 				}
-
 				final Set<AbstractInsnNode> emptyAt = shzf.getEmptyAt();
+
+				final boolean isCtor = "<init>".equals(mw.getName());
+				boolean calledSuper = false;
+				AbstractInsnNode superCall = null;
 				for (final AbstractInsnNode insn : untouchedList)
 				{
 					if (leeway < 10000)
 						break;
 
 					// Bad way of detecting if this class was instantiated
-					if ("<init>".equals(mw.getName()))
-						calledSuper = insn instanceof MethodInsnNode && insn.getOpcode() == INVOKESPECIAL && insn.getPrevious() instanceof VarInsnNode && ((VarInsnNode) insn.getPrevious()).var == 0;
+					if (isCtor && !calledSuper)
+					{
+						calledSuper = ASMUtils.isSuperCall(mw.getMethodNode(), insn);
+						superCall = insn;
+					}
+
 					if (insn != insns.getFirst() && !(insn instanceof LineNumberNode))
 					{
-						if ("<init>".equals(mw.getName()) && !calledSuper)
+						if (isCtor && !calledSuper)
 							continue;
+
 						if (emptyAt.contains(insn))
 						{
 							// We need to make sure stack is empty before making jumps
@@ -118,6 +125,18 @@ public class BogusJumpInserter extends FlowObfuscation
 							// {
 							// ... (original code)
 							// }
+							//
+							//
+							// Impl:
+							// L0
+							// - Original Codes...
+							// L1
+							// - IF (FAKEPREDICATE) GOTO L3
+							// L2
+							// - GOTO L0
+							// L3
+							// - Original Codes...
+							//
 							// </TODO>
 
 							final InsnList fakeJump = BogusJumps.createBogusJump(varIndex, predicateType, predicateInitialValue, jumpTo, false);
@@ -132,23 +151,28 @@ public class BogusJumpInserter extends FlowObfuscation
 
 				if (shouldAdd.get())
 				{
+					final InsnList initializer = new InsnList();
+					initializer.add(new FieldInsnNode(GETSTATIC, cw.getName(), predicate.name, predicateDescriptor));
 					switch (predicateType.getSort())
 					{
 						case Type.FLOAT:
-							insns.insert(new VarInsnNode(FSTORE, varIndex));
+							initializer.add(new VarInsnNode(FSTORE, varIndex));
 							break;
 						case Type.LONG:
-							insns.insert(new VarInsnNode(LSTORE, varIndex));
+							initializer.add(new VarInsnNode(LSTORE, varIndex));
 							break;
 						case Type.DOUBLE:
-							insns.insert(new VarInsnNode(DSTORE, varIndex));
+							initializer.add(new VarInsnNode(DSTORE, varIndex));
 							break;
 						default:
-							insns.insert(new VarInsnNode(ISTORE, varIndex));
+							initializer.add(new VarInsnNode(ISTORE, varIndex));
 							break;
 					}
 
-					insns.insert(new FieldInsnNode(GETSTATIC, cw.getName(), predicate.name, predicateDescriptor));
+					if (superCall == null)
+						insns.insert(initializer);
+					else
+						insns.insert(superCall, initializer);
 				}
 			});
 
@@ -168,20 +192,24 @@ public class BogusJumpInserter extends FlowObfuscation
 	/**
 	 * Generates a generic "escape" pattern to avoid inserting multiple copies of the same bytecode instructions.
 	 *
-	 * @param  methodNode
-	 *                    the {@link MethodNode} we are inserting into.
-	 * @return            a {@link LabelNode} which "escapes" all other flow.
+	 * @param  mn
+	 *            the {@link MethodNode} we are inserting into.
+	 * @return    a {@link LabelNode} which "escapes" all other flow.
 	 */
-	private static LabelNode createBogusJumpTarget(final MethodNode methodNode)
+	private static LabelNode createBogusJumpTarget(final MethodNode mn)
 	{
 		final LabelNode label = new LabelNode();
 		final LabelNode escapeNode = new LabelNode();
-		final InsnList insnList = methodNode.instructions;
-		final AbstractInsnNode target = insnList.getFirst();
-		insnList.insertBefore(target, new JumpInsnNode(GOTO, escapeNode));
-		insnList.insertBefore(target, label);
-		insnList.insertBefore(target, BogusJumps.createBogusExit(methodNode));
-		insnList.insertBefore(target, escapeNode);
+		final InsnList insnList = mn.instructions;
+		final AbstractInsnNode first = insnList.getFirst();
+
+		final InsnList pattern = new InsnList();
+		pattern.add(new JumpInsnNode(GOTO, escapeNode));
+		pattern.add(label);
+		pattern.add(BogusJumps.createBogusExit(mn));
+		pattern.add(escapeNode);
+		insnList.insertBefore(first, pattern);
+
 		return label;
 	}
 }

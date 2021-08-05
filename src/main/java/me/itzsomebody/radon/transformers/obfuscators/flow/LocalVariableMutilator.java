@@ -18,13 +18,9 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.flow;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
@@ -71,29 +67,26 @@ public class LocalVariableMutilator extends FlowObfuscation
 				mn.maxLocals = maxLocals;
 			}
 
-			// Simplified VariableProvider
 			final LocalVariableProvider provider = new LocalVariableProvider(mn);
 
 			// Map of local variables and their types. They are added if the type of the variable is double, float, int or long
-			final Map<Integer, Type> localVarMap = new HashMap<>();
+			final Map<Integer, Set<Type>> localVarMap = new HashMap<>();
 
 			// KEY: Type of array
 			// VALUE: Array local variable index
 			final Map<Type, Integer> typeArrayVarIndexMap = new HashMap<>();
 
 			// KEY: Original Local variable
-			// VALUE: [0]: Local variable index of the array, [1]: Array index
-			final Map<Integer, int[]> slotMap = new HashMap<>();
+			// VALUE:
+			// - KEY: Type of the local variable
+			// - VALUE: [0]: Local variable index of the array, [1]: Array index
+			final Map<Integer, Map<Type, int[]>> slotMap = new HashMap<>();
 
 			// KEY: Array local variable index
 			// VALUE: Current highest array index
 			final Map<Integer, Integer> arrayIndices = new HashMap<>();
 
-			final Map<Integer, Set<Integer>> arrayRNGExclusions = new HashMap<>();
-
-			// KEY: Original Local variable
-			// VALUE: Last setter stack type
-			final Map<Integer, Type> typeChange = new HashMap<>();
+			final Map<Integer, Set<Integer>> arrayIndexRNGExclusions = new HashMap<>();
 
 			final InsnList insns = mn.instructions;
 			for (final AbstractInsnNode insn : insns.toArray())
@@ -106,9 +99,10 @@ public class LocalVariableMutilator extends FlowObfuscation
 						continue;
 
 					final int opcode = varInsn.getOpcode();
-					if (!localVarMap.containsKey(varIndex))
+
+					if (opcode >= ILOAD && opcode <= DLOAD)
 					{
-						Type type = null;
+						final Type type;
 						switch (opcode - ILOAD)
 						{
 							case 0:
@@ -120,78 +114,54 @@ public class LocalVariableMutilator extends FlowObfuscation
 							case FLOAD - ILOAD:
 								type = Type.FLOAT_TYPE;
 								break;
-							case DLOAD - ILOAD:
+							default:
 								type = Type.DOUBLE_TYPE;
-//							case ALOAD - ILOAD: // TODO
-//								type = Type.OBJECT;
 								break;
 						}
 
+						if (!localVarMap.containsKey(varIndex) || !localVarMap.get(varIndex).contains(type))
+							localVarMap.computeIfAbsent(varIndex, i -> new HashSet<>()).add(type);
+					}
+
+					if (opcode >= ISTORE && opcode <= DSTORE)
+					{
+						final Frame<BasicValue> currentFrame = frames[insns.indexOf(varInsn)];
+						final Type type = currentFrame.getStack(currentFrame.getStackSize() - 1).getType();
 						if (type != null)
 						{
-							localVarMap.put(varIndex, type);
-							if (type.getSize() > 1)
+							final int typeSort = type.getSort();
+							if (typeSort >= Type.CHAR && typeSort <= Type.DOUBLE)
 							{
-								final Type finalType = type;
-								verboseInfo(() -> "Put array for wide object in class " + cw.getName() + " method " + mw.getName() + " type: " + finalType.getClassName());
+								final Type newType = typeSort < Type.INT ? Type.INT_TYPE : type;
+								if (!localVarMap.containsKey(varIndex) || !localVarMap.get(varIndex).contains(newType))
+									localVarMap.computeIfAbsent(varIndex, i -> new HashSet<>()).add(newType);
 							}
 						}
 					}
-
-					if (opcode >= ISTORE && opcode <= ASTORE)
-					{
-						// Check for variable type size change
-
-						// Example:
-						// switch(i)
-						// {
-						// case 0:
-						// int j = 0; -> ICONST_0; ISTORE 0
-						// break;
-						// case 1:
-						// int k = 1.0; -> DCONST_0; DSTORE 0
-						// break;
-						// }
-						// Local variable j and k shares variable index 0 although there're no contacts between them.
-
-						final Frame<BasicValue> currentFrame = frames[insns.indexOf(varInsn)];
-						final Type size = currentFrame.getStack(currentFrame.getStackSize() - 1).getType();
-						if (typeChange.containsKey(varIndex) && typeChange.get(varIndex) != size) // Type changed
-							localVarMap.put(varIndex, Type.VOID_TYPE); // Exclude them
-
-						typeChange.put(varIndex, size);
-					}
 				}
 
-			for (final Integer integer : localVarMap.entrySet().stream().filter(entry -> entry.getValue().getSort() == Type.VOID).map(Entry::getKey).collect(Collectors.toList()))
-				localVarMap.remove(integer);
-
-			for (final Type type : localVarMap.values())
-			{
-				typeArrayVarIndexMap.computeIfAbsent(type, i ->
+			for (final Set<Type> types : localVarMap.values())
+				for (final Type type : types)
 				{
-					if (type.getSize() > 1)
-						verboseInfo(() -> "Created array for wide object in class " + cw.getName() + " method " + mw.getName() + " type: " + type.getClassName());
-					return provider.allocateVar(1);
-				});
-				final int arrayVarIndex = typeArrayVarIndexMap.get(type);
-				arrayIndices.put(arrayVarIndex, arrayIndices.getOrDefault(arrayVarIndex, 0) + 1);
-			}
+					typeArrayVarIndexMap.computeIfAbsent(type, i -> provider.allocateVar(1));
+					final int arrayVarIndex = typeArrayVarIndexMap.get(type);
+					arrayIndices.put(arrayVarIndex, arrayIndices.getOrDefault(arrayVarIndex, 0) + 1);
+				}
 
-			for (final Entry<Integer, Type> entry : localVarMap.entrySet())
-			{
-				final int arrayVarIndex = typeArrayVarIndexMap.get(entry.getValue());
-
-				arrayRNGExclusions.computeIfAbsent(arrayVarIndex, i -> new HashSet<>());
-				final int arrayIndex;
-				slotMap.put(entry.getKey(), new int[]
+			for (final Entry<Integer, Set<Type>> entry : localVarMap.entrySet())
+				for (final Type type : entry.getValue())
 				{
-						arrayVarIndex, arrayIndex = RandomUtils.getRandomIntWithExclusion(0, arrayIndices.get(arrayVarIndex), arrayRNGExclusions.get(arrayVarIndex))
-				});
-				arrayRNGExclusions.get(arrayVarIndex).add(arrayIndex);
+					final int arrayVarIndex = typeArrayVarIndexMap.get(type);
+					arrayIndexRNGExclusions.computeIfAbsent(arrayVarIndex, i -> new HashSet<>());
+					final int arrayIndex;
+					slotMap.computeIfAbsent(entry.getKey(), i -> new HashMap<>()).put(type, new int[]
+					{
+							arrayVarIndex, arrayIndex = RandomUtils.getRandomIntWithExclusion(0, arrayIndices.get(arrayVarIndex), arrayIndexRNGExclusions.get(arrayVarIndex))
+					});
+					arrayIndexRNGExclusions.get(arrayVarIndex).add(arrayIndex);
 
-				counter.incrementAndGet();
-			}
+					counter.incrementAndGet();
+				}
 
 			final InsnList initialize = new InsnList();
 
@@ -239,48 +209,59 @@ public class LocalVariableMutilator extends FlowObfuscation
 
 					if (slotMap.containsKey(varIndex))
 					{
-						final Type type = localVarMap.get(varIndex);
+						final Set<Type> types = localVarMap.get(varIndex);
+						final Map<Type, int[]> typeMap = slotMap.get(varIndex);
 
 						if (opcode >= ILOAD && opcode <= DLOAD)
 						{
-							final int[] value = slotMap.get(varIndex);
+							final Optional<Type> optType = types.stream().filter(type -> type.getOpcode(ILOAD) == opcode).findAny();
+							if (optType.isPresent())
+							{
+								final Type type = optType.get();
+								final int[] value = typeMap.get(type);
 
-							final InsnList replace = new InsnList();
-							replace.add(new VarInsnNode(ALOAD, value[0]));
-							replace.add(ASMUtils.getNumberInsn(value[1]));
-							replace.add(new InsnNode(type.getOpcode(IALOAD)));
-							insns.insert(varInsn, replace);
-							insns.remove(varInsn);
+								final InsnList replace = new InsnList();
+								replace.add(new VarInsnNode(ALOAD, value[0]));
+								replace.add(ASMUtils.getNumberInsn(value[1]));
+								replace.add(new InsnNode(type.getOpcode(IALOAD)));
+								insns.insert(varInsn, replace);
+								insns.remove(varInsn);
+							}
 						}
 
 						if (opcode >= ISTORE && opcode <= DSTORE)
 						{
-							final boolean isWide = type.getSize() > 1;
-							final int[] value = slotMap.get(varIndex);
-
-							final InsnList replace = new InsnList();
-							replace.add(new VarInsnNode(ALOAD, value[0]));
-							if (isWide)
+							final Optional<Type> optType = types.stream().filter(type -> type.getOpcode(ISTORE) == opcode).findAny();
+							if (optType.isPresent())
 							{
-								if (mn.maxStack < 4)
-									mn.maxStack = 4;
+								final Type type = optType.get();
+								final boolean isWide = type.getSize() > 1;
+								final int[] value = typeMap.get(type);
 
-								replace.add(new InsnNode(DUP_X2));
-								replace.add(new InsnNode(POP));
+								final InsnList replace = new InsnList();
+								replace.add(new VarInsnNode(ALOAD, value[0]));
+								if (isWide)
+								{
+									if (mn.maxStack < 4)
+										mn.maxStack = 4;
+
+									replace.add(new InsnNode(DUP_X2));
+									replace.add(new InsnNode(POP));
+								}
+								else
+									replace.add(new InsnNode(SWAP));
+								replace.add(ASMUtils.getNumberInsn(value[1]));
+								if (isWide)
+								{
+									replace.add(new InsnNode(DUP_X2));
+									replace.add(new InsnNode(POP));
+								}
+								else
+									replace.add(new InsnNode(SWAP));
+								replace.add(new InsnNode(type.getOpcode(IASTORE)));
+								insns.insert(varInsn, replace);
+								insns.remove(varInsn);
 							}
-							else
-								replace.add(new InsnNode(SWAP));
-							replace.add(ASMUtils.getNumberInsn(value[1]));
-							if (isWide)
-							{
-								replace.add(new InsnNode(DUP_X2));
-								replace.add(new InsnNode(POP));
-							}
-							else
-								replace.add(new InsnNode(SWAP));
-							replace.add(new InsnNode(type.getOpcode(IASTORE)));
-							insns.insert(varInsn, replace);
-							insns.remove(varInsn);
 						}
 					}
 				}
@@ -292,7 +273,7 @@ public class LocalVariableMutilator extends FlowObfuscation
 
 					if (slotMap.containsKey(varIndex))
 					{
-						final int[] value = slotMap.get(varIndex);
+						final int[] value = slotMap.get(varIndex).get(Type.INT_TYPE); // IINC is only applicable with 'int'
 
 						final InsnList replace = new InsnList();
 
@@ -301,13 +282,13 @@ public class LocalVariableMutilator extends FlowObfuscation
 
 						replace.add(new VarInsnNode(ALOAD, value[0]));
 						replace.add(ASMUtils.getNumberInsn(value[1]));
-						replace.add(new InsnNode(localVarMap.get(varIndex).getOpcode(IALOAD)));
+						replace.add(new InsnNode(IALOAD));
 
 						replace.add(ASMUtils.getNumberInsn(iinc.incr));
 
 						replace.add(new InsnNode(IADD));
 
-						replace.add(new InsnNode(localVarMap.get(varIndex).getOpcode(IASTORE)));
+						replace.add(new InsnNode(IASTORE));
 
 						insns.insert(iinc, replace);
 						insns.remove(iinc);
@@ -327,4 +308,5 @@ public class LocalVariableMutilator extends FlowObfuscation
 	{
 		return "Local Variable Mutilator";
 	}
+
 }
