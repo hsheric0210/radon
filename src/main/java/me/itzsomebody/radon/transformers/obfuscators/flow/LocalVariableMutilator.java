@@ -86,7 +86,7 @@ public class LocalVariableMutilator extends FlowObfuscation
 			// VALUE: Current highest array index
 			final Map<Integer, Integer> arrayIndices = new HashMap<>();
 
-			final Map<Integer, Set<Integer>> arrayIndexRNGExclusions = new HashMap<>();
+			final Map<Integer, Collection<Integer>> arrayIndexRNGExclusions = new HashMap<>();
 
 			final InsnList insns = mn.instructions;
 			for (final AbstractInsnNode insn : insns.toArray())

@@ -18,7 +18,7 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.references;
 
-import java.util.Arrays;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.stream.Stream;
@@ -29,6 +29,8 @@ import org.objectweb.asm.tree.*;
 import me.itzsomebody.radon.asm.ClassWrapper;
 import me.itzsomebody.radon.utils.ASMUtils;
 import me.itzsomebody.radon.utils.Constants;
+import me.itzsomebody.radon.utils.RandomUtils;
+import me.itzsomebody.radon.utils.Strings;
 
 /**
  * Hides INVOKESTATICs, INVOKEVIRTUALs, INVOKESPECIALs, GETSTATIC, PUTSTATIC, GETFIELD and PUTFIELD operations by swapping them out with an invokedynamic instruction.
@@ -70,11 +72,8 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 							newDesc = Constants.OPENING_BRACE_PATTERN.matcher(newDesc).replaceAll(Matcher.quoteReplacement("(Ljava/lang/Object;"));
 
 						newDesc = ASMUtils.getGenericMethodDesc(newDesc);
-						final String name = insn.getOpcode() == INVOKESTATIC ? "a" : "b";
-						// TODO: Randomize the unique identifiers if can.
 
-						final InvokeDynamicInsnNode indy = new InvokeDynamicInsnNode(name, newDesc, bootstrapHandle);
-
+						final InvokeDynamicInsnNode indy = new InvokeDynamicInsnNode(memberNames.generateMethodName(insn.getOpcode() == INVOKESTATIC ? 0 : 1, true), newDesc, bootstrapHandle);
 						insns.insertBefore(m, new LdcInsnNode(m.owner.replace('/', '.')));
 						insns.insertBefore(m, ASMUtils.getNumberInsn(hash(m.desc) & 0xffffffffL | (long) m.name.hashCode() << 32));
 						insns.set(m, indy);
@@ -94,26 +93,7 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 							if (!isStatic)
 								newDesc = Constants.OPENING_BRACE_PATTERN.matcher(newDesc).replaceAll(Matcher.quoteReplacement("(Ljava/lang/Object;"));
 
-							final String name;
-
-							switch (insn.getOpcode())
-							{
-								case GETSTATIC:
-									name = "d";
-									break;
-								case GETFIELD:
-									name = "e";
-									break;
-								case PUTSTATIC:
-									name = "f";
-									break;
-								default:
-									name = "g";
-									break;
-							}
-
-							final InvokeDynamicInsnNode indy = new InvokeDynamicInsnNode(name, newDesc, bootstrapHandle);
-
+							final InvokeDynamicInsnNode indy = new InvokeDynamicInsnNode(memberNames.generateMethodName(insn.getOpcode() - GETSTATIC, false), newDesc, bootstrapHandle);
 							insns.insertBefore(f, new LdcInsnNode(f.owner.replace('/', '.')));
 							insns.insertBefore(f, ASMUtils.getNumberInsn(hashType(f.desc) & 0xffffffffL | (long) f.name.hashCode() << 32));
 							insns.set(f, indy);
@@ -507,7 +487,7 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 			mv.visitEnd();
 		}
 		{
-			mv = cw.visitMethod(ACC_PRIVATE | ACC_STATIC, memberNames.resolveMethodHandleMethodName, "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MutableCallSite;[Ljava/lang/Object;)Ljava/lang/Object;", null, new String[]
+			mv = cw.visitMethod(ACC_PRIVATE + ACC_STATIC, memberNames.resolveMethodHandleMethodName, "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MutableCallSite;[Ljava/lang/Object;)Ljava/lang/Object;", null, new String[]
 			{
 					"java/lang/Throwable"
 			});
@@ -515,11 +495,33 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 			final Label l0 = new Label();
 			mv.visitLabel(l0);
 			mv.visitVarInsn(ALOAD, 1);
-			mv.visitInsn(ICONST_0);
-			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "charAt", "(I)C", false);
-			mv.visitVarInsn(ISTORE, 5);
+			mv.visitLdcInsn(memberNames.separator);
+			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "split", "(Ljava/lang/String;)[Ljava/lang/String;", false);
+			mv.visitVarInsn(ASTORE, 5);
 			final Label l1 = new Label();
 			mv.visitLabel(l1);
+			mv.visitVarInsn(ALOAD, 5);
+			mv.visitInsn(ICONST_0);
+			mv.visitInsn(AALOAD);
+			mv.visitInsn(ICONST_0);
+			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "charAt", "(I)C", false);
+			mv.visitVarInsn(ISTORE, 6);
+			final Label l2 = new Label();
+			mv.visitLabel(l2);
+			mv.visitVarInsn(ALOAD, 5);
+			mv.visitInsn(ICONST_2);
+			mv.visitInsn(AALOAD);
+			mv.visitVarInsn(ALOAD, 5);
+			mv.visitInsn(ICONST_1);
+			mv.visitInsn(AALOAD);
+			mv.visitInsn(ICONST_0);
+			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "charAt", "(I)C", false);
+			mv.visitInsn(ICONST_1);
+			mv.visitInsn(ISUB);
+			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "charAt", "(I)C", false);
+			mv.visitVarInsn(ISTORE, 7);
+			final Label l3 = new Label();
+			mv.visitLabel(l3);
 			mv.visitVarInsn(ALOAD, 4);
 			mv.visitVarInsn(ALOAD, 4);
 			mv.visitInsn(ARRAYLENGTH);
@@ -528,21 +530,21 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 			mv.visitInsn(AALOAD);
 			mv.visitTypeInsn(CHECKCAST, "java/lang/Long");
 			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Long", "longValue", "()J", false);
-			mv.visitVarInsn(LSTORE, 6);
-			final Label l2 = new Label();
-			mv.visitLabel(l2);
-			mv.visitVarInsn(LLOAD, 6);
+			mv.visitVarInsn(LSTORE, 8);
+			final Label l4 = new Label();
+			mv.visitLabel(l4);
+			mv.visitVarInsn(LLOAD, 8);
 			mv.visitIntInsn(BIPUSH, 32);
 			mv.visitInsn(LSHR);
 			mv.visitInsn(L2I);
-			mv.visitVarInsn(ISTORE, 8);
-			final Label l3 = new Label();
-			mv.visitLabel(l3);
-			mv.visitVarInsn(LLOAD, 6);
+			mv.visitVarInsn(ISTORE, 10);
+			final Label l5 = new Label();
+			mv.visitLabel(l5);
+			mv.visitVarInsn(LLOAD, 8);
 			mv.visitInsn(L2I);
-			mv.visitVarInsn(ISTORE, 9);
-			final Label l4 = new Label();
-			mv.visitLabel(l4);
+			mv.visitVarInsn(ISTORE, 11);
+			final Label l6 = new Label();
+			mv.visitLabel(l6);
 			mv.visitVarInsn(ALOAD, 4);
 			mv.visitVarInsn(ALOAD, 4);
 			mv.visitInsn(ARRAYLENGTH);
@@ -550,252 +552,283 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 			mv.visitInsn(ISUB);
 			mv.visitInsn(AALOAD);
 			mv.visitTypeInsn(CHECKCAST, "java/lang/String");
-			mv.visitVarInsn(ASTORE, 10);
-			final Label l5 = new Label();
-			mv.visitLabel(l5);
-			mv.visitVarInsn(ALOAD, 10);
-			mv.visitMethodInsn(INVOKESTATIC, "java/lang/Class", "forName", "(Ljava/lang/String;)Ljava/lang/Class;", false);
-			mv.visitVarInsn(ASTORE, 11);
-			final Label l6 = new Label();
-			mv.visitLabel(l6);
-			mv.visitVarInsn(ILOAD, 5);
-			mv.visitIntInsn(BIPUSH, 97); // a
+			mv.visitVarInsn(ASTORE, 12);
 			final Label l7 = new Label();
-			mv.visitJumpInsn(IF_ICMPLT, l7);
-			mv.visitVarInsn(ILOAD, 5);
-			mv.visitIntInsn(BIPUSH, 99); // c
-			mv.visitJumpInsn(IF_ICMPGT, l7);
+			mv.visitLabel(l7);
+			mv.visitVarInsn(ALOAD, 12);
+			mv.visitMethodInsn(INVOKESTATIC, "java/lang/Class", "forName", "(Ljava/lang/String;)Ljava/lang/Class;", false);
+			mv.visitVarInsn(ASTORE, 13);
 			final Label l8 = new Label();
 			mv.visitLabel(l8);
-			mv.visitVarInsn(ALOAD, 11);
-			mv.visitVarInsn(ILOAD, 8);
-			mv.visitVarInsn(ILOAD, 9);
-			mv.visitMethodInsn(INVOKESTATIC, memberNames.className, memberNames.findMethodMethodName, "(Ljava/lang/Class;II)Ljava/lang/reflect/Method;", false);
-			mv.visitVarInsn(ASTORE, 13);
+			mv.visitVarInsn(ILOAD, 6);
+			ASMUtils.getNumberInsn(memberNames.methodAccessFlag).accept(mv);
+			mv.visitInsn(IAND);
 			final Label l9 = new Label();
-			mv.visitLabel(l9);
-			mv.visitVarInsn(ALOAD, 13);
+			mv.visitJumpInsn(IFEQ, l9);
 			final Label l10 = new Label();
-			mv.visitJumpInsn(IFNONNULL, l10);
+			mv.visitLabel(l10);
+			mv.visitVarInsn(ALOAD, 13);
+			mv.visitVarInsn(ILOAD, 10);
+			mv.visitVarInsn(ILOAD, 11);
+			mv.visitMethodInsn(INVOKESTATIC, memberNames.className, memberNames.findMethodMethodName, "(Ljava/lang/Class;II)Ljava/lang/reflect/Method;", false);
+			mv.visitVarInsn(ASTORE, 15);
 			final Label l11 = new Label();
 			mv.visitLabel(l11);
+			mv.visitVarInsn(ALOAD, 15);
+			final Label l12 = new Label();
+			mv.visitJumpInsn(IFNONNULL, l12);
+			final Label l13 = new Label();
+			mv.visitLabel(l13);
 			mv.visitTypeInsn(NEW, "java/lang/NoSuchMethodException");
 			mv.visitInsn(DUP);
 			mv.visitTypeInsn(NEW, "java/lang/StringBuilder");
 			mv.visitInsn(DUP);
-			mv.visitMethodInsn(INVOKESPECIAL, "java/lang/StringBuilder", "<init>", "()V", false);
-			mv.visitVarInsn(ALOAD, 10);
-			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;", false);
+			mv.visitVarInsn(ALOAD, 12);
+			mv.visitMethodInsn(INVOKESTATIC, "java/lang/String", "valueOf", "(Ljava/lang/Object;)Ljava/lang/String;", false);
+			mv.visitMethodInsn(INVOKESPECIAL, "java/lang/StringBuilder", "<init>", "(Ljava/lang/String;)V", false);
 			mv.visitIntInsn(BIPUSH, 32);
 			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(C)Ljava/lang/StringBuilder;", false);
 			mv.visitVarInsn(ALOAD, 1);
 			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;", false);
 			mv.visitIntInsn(BIPUSH, 32);
 			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(C)Ljava/lang/StringBuilder;", false);
-			mv.visitVarInsn(ILOAD, 9);
+			mv.visitVarInsn(ILOAD, 11);
 			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(I)Ljava/lang/StringBuilder;", false);
 			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StringBuilder", "toString", "()Ljava/lang/String;", false);
 			mv.visitMethodInsn(INVOKESPECIAL, "java/lang/NoSuchMethodException", "<init>", "(Ljava/lang/String;)V", false);
 			mv.visitInsn(ATHROW);
-			mv.visitLabel(l10);
-			mv.visitVarInsn(ALOAD, 13);
+			mv.visitLabel(l12);
+			mv.visitVarInsn(ALOAD, 15);
 			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/reflect/Method", "getReturnType", "()Ljava/lang/Class;", false);
-			mv.visitVarInsn(ALOAD, 13);
+			mv.visitVarInsn(ALOAD, 15);
 			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/reflect/Method", "getParameterTypes", "()[Ljava/lang/Class;", false);
 			mv.visitMethodInsn(INVOKESTATIC, "java/lang/invoke/MethodType", "methodType", "(Ljava/lang/Class;[Ljava/lang/Class;)Ljava/lang/invoke/MethodType;", false);
-			mv.visitVarInsn(ASTORE, 14);
-			final Label l12 = new Label();
-			mv.visitLabel(l12);
-			mv.visitVarInsn(ILOAD, 5);
-			mv.visitIntInsn(BIPUSH, 97); // a
-			final Label l13 = new Label();
-			mv.visitJumpInsn(IF_ICMPNE, l13);
+			mv.visitVarInsn(ASTORE, 16);
 			final Label l14 = new Label();
 			mv.visitLabel(l14);
-			mv.visitVarInsn(ALOAD, 0);
-			mv.visitVarInsn(ALOAD, 13);
-			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/invoke/MethodHandles$Lookup", "unreflect", "(Ljava/lang/reflect/Method;)Ljava/lang/invoke/MethodHandle;", false);
-			mv.visitVarInsn(ALOAD, 14);
-			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/invoke/MethodHandle", "asType", "(Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/MethodHandle;", false);
-			mv.visitVarInsn(ASTORE, 12);
+			mv.visitVarInsn(ILOAD, 7);
+			ASMUtils.getNumberInsn(memberNames.nameFlags[0]).accept(mv);
+			mv.visitInsn(IAND);
 			final Label l15 = new Label();
-			mv.visitLabel(l15);
+			mv.visitJumpInsn(IFEQ, l15);
 			final Label l16 = new Label();
-			mv.visitJumpInsn(GOTO, l16);
-			mv.visitLabel(l13);
-			mv.visitVarInsn(ILOAD, 5);
-			mv.visitIntInsn(BIPUSH, 98); // b
-			final Label l17 = new Label();
-			mv.visitJumpInsn(IF_ICMPNE, l17);
-			final Label l18 = new Label();
-			mv.visitLabel(l18);
+			mv.visitLabel(l16);
 			mv.visitVarInsn(ALOAD, 0);
-			mv.visitVarInsn(ALOAD, 13);
+			mv.visitVarInsn(ALOAD, 15);
 			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/invoke/MethodHandles$Lookup", "unreflect", "(Ljava/lang/reflect/Method;)Ljava/lang/invoke/MethodHandle;", false);
-			mv.visitVarInsn(ALOAD, 14);
+			mv.visitVarInsn(ALOAD, 16);
+			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/invoke/MethodHandle", "asType", "(Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/MethodHandle;", false);
+			mv.visitVarInsn(ASTORE, 14);
+			final Label l17 = new Label();
+			mv.visitLabel(l17);
+			final Label l18 = new Label();
+			mv.visitJumpInsn(GOTO, l18);
+			mv.visitLabel(l15);
+			mv.visitVarInsn(ILOAD, 7);
+			ASMUtils.getNumberInsn(memberNames.nameFlags[1]).accept(mv);
+			mv.visitInsn(IAND);
+			final Label l19 = new Label();
+			mv.visitJumpInsn(IFEQ, l19);
+			final Label l20 = new Label();
+			mv.visitLabel(l20);
+			mv.visitVarInsn(ALOAD, 0);
+			mv.visitVarInsn(ALOAD, 15);
+			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/invoke/MethodHandles$Lookup", "unreflect", "(Ljava/lang/reflect/Method;)Ljava/lang/invoke/MethodHandle;", false);
+			mv.visitVarInsn(ALOAD, 16);
 			mv.visitInsn(ICONST_0);
+			final Label l21 = new Label();
+			mv.visitLabel(l21);
 			mv.visitInsn(ICONST_1);
 			mv.visitTypeInsn(ANEWARRAY, "java/lang/Class");
 			mv.visitInsn(DUP);
 			mv.visitInsn(ICONST_0);
+			final Label l22 = new Label();
+			mv.visitLabel(l22);
 			mv.visitLdcInsn(Type.getType("Ljava/lang/Object;"));
 			mv.visitInsn(AASTORE);
-			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/invoke/MethodType", "insertParameterTypes", "(I[Ljava/lang/Class;)Ljava/lang/invoke/MethodType;", false);
-			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/invoke/MethodHandle", "asType", "(Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/MethodHandle;", false);
-			mv.visitVarInsn(ASTORE, 12);
-			final Label l19 = new Label();
-			mv.visitLabel(l19);
-			mv.visitJumpInsn(GOTO, l16);
-			mv.visitLabel(l17);
-			mv.visitVarInsn(ALOAD, 0);
-			mv.visitVarInsn(ALOAD, 13);
-			mv.visitLdcInsn(Type.getType("L" + memberNames.className + ";"));
-			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/invoke/MethodHandles$Lookup", "unreflectSpecial", "(Ljava/lang/reflect/Method;Ljava/lang/Class;)Ljava/lang/invoke/MethodHandle;", false);
-			mv.visitVarInsn(ALOAD, 14);
-			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/invoke/MethodHandle", "asType", "(Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/MethodHandle;", false);
-			mv.visitVarInsn(ASTORE, 12);
-			mv.visitLabel(l16);
-			final Label l20 = new Label();
-			mv.visitJumpInsn(GOTO, l20);
-			mv.visitLabel(l7);
-			mv.visitVarInsn(ALOAD, 11);
-			mv.visitVarInsn(ILOAD, 8);
-			mv.visitVarInsn(ILOAD, 9);
-			mv.visitMethodInsn(INVOKESTATIC, memberNames.className, memberNames.findFieldMethodName, "(Ljava/lang/Class;II)Ljava/lang/reflect/Field;", false);
-			mv.visitVarInsn(ASTORE, 13);
-			final Label l21 = new Label();
-			mv.visitLabel(l21);
-			mv.visitVarInsn(ALOAD, 13);
-			final Label l22 = new Label();
-			mv.visitJumpInsn(IFNONNULL, l22);
 			final Label l23 = new Label();
 			mv.visitLabel(l23);
+			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/invoke/MethodType", "insertParameterTypes", "(I[Ljava/lang/Class;)Ljava/lang/invoke/MethodType;", false);
+			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/invoke/MethodHandle", "asType", "(Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/MethodHandle;", false);
+			mv.visitVarInsn(ASTORE, 14);
+			final Label l24 = new Label();
+			mv.visitLabel(l24);
+			mv.visitJumpInsn(GOTO, l18);
+			mv.visitLabel(l19);
+			mv.visitVarInsn(ALOAD, 0);
+			mv.visitVarInsn(ALOAD, 15);
+			mv.visitLdcInsn(Type.getType("L" + memberNames.className + ";"));
+			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/invoke/MethodHandles$Lookup", "unreflectSpecial", "(Ljava/lang/reflect/Method;Ljava/lang/Class;)Ljava/lang/invoke/MethodHandle;", false);
+			mv.visitVarInsn(ALOAD, 16);
+			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/invoke/MethodHandle", "asType", "(Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/MethodHandle;", false);
+			mv.visitVarInsn(ASTORE, 14);
+			final Label l25 = new Label();
+			mv.visitLabel(l25);
+			mv.visitJumpInsn(GOTO, l18);
+			mv.visitLabel(l9);
+			mv.visitVarInsn(ALOAD, 13);
+			mv.visitVarInsn(ILOAD, 10);
+			mv.visitVarInsn(ILOAD, 11);
+			mv.visitMethodInsn(INVOKESTATIC, memberNames.className, memberNames.findFieldMethodName, "(Ljava/lang/Class;II)Ljava/lang/reflect/Field;", false);
+			mv.visitVarInsn(ASTORE, 15);
+			final Label l26 = new Label();
+			mv.visitLabel(l26);
+			mv.visitVarInsn(ALOAD, 15);
+			final Label l27 = new Label();
+			mv.visitJumpInsn(IFNONNULL, l27);
+			final Label l28 = new Label();
+			mv.visitLabel(l28);
 			mv.visitTypeInsn(NEW, "java/lang/NoSuchFieldException");
 			mv.visitInsn(DUP);
 			mv.visitTypeInsn(NEW, "java/lang/StringBuilder");
 			mv.visitInsn(DUP);
-			mv.visitMethodInsn(INVOKESPECIAL, "java/lang/StringBuilder", "<init>", "()V", false);
-			mv.visitVarInsn(ALOAD, 10);
-			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;", false);
+			mv.visitVarInsn(ALOAD, 12);
+			mv.visitMethodInsn(INVOKESTATIC, "java/lang/String", "valueOf", "(Ljava/lang/Object;)Ljava/lang/String;", false);
+			mv.visitMethodInsn(INVOKESPECIAL, "java/lang/StringBuilder", "<init>", "(Ljava/lang/String;)V", false);
 			mv.visitIntInsn(BIPUSH, 32);
 			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(C)Ljava/lang/StringBuilder;", false);
 			mv.visitVarInsn(ALOAD, 1);
 			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;", false);
 			mv.visitIntInsn(BIPUSH, 32);
 			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(C)Ljava/lang/StringBuilder;", false);
-			mv.visitVarInsn(ILOAD, 9);
+			mv.visitVarInsn(ILOAD, 11);
 			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StringBuilder", "append", "(I)Ljava/lang/StringBuilder;", false);
 			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StringBuilder", "toString", "()Ljava/lang/String;", false);
 			mv.visitMethodInsn(INVOKESPECIAL, "java/lang/NoSuchFieldException", "<init>", "(Ljava/lang/String;)V", false);
 			mv.visitInsn(ATHROW);
-			mv.visitLabel(l22);
-			mv.visitVarInsn(ILOAD, 5);
-			mv.visitIntInsn(BIPUSH, 100); // d
-			final Label l24 = new Label();
-			mv.visitJumpInsn(IF_ICMPNE, l24);
-			final Label l25 = new Label();
-			mv.visitLabel(l25);
-			mv.visitVarInsn(ALOAD, 0);
-			mv.visitVarInsn(ALOAD, 13);
-			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/invoke/MethodHandles$Lookup", "unreflectGetter", "(Ljava/lang/reflect/Field;)Ljava/lang/invoke/MethodHandle;", false);
-			mv.visitVarInsn(ALOAD, 13);
-			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/reflect/Field", "getType", "()Ljava/lang/Class;", false);
-			mv.visitMethodInsn(INVOKESTATIC, "java/lang/invoke/MethodType", "methodType", "(Ljava/lang/Class;)Ljava/lang/invoke/MethodType;", false);
-			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/invoke/MethodHandle", "asType", "(Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/MethodHandle;", false);
-			mv.visitVarInsn(ASTORE, 12);
-			final Label l26 = new Label();
-			mv.visitLabel(l26);
-			mv.visitJumpInsn(GOTO, l20);
-			mv.visitLabel(l24);
-			mv.visitVarInsn(ILOAD, 5);
-			mv.visitIntInsn(BIPUSH, 101); // e
-			final Label l27 = new Label();
-			mv.visitJumpInsn(IF_ICMPNE, l27);
-			final Label l28 = new Label();
-			mv.visitLabel(l28);
-			mv.visitVarInsn(ALOAD, 0);
-			mv.visitVarInsn(ALOAD, 13);
-			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/invoke/MethodHandles$Lookup", "unreflectGetter", "(Ljava/lang/reflect/Field;)Ljava/lang/invoke/MethodHandle;", false);
-			mv.visitVarInsn(ALOAD, 13);
-			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/reflect/Field", "getType", "()Ljava/lang/Class;", false);
-			mv.visitMethodInsn(INVOKESTATIC, "java/lang/invoke/MethodType", "methodType", "(Ljava/lang/Class;)Ljava/lang/invoke/MethodType;", false);
-			mv.visitInsn(ICONST_0);
-			mv.visitInsn(ICONST_1);
-			mv.visitTypeInsn(ANEWARRAY, "java/lang/Class");
-			mv.visitInsn(DUP);
-			mv.visitInsn(ICONST_0);
-			mv.visitLdcInsn(Type.getType("Ljava/lang/Object;"));
-			mv.visitInsn(AASTORE);
-			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/invoke/MethodType", "insertParameterTypes", "(I[Ljava/lang/Class;)Ljava/lang/invoke/MethodType;", false);
-			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/invoke/MethodHandle", "asType", "(Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/MethodHandle;", false);
-			mv.visitVarInsn(ASTORE, 12);
-			final Label l29 = new Label();
-			mv.visitLabel(l29);
-			mv.visitJumpInsn(GOTO, l20);
 			mv.visitLabel(l27);
-			mv.visitVarInsn(ILOAD, 5);
-			mv.visitIntInsn(BIPUSH, 102); // e
+			mv.visitVarInsn(ILOAD, 7);
+			ASMUtils.getNumberInsn(memberNames.nameFlags[0]).accept(mv);
+			mv.visitInsn(IAND);
+			final Label l29 = new Label();
+			mv.visitJumpInsn(IFEQ, l29);
 			final Label l30 = new Label();
-			mv.visitJumpInsn(IF_ICMPNE, l30);
-			final Label l31 = new Label();
-			mv.visitLabel(l31);
-			mv.visitVarInsn(ALOAD, 0);
-			mv.visitVarInsn(ALOAD, 13);
-			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/invoke/MethodHandles$Lookup", "unreflectSetter", "(Ljava/lang/reflect/Field;)Ljava/lang/invoke/MethodHandle;", false);
-			mv.visitFieldInsn(GETSTATIC, "java/lang/Void", "TYPE", "Ljava/lang/Class;");
-			mv.visitVarInsn(ALOAD, 13);
-			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/reflect/Field", "getType", "()Ljava/lang/Class;", false);
-			mv.visitMethodInsn(INVOKESTATIC, "java/lang/invoke/MethodType", "methodType", "(Ljava/lang/Class;Ljava/lang/Class;)Ljava/lang/invoke/MethodType;", false);
-			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/invoke/MethodHandle", "asType", "(Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/MethodHandle;", false);
-			mv.visitVarInsn(ASTORE, 12);
-			final Label l32 = new Label();
-			mv.visitLabel(l32);
-			mv.visitJumpInsn(GOTO, l20);
 			mv.visitLabel(l30);
 			mv.visitVarInsn(ALOAD, 0);
-			mv.visitVarInsn(ALOAD, 13);
+			mv.visitVarInsn(ALOAD, 15);
+			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/invoke/MethodHandles$Lookup", "unreflectGetter", "(Ljava/lang/reflect/Field;)Ljava/lang/invoke/MethodHandle;", false);
+			mv.visitVarInsn(ALOAD, 15);
+			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/reflect/Field", "getType", "()Ljava/lang/Class;", false);
+			mv.visitMethodInsn(INVOKESTATIC, "java/lang/invoke/MethodType", "methodType", "(Ljava/lang/Class;)Ljava/lang/invoke/MethodType;", false);
+			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/invoke/MethodHandle", "asType", "(Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/MethodHandle;", false);
+			mv.visitVarInsn(ASTORE, 14);
+			final Label l31 = new Label();
+			mv.visitLabel(l31);
+			mv.visitJumpInsn(GOTO, l18);
+			mv.visitLabel(l29);
+			mv.visitVarInsn(ILOAD, 7);
+			ASMUtils.getNumberInsn(memberNames.nameFlags[1]).accept(mv);
+			mv.visitInsn(IAND);
+			final Label l32 = new Label();
+			mv.visitJumpInsn(IFEQ, l32);
+			final Label l33 = new Label();
+			mv.visitLabel(l33);
+			mv.visitVarInsn(ALOAD, 0);
+			mv.visitVarInsn(ALOAD, 15);
 			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/invoke/MethodHandles$Lookup", "unreflectSetter", "(Ljava/lang/reflect/Field;)Ljava/lang/invoke/MethodHandle;", false);
 			mv.visitFieldInsn(GETSTATIC, "java/lang/Void", "TYPE", "Ljava/lang/Class;");
-			mv.visitVarInsn(ALOAD, 13);
+			mv.visitVarInsn(ALOAD, 15);
 			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/reflect/Field", "getType", "()Ljava/lang/Class;", false);
 			mv.visitMethodInsn(INVOKESTATIC, "java/lang/invoke/MethodType", "methodType", "(Ljava/lang/Class;Ljava/lang/Class;)Ljava/lang/invoke/MethodType;", false);
+			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/invoke/MethodHandle", "asType", "(Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/MethodHandle;", false);
+			mv.visitVarInsn(ASTORE, 14);
+			final Label l34 = new Label();
+			mv.visitLabel(l34);
+			mv.visitJumpInsn(GOTO, l18);
+			mv.visitLabel(l32);
+			mv.visitVarInsn(ILOAD, 7);
+			ASMUtils.getNumberInsn(memberNames.nameFlags[2]).accept(mv);
+			mv.visitInsn(IAND);
+			final Label l35 = new Label();
+			mv.visitJumpInsn(IFEQ, l35);
+			final Label l36 = new Label();
+			mv.visitLabel(l36);
+			mv.visitVarInsn(ALOAD, 0);
+			mv.visitVarInsn(ALOAD, 15);
+			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/invoke/MethodHandles$Lookup", "unreflectGetter", "(Ljava/lang/reflect/Field;)Ljava/lang/invoke/MethodHandle;", false);
+			mv.visitVarInsn(ALOAD, 15);
+			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/reflect/Field", "getType", "()Ljava/lang/Class;", false);
+			mv.visitMethodInsn(INVOKESTATIC, "java/lang/invoke/MethodType", "methodType", "(Ljava/lang/Class;)Ljava/lang/invoke/MethodType;", false);
 			mv.visitInsn(ICONST_0);
+			final Label l37 = new Label();
+			mv.visitLabel(l37);
 			mv.visitInsn(ICONST_1);
 			mv.visitTypeInsn(ANEWARRAY, "java/lang/Class");
 			mv.visitInsn(DUP);
 			mv.visitInsn(ICONST_0);
+			final Label l38 = new Label();
+			mv.visitLabel(l38);
 			mv.visitLdcInsn(Type.getType("Ljava/lang/Object;"));
 			mv.visitInsn(AASTORE);
+			final Label l39 = new Label();
+			mv.visitLabel(l39);
 			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/invoke/MethodType", "insertParameterTypes", "(I[Ljava/lang/Class;)Ljava/lang/invoke/MethodType;", false);
 			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/invoke/MethodHandle", "asType", "(Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/MethodHandle;", false);
-			mv.visitVarInsn(ASTORE, 12);
-			mv.visitLabel(l20);
-			mv.visitVarInsn(ALOAD, 12);
+			mv.visitVarInsn(ASTORE, 14);
+			final Label l40 = new Label();
+			mv.visitLabel(l40);
+			mv.visitJumpInsn(GOTO, l18);
+			mv.visitLabel(l35);
+			mv.visitVarInsn(ALOAD, 0);
+			mv.visitVarInsn(ALOAD, 15);
+			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/invoke/MethodHandles$Lookup", "unreflectSetter", "(Ljava/lang/reflect/Field;)Ljava/lang/invoke/MethodHandle;", false);
+			mv.visitFieldInsn(GETSTATIC, "java/lang/Void", "TYPE", "Ljava/lang/Class;");
+			mv.visitVarInsn(ALOAD, 15);
+			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/reflect/Field", "getType", "()Ljava/lang/Class;", false);
+			mv.visitMethodInsn(INVOKESTATIC, "java/lang/invoke/MethodType", "methodType", "(Ljava/lang/Class;Ljava/lang/Class;)Ljava/lang/invoke/MethodType;", false);
+			mv.visitInsn(ICONST_0);
+			final Label l41 = new Label();
+			mv.visitLabel(l41);
+			mv.visitInsn(ICONST_1);
+			mv.visitTypeInsn(ANEWARRAY, "java/lang/Class");
+			mv.visitInsn(DUP);
+			mv.visitInsn(ICONST_0);
+			final Label l42 = new Label();
+			mv.visitLabel(l42);
+			mv.visitLdcInsn(Type.getType("Ljava/lang/Object;"));
+			mv.visitInsn(AASTORE);
+			final Label l43 = new Label();
+			mv.visitLabel(l43);
+			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/invoke/MethodType", "insertParameterTypes", "(I[Ljava/lang/Class;)Ljava/lang/invoke/MethodType;", false);
+			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/invoke/MethodHandle", "asType", "(Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/MethodHandle;", false);
+			mv.visitVarInsn(ASTORE, 14);
+			mv.visitLabel(l18);
+			mv.visitVarInsn(ALOAD, 14);
 			mv.visitVarInsn(ALOAD, 2);
 			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/invoke/MethodType", "parameterCount", "()I", false);
 			mv.visitInsn(ICONST_2);
 			mv.visitInsn(ISUB);
+			final Label l44 = new Label();
+			mv.visitLabel(l44);
 			mv.visitInsn(ICONST_2);
 			mv.visitTypeInsn(ANEWARRAY, "java/lang/Class");
 			mv.visitInsn(DUP);
 			mv.visitInsn(ICONST_0);
+			final Label l45 = new Label();
+			mv.visitLabel(l45);
 			mv.visitLdcInsn(Type.getType("Ljava/lang/String;"));
 			mv.visitInsn(AASTORE);
 			mv.visitInsn(DUP);
 			mv.visitInsn(ICONST_1);
 			mv.visitFieldInsn(GETSTATIC, "java/lang/Long", "TYPE", "Ljava/lang/Class;");
 			mv.visitInsn(AASTORE);
+			final Label l46 = new Label();
+			mv.visitLabel(l46);
 			mv.visitMethodInsn(INVOKESTATIC, "java/lang/invoke/MethodHandles", "dropArguments", "(Ljava/lang/invoke/MethodHandle;I[Ljava/lang/Class;)Ljava/lang/invoke/MethodHandle;", false);
+			final Label l47 = new Label();
+			mv.visitLabel(l47);
 			mv.visitLdcInsn(Type.getType("[Ljava/lang/Object;"));
 			mv.visitVarInsn(ALOAD, 4);
 			mv.visitInsn(ARRAYLENGTH);
 			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/invoke/MethodHandle", "asSpreader", "(Ljava/lang/Class;I)Ljava/lang/invoke/MethodHandle;", false);
 			mv.visitVarInsn(ALOAD, 4);
 			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/invoke/MethodHandle", "invoke", "([Ljava/lang/Object;)Ljava/lang/Object;", false);
+			final Label l48 = new Label();
+			mv.visitLabel(l48);
 			mv.visitInsn(ARETURN);
-			final Label l33 = new Label();
-			mv.visitLabel(l33);
-			mv.visitMaxs(7, 15);
+			final Label l49 = new Label();
+			mv.visitLabel(l49);
+			mv.visitMaxs(7, 17);
 			mv.visitEnd();
 		}
 		{
@@ -905,22 +938,101 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 
 	private class MemberNames
 	{
-		final String className = randomClassName();
-		final String methodCacheFieldName = fieldDictionary.uniqueRandomString();
-		final String fieldCacheFieldName = fieldDictionary.uniqueRandomString();
-		final String hashMethodName = methodDictionary.uniqueRandomString();
-		final String findMethodMethodName = methodDictionary.uniqueRandomString();
-		final String findFieldMethodName = methodDictionary.uniqueRandomString();
-		final String resolveMethodHandleMethodName = methodDictionary.uniqueRandomString();
-		final String bootstrapMethodName = methodDictionary.uniqueRandomString();
+		final String className;
+		final String methodCacheFieldName;
+		final String fieldCacheFieldName;
+		final String hashMethodName;
+		final String findMethodMethodName;
+		final String findFieldMethodName;
+		final String resolveMethodHandleMethodName;
+		final String bootstrapMethodName;
+		final int nameLength;
+		final String separator;
+		final int[] nameFlags;
+		final int methodAccessFlag;
 
 		MemberNames()
 		{
+			className = randomClassName();
+			methodCacheFieldName = fieldDictionary.uniqueRandomString();
+			fieldCacheFieldName = fieldDictionary.uniqueRandomString();
+			hashMethodName = methodDictionary.uniqueRandomString();
+			findMethodMethodName = methodDictionary.uniqueRandomString();
+			findFieldMethodName = methodDictionary.uniqueRandomString();
+			resolveMethodHandleMethodName = methodDictionary.uniqueRandomString();
+			bootstrapMethodName = methodDictionary.uniqueRandomString();
+			nameLength = 5; // Make customizable
+			separator = "\u0000\u0000";
+
+			// method / field
+			// 0: INVOKESTATIC / GETSTATIC
+			// 1: INVOKEVIRTUAL / PUTSTATIC
+			// 2: / GETFIELD
+			// 3: / PUTFIELD
+			nameFlags = new int[4];
+
+			final Collection<Integer> rngExclusions = new HashSet<>(3);
+			for (int i = 0; i < 4; i++)
+				nameFlags[i] = 1 << RandomUtils.getRandomIntWithExclusion(0, 16, rngExclusions);
+
+			methodAccessFlag = 1 << RandomUtils.getRandomInt(16);
+		}
+
+		String generateMethodName(final int nameFlagIndex, final boolean isMethodAccess)
+		{
+			final Set<Character> separatorChars = new HashSet<>(separator.length());
+			for (final char c : separator.toCharArray())
+				separatorChars.add(c);
+
+			char positionOfTrueValueFlag;
+			do
+				positionOfTrueValueFlag = (char) RandomUtils.getRandomInt(nameLength);
+			while (isInvalidMethodName(positionOfTrueValueFlag)|| separatorChars.contains(positionOfTrueValueFlag));
+
+			final char[] chars = new char[nameLength];
+
+			char accessFlag = (char) RandomUtils.getRandomInt(Character.MAX_VALUE);
+			if (isMethodAccess)
+				accessFlag |= methodAccessFlag;
+			else
+				accessFlag &= ~methodAccessFlag;
+
+			char opTypeValue = 0;
+			for (int i = 0; i < 4; i++)
+			{
+				final int flag = nameFlags[i];
+				if (i == nameFlagIndex)
+					opTypeValue |= flag;
+				else
+					opTypeValue &= ~flag;
+			}
+
+			// Hide the true value between fake values
+			for (int i = 0; i < nameLength; i++)
+				if (i == positionOfTrueValueFlag)
+					chars[i] = opTypeValue;
+				else
+				{
+					char randomChar;
+					do
+						randomChar = (char) RandomUtils.getRandomInt(Character.MAX_VALUE);
+					while (isInvalidMethodName(randomChar) || separatorChars.contains(randomChar));
+
+					chars[i] = randomChar;
+				}
+
+			return accessFlag + separator + (char) (positionOfTrueValueFlag + 1) + separator + String.valueOf(chars);
+		}
+
+		private boolean isInvalidMethodName(final char positionOfTrueValueFlag)
+		{
+			// See https://github.com/openjdk/jdk/blob/357947acd80b50b1f26679608245de1f9566163e/src/hotspot/share/classfile/classFileParser.cpp, line 4741
+			return positionOfTrueValueFlag == '.' || positionOfTrueValueFlag == ';' || positionOfTrueValueFlag == '[' || positionOfTrueValueFlag == '/' || positionOfTrueValueFlag == '<' || positionOfTrueValueFlag == '>';
 		}
 
 		public String[] toStrings()
 		{
-			final String[] strings = new String[8];
+			final String[] strings = new String[11];
 			strings[0] = "Decryptor class name: " + className;
 			strings[1] = "Method cache field name: " + methodCacheFieldName;
 			strings[2] = "Field cache field name: " + fieldCacheFieldName;
@@ -929,6 +1041,13 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 			strings[5] = "Find field method name: " + findFieldMethodName;
 			strings[6] = "Resolve method handle method name: " + resolveMethodHandleMethodName;
 			strings[7] = "Bootstrap method name: " + bootstrapMethodName;
+			strings[8] = "Name length: " + nameLength;
+			strings[9] = "Invocation data separator : '" + separator + "' (" + Strings.stringToHexBytes(separator) + ")";
+
+			final StringJoiner identifierOrderBuilder = new StringJoiner(", ", "[", "]");
+			for (final int i : nameFlags)
+				identifierOrderBuilder.add(Strings.intToHexByte(i, 4));
+			strings[10] = "Method name flags : " + identifierOrderBuilder;
 			return strings;
 		}
 	}

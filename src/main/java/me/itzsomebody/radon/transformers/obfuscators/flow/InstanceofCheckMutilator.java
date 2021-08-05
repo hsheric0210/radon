@@ -30,7 +30,7 @@ import me.itzsomebody.radon.utils.ASMUtils;
 import me.itzsomebody.radon.utils.Throwables;
 
 /**
- * Replaces INSTANCEOF + IF<EQ/NE> with a semantically equivalent try-catch block.
+ * Replaces INSTANCEOF + IFEQ/IFNE with a semantically equivalent try-catch block.
  *
  * @author ItzSomebody, hsheric0210
  */

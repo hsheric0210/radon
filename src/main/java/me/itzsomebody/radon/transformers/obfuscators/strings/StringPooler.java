@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
 
 import me.itzsomebody.radon.asm.ClassWrapper;
@@ -211,7 +210,7 @@ public class StringPooler extends StringEncryption
 	{
 		final List<MethodNode> pools = new ArrayList<>();
 		int flags = 0;
-		Set<Integer> rngExclusions = null;
+		Collection<Integer> rngExclusions = null;
 
 		while (true)
 		{

@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
 
 import me.itzsomebody.radon.asm.ClassWrapper;
@@ -517,10 +516,10 @@ public class NumberPooler extends NumberObfuscation
 	{
 		final List<MethodNode> pools = new ArrayList<>();
 		int flags = 0;
-		Set<Integer> intIndexRNGExclusions = null;
-		Set<Integer> longIndexRNGExclusions = null;
-		Set<Integer> floatIndexRNGExclusions = null;
-		Set<Integer> doubleIndexRNGExclusions = null;
+		Collection<Integer> intIndexRNGExclusions = null;
+		Collection<Integer> longIndexRNGExclusions = null;
+		Collection<Integer> floatIndexRNGExclusions = null;
+		Collection<Integer> doubleIndexRNGExclusions = null;
 
 		while (true)
 		{

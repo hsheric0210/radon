@@ -129,6 +129,29 @@ public class ContextCheckObfuscator extends NumberObfuscation
 					leeway -= ASMUtils.evaluateMaxSize(insns);
 					counter.incrementAndGet();
 				}
+				else if (insn.getOpcode() == IINC && master.isIntegerTamperingEnabled())
+				{
+					final IincInsnNode iincInsn = (IincInsnNode) insn;
+					final int var = iincInsn.var;
+					final int originalNum = iincInsn.incr;
+					final int encodedInt = encodeInt(originalNum, methodWrapper.getName().hashCode());
+
+					final InsnList insns = new InsnList();
+					insns.add(new VarInsnNode(ILOAD, var));
+					insns.add(ASMUtils.getNumberInsn(encodedInt));
+					insns.add(new MethodInsnNode(INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false));
+					insns.add(new InsnNode(ICONST_0));
+					insns.add(new MethodInsnNode(INVOKESTATIC, memberNames.className, memberNames.decodeConstantMethodName, "(Ljava/lang/Object;I)Ljava/lang/Object;", false));
+					insns.add(new TypeInsnNode(CHECKCAST, "java/lang/Integer"));
+					insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Integer", "intValue", "()I", false));
+					insns.add(new InsnNode(IADD));
+					insns.add(new VarInsnNode(ISTORE, var));
+
+					methodInstructions.insertBefore(insn, insns);
+					methodInstructions.remove(insn);
+					leeway -= ASMUtils.evaluateMaxSize(insns);
+					counter.incrementAndGet();
+				}
 			}
 		}));
 

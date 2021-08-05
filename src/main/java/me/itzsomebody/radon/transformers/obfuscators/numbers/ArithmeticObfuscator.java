@@ -20,10 +20,7 @@ package me.itzsomebody.radon.transformers.obfuscators.numbers;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.InsnNode;
+import org.objectweb.asm.tree.*;
 
 import me.itzsomebody.radon.utils.ASMUtils;
 import me.itzsomebody.radon.utils.RandomUtils;
@@ -92,6 +89,23 @@ public class ArithmeticObfuscator extends NumberObfuscation
 						continue;
 					final InsnList insns = obfuscateNumber(originalNum);
 
+					methodInstructions.insert(insn, insns);
+					methodInstructions.remove(insn);
+
+					counter.incrementAndGet();
+					leeway -= ASMUtils.evaluateMaxSize(insns);
+				}
+				else if (insn.getOpcode() == IINC && master.isIntegerTamperingEnabled())
+				{
+					final IincInsnNode iincInsn = (IincInsnNode) insn;
+					final int var = iincInsn.var;
+					final int originalNum = iincInsn.incr;
+
+					final InsnList insns = new InsnList();
+					insns.add(new VarInsnNode(ILOAD, var));
+					insns.add(obfuscateNumber(originalNum));
+					insns.add(new InsnNode(IADD));
+					insns.add(new VarInsnNode(ISTORE, var));
 					methodInstructions.insert(insn, insns);
 					methodInstructions.remove(insn);
 
