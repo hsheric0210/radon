@@ -268,6 +268,7 @@ public final class ASMUtils implements Opcodes
 			case Type.DOUBLE:
 				return getNumberInsn(0.00d);
 			case Type.OBJECT:
+			case Type.ARRAY:
 				return new InsnNode(ACONST_NULL);
 			default:
 				throw new AssertionError();

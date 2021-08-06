@@ -18,7 +18,10 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.references;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.StringJoiner;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.stream.Stream;
@@ -967,12 +970,12 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 			// method / field
 			// 0: INVOKESTATIC / GETSTATIC
 			// 1: INVOKEVIRTUAL / PUTSTATIC
-			// 2: / GETFIELD
-			// 3: / PUTFIELD
-			nameFlags = new int[4];
+			// 2: INVOKESPECIAL / GETFIELD
+			// else -> PUTFIELD
+			nameFlags = new int[3];
 
 			final Collection<Integer> rngExclusions = new HashSet<>(3);
-			for (int i = 0; i < 4; i++)
+			for (int i = 0; i < 3; i++)
 				nameFlags[i] = 1 << RandomUtils.getRandomIntWithExclusion(0, 16, rngExclusions);
 
 			methodAccessFlag = 1 << RandomUtils.getRandomInt(16);
@@ -980,14 +983,14 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 
 		String generateMethodName(final int nameFlagIndex, final boolean isMethodAccess)
 		{
-			final Set<Character> separatorChars = new HashSet<>(separator.length());
+			final Collection<Character> separatorChars = new HashSet<>(separator.length());
 			for (final char c : separator.toCharArray())
 				separatorChars.add(c);
 
-			char positionOfTrueValueFlag;
+			char positionOfTrueFlag;
 			do
-				positionOfTrueValueFlag = (char) RandomUtils.getRandomInt(nameLength);
-			while (isInvalidMethodName(positionOfTrueValueFlag)|| separatorChars.contains(positionOfTrueValueFlag));
+				positionOfTrueFlag = (char) RandomUtils.getRandomInt(nameLength);
+			while (isInvalidMethodName(positionOfTrueFlag) || separatorChars.contains(positionOfTrueFlag));
 
 			final char[] chars = new char[nameLength];
 
@@ -1000,7 +1003,7 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 			char opTypeValue = 0;
 			for (int i = 0; i < 4; i++)
 			{
-				final int flag = nameFlags[i];
+				final int flag = i < 3 ? nameFlags[i] : 0;
 				if (i == nameFlagIndex)
 					opTypeValue |= flag;
 				else
@@ -1009,7 +1012,7 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 
 			// Hide the true value between fake values
 			for (int i = 0; i < nameLength; i++)
-				if (i == positionOfTrueValueFlag)
+				if (i == positionOfTrueFlag)
 					chars[i] = opTypeValue;
 				else
 				{
@@ -1021,12 +1024,12 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 					chars[i] = randomChar;
 				}
 
-			return accessFlag + separator + (char) (positionOfTrueValueFlag + 1) + separator + String.valueOf(chars);
+			return accessFlag + separator + (char) (positionOfTrueFlag + 1) + separator + String.valueOf(chars);
 		}
 
 		private boolean isInvalidMethodName(final char positionOfTrueValueFlag)
 		{
-			// See https://github.com/openjdk/jdk/blob/357947acd80b50b1f26679608245de1f9566163e/src/hotspot/share/classfile/classFileParser.cpp, line 4741
+			// See https://github.com/openjdk/jdk/blob/master/src/hotspot/share/classfile/classFileParser.cpp, line 4741
 			return positionOfTrueValueFlag == '.' || positionOfTrueValueFlag == ';' || positionOfTrueValueFlag == '[' || positionOfTrueValueFlag == '/' || positionOfTrueValueFlag == '<' || positionOfTrueValueFlag == '>';
 		}
 

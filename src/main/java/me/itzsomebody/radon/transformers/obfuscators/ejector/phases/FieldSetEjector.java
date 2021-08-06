@@ -152,39 +152,37 @@ public final class FieldSetEjector extends AbstractEjectPhase
 		methodWrapper.getMethodNode().maxStack++;
 
 		final Map<AbstractInsnNode, InsnList> patches = new HashMap<>();
-		fieldSets.forEach((key, value) ->
+		fieldSets.forEach((setInfo, setInsns) ->
 		{
-			final MethodNode proxyMethod = createProxyMethod(getProxyMethodName(methodWrapper), key);
-			final boolean isStatic = key.opcode == PUTSTATIC;
-			final int offset = isStatic ? 0 : 1;
+			final MethodNode proxyMethod = createProxyMethod(getProxyMethodName(methodWrapper), setInfo);
+			final boolean isStatic = setInfo.opcode == PUTSTATIC;
 
 			final Map<Integer, InsnList> proxyFixes = new HashMap<>();
 
 			classWrapper.addMethod(proxyMethod);
 
-			for (final FieldInsnNode fieldInsnNode : value)
+			for (final FieldInsnNode insn : setInsns)
 			{
 				final int id = ejectorContext.getNextId();
 
-				patches.put(fieldInsnNode, ASMUtils.asList(new LdcInsnNode(id), new MethodInsnNode(Opcodes.INVOKESTATIC, classWrapper.getName(), proxyMethod.name, proxyMethod.desc, false)));
+				patches.put(insn, ASMUtils.asList(new LdcInsnNode(id), new MethodInsnNode(Opcodes.INVOKESTATIC, classWrapper.getName(), proxyMethod.name, proxyMethod.desc, false)));
 
-				final InsnList proxyArgumentFix = processFieldSet(methodNode, frames, patches, fieldInsnNode);
+				final InsnList proxyArgumentFix = processFieldSet(methodNode, frames, patches, insn);
 
 				proxyFixes.put(id, proxyArgumentFix);
 				ejectorContext.getCounter().incrementAndGet();
 
 				if (ejectorContext.isJunkArguments())
-					proxyFixes.putAll(createJunkArguments(value, isStatic));
+					proxyFixes.putAll(createJunkArguments(setInsns, isStatic));
 			}
 
-			final int idVariable = Type.getArgumentTypes(proxyMethod.desc)[offset + 1].getSize();
-			insertFixes(proxyMethod, proxyFixes, idVariable);
+			insertFixes(proxyMethod, proxyFixes,  getLastArgumentVar(Type.getArgumentTypes(proxyMethod.desc)));
 		});
 
-		patches.forEach((abstractInsnNode, insnList) ->
+		patches.forEach((patchTarget, patch) ->
 		{
-			methodNode.instructions.insertBefore(abstractInsnNode, insnList);
-			methodNode.instructions.remove(abstractInsnNode);
+			methodNode.instructions.insertBefore(patchTarget, patch);
+			methodNode.instructions.remove(patchTarget);
 		});
 	}
 

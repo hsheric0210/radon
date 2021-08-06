@@ -18,13 +18,12 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.ejector.phases;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 import org.objectweb.asm.tree.analysis.Frame;
 
@@ -36,29 +35,31 @@ import me.itzsomebody.radon.utils.RandomUtils;
 public abstract class AbstractEjectPhase implements Opcodes
 {
 	protected final EjectorContext ejectorContext;
+	private static Map<String, Collection<String>> proxyMethodNameExclusionMap = new HashMap<>();
 
 	public AbstractEjectPhase(final EjectorContext ejectorContext)
 	{
 		this.ejectorContext = ejectorContext;
 	}
 
-	// TODO: Improve name generation logic
 	static String getProxyMethodName(final MethodWrapper mw)
 	{
-//		final String fixedMethodName = mw.getName().replace('<', '_').replace('>', '_');
-//		return fixedMethodName + "$" + Math.abs(RandomUtils.getRandomInt());
+		final String ownerName = mw.getOwner().getName();
+		final int ownerNameLength = ownerName.length();
+
+		final String name = mw.getName();
+		final int nameLength = name.length();
+
+		final String desc = mw.getDescription();
+		final int descLength = desc.length();
 
 		final StringBuilder nameBuilder = new StringBuilder();
-
-		// 사람들은 보통 앞 숫자들을 보고 서로 다른 문자열들을 구분한다. 이 심리를 역이용하여 앞 글자들을 Class name를 XOR 암호화한 문자열로 바꾸면, 같은 클래스 안에서는 앞 숫자들이 모두 같게 나오게 되기에, 헷갈리게 될 것이다. //
-		nameBuilder.append(mw.getOwner().getName().chars().mapToObj(i -> String.valueOf(i ^ mw.getOwner().getName().length())).collect(Collectors.joining()));
-		nameBuilder.append(mw.getName().chars().mapToObj(i -> String.valueOf(i ^ mw.getName().length())).collect(Collectors.joining()));
-		nameBuilder.append(mw.getDescription().chars().mapToObj(i -> String.valueOf(i ^ mw.getDescription().length())).collect(Collectors.joining()));
-		nameBuilder.append("$");
-		IntStream.range(0, RandomUtils.getRandomInt(3, 8)).forEach(i -> nameBuilder.append(Math.abs(RandomUtils.getRandomLong())));
-
+		nameBuilder.append(ownerName.chars().mapToObj(i -> Integer.toString(Math.abs(i ^ ownerNameLength), 16).toUpperCase(Locale.ENGLISH)).collect(Collectors.joining()));
+		IntStream.range(0, RandomUtils.getRandomInt(3, 5)).forEach(i -> nameBuilder.append(Long.toString(Math.abs(RandomUtils.getRandomLong()), 16).toUpperCase(Locale.ENGLISH)));
+		nameBuilder.append(name.chars().mapToObj(i -> Integer.toString(Math.abs(i ^ nameLength), 16).toUpperCase(Locale.ENGLISH)).collect(Collectors.joining()));
+		IntStream.range(0, RandomUtils.getRandomInt(3, 5)).forEach(i -> nameBuilder.append(Long.toString(Math.abs(RandomUtils.getRandomLong()), 16).toUpperCase(Locale.ENGLISH)));
+		nameBuilder.append(desc.chars().mapToObj(i -> Integer.toString(Math.abs(i ^ descLength), 16).toUpperCase(Locale.ENGLISH)).collect(Collectors.joining()));
 		return nameBuilder.toString();
-
 	}
 
 	protected static int getRandomAccess()
@@ -73,6 +74,7 @@ public abstract class AbstractEjectPhase implements Opcodes
 		return access;
 	}
 
+	// TODO: Improve key generation & verification algorithm
 	protected static void insertFixes(final MethodNode methodNode, final Map<Integer, ? extends InsnList> fixes, final int idVariable)
 	{
 		final InsnList proxyFix = new InsnList();
@@ -103,6 +105,11 @@ public abstract class AbstractEjectPhase implements Opcodes
 	}
 
 	public abstract void process(MethodWrapper methodWrapper, Frame<AbstractValue>... frames);
+
+	protected static int getLastArgumentVar(final Type... argumentTypes)
+	{
+		return IntStream.range(0, argumentTypes.length - 1).map(i -> argumentTypes[i].getSize()).sum();
+	}
 
 	protected int getJunkArgumentCount()
 	{

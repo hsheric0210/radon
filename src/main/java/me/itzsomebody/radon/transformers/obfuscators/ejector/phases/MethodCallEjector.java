@@ -109,12 +109,6 @@ public final class MethodCallEjector extends AbstractEjectPhase
 		return methodNode;
 	}
 
-	private static int getLastArgumentVar(final MethodNode methodNode)
-	{
-		final Type[] argumentTypes = Type.getArgumentTypes(methodNode.desc);
-		return IntStream.range(0, argumentTypes.length - 1).map(i -> argumentTypes[i].getSize()).sum();
-	}
-
 	private Map<Integer, InsnList> createJunkArguments(final Type[] argumentTypes, final int offset)
 	{
 		final Map<Integer, InsnList> junkArguments = new HashMap<>();
@@ -149,25 +143,25 @@ public final class MethodCallEjector extends AbstractEjectPhase
 		methodWrapper.getMethodNode().maxStack++;
 
 		final Map<AbstractInsnNode, InsnList> patches = new HashMap<>();
-		methodCalls.forEach((key, value) ->
+		methodCalls.forEach((callInfo, callInsns) ->
 		{
-			final MethodNode proxyMethod = createProxyMethod(getProxyMethodName(methodWrapper), key);
-			final int offset = key.opcode == INVOKESTATIC ? 0 : 1;
+			final MethodNode proxyMethod = createProxyMethod(getProxyMethodName(methodWrapper), callInfo);
+			final int offset = callInfo.opcode == INVOKESTATIC ? 0 : 1;
 
 			final Map<Integer, InsnList> proxyFixes = new HashMap<>();
 
 			classWrapper.addMethod(proxyMethod);
 
-			for (final MethodInsnNode methodInsnNode : value)
+			for (final MethodInsnNode insn : callInsns)
 			{
 				final int id = ejectorContext.getNextId();
 
-				patches.put(methodInsnNode, ASMUtils.asList(new LdcInsnNode(id), new MethodInsnNode(Opcodes.INVOKESTATIC, classWrapper.getName(), proxyMethod.name, proxyMethod.desc, false)));
+				patches.put(insn, ASMUtils.asList(new LdcInsnNode(id), new MethodInsnNode(Opcodes.INVOKESTATIC, classWrapper.getName(), proxyMethod.name, proxyMethod.desc, false)));
 
 				final InsnList proxyArgumentFix = new InsnList();
-				final Frame<AbstractValue> frame = frames[methodNode.instructions.indexOf(methodInsnNode)];
+				final Frame<AbstractValue> frame = frames[methodNode.instructions.indexOf(insn)];
 
-				final Type[] argumentTypes = Type.getArgumentTypes(methodInsnNode.desc);
+				final Type[] argumentTypes = Type.getArgumentTypes(insn.desc);
 
 				int variable = 0;
 				for (int i = 0, j = argumentTypes.length; i < j; i++)
@@ -191,14 +185,13 @@ public final class MethodCallEjector extends AbstractEjectPhase
 					proxyFixes.putAll(createJunkArguments(argumentTypes, offset));
 			}
 
-			final int idVariable = getLastArgumentVar(proxyMethod);
-			insertFixes(proxyMethod, proxyFixes, idVariable);
+			insertFixes(proxyMethod, proxyFixes, getLastArgumentVar(Type.getArgumentTypes(proxyMethod.desc)));
 		});
 
-		patches.forEach((abstractInsnNode, insnList) ->
+		patches.forEach((patchTarget, patch) ->
 		{
-			methodNode.instructions.insertBefore(abstractInsnNode, insnList);
-			methodNode.instructions.remove(abstractInsnNode);
+			methodNode.instructions.insertBefore(patchTarget, patch);
+			methodNode.instructions.remove(patchTarget);
 		});
 	}
 

@@ -71,6 +71,9 @@ public class Ejector extends Transformer
 
 	private void processClass(final ClassWrapper classWrapper, final AtomicInteger counter)
 	{
+		if ((classWrapper.getAccessFlags() & ACC_INTERFACE) != 0)
+			return;
+
 		new ArrayList<>(classWrapper.getMethods()).stream().filter(this::included).filter(methodWrapper -> !"<init>".equals(methodWrapper.getMethodNode().name)).forEach(methodWrapper ->
 		{
 			final EjectorContext ejectorContext = new EjectorContext(counter, classWrapper, junkArguments, junkArgumentStrength);
@@ -86,7 +89,6 @@ public class Ejector extends Transformer
 				final ConstantAnalyzer constantAnalyzer = new ConstantAnalyzer();
 				try
 				{
-					info("Analyze: " + classWrapper.getOriginalName() + "::" + methodWrapper.getOriginalName() + methodWrapper.getOriginalDescription());
 					final Frame<AbstractValue>[] frames = constantAnalyzer.analyze(classWrapper.getName(), methodWrapper.getMethodNode());
 
 					ejectPhase.process(methodWrapper, frames);
