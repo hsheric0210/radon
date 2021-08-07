@@ -18,9 +18,11 @@
 
 package me.itzsomebody.radon.dictionaries;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
+import java.util.AbstractMap.SimpleImmutableEntry;
+import java.util.Map.Entry;
 import java.util.stream.IntStream;
 
 import me.itzsomebody.radon.utils.RandomUtils;
@@ -40,18 +42,23 @@ public class CustomDictionary implements Dictionary
 
 	public CustomDictionary(final String charset)
 	{
-		this(new StrSequence(charset.toCharArray()));
+		this(new StrSequence(charset));
 	}
 
 	public CustomDictionary(final List<String> charset)
 	{
 		this(new StrSequence(charset, true));
-		charset.remove(0);
+		charset.remove(0); // ?
 	}
 
 	private CustomDictionary(final StrSequence strSequence)
 	{
 		CHARSET = strSequence;
+	}
+
+	public CustomDictionary(final File dictionaryFile) throws IOException
+	{
+		this(new StrSequence(dictionaryFile, true));
 	}
 
 	@Override
@@ -155,5 +162,60 @@ public class CustomDictionary implements Dictionary
 	public final Dictionary copy()
 	{
 		return new CustomDictionary(CHARSET);
+	}
+
+	private static final char chooseChar(final String pattern)
+	{
+		final List<Entry<Character, Double>> candidates = new ArrayList<>();
+		final int stringLength = pattern.length();
+		int totalCount = 0;
+
+		// Calculate total count
+		for (int index = 0; index < stringLength;)
+			// try to read [<startChar>-<endChar>] format
+			if (pattern.length() >= 5 && pattern.charAt(index) == '[' && (index == 0 || pattern.charAt(index - 1) != '\\') && pattern.charAt(index + 4) == ']')
+			{
+				totalCount += pattern.charAt(index + 3) - pattern.charAt(index + 1) + 1;
+				index += 5;
+			}
+			else
+			{
+				totalCount++;
+				index++;
+			}
+
+		// Register candidates
+		for (int index = 0; index < stringLength;)
+			if (pattern.length() >= 5 && pattern.charAt(index) == '[' && (index == 0 || pattern.charAt(index - 1) != '\\') && pattern.charAt(index + 2) == '-' && pattern.charAt(index + 4) == ']')
+			{
+				final char start = pattern.charAt(index + 1);
+				final char end = pattern.charAt(index + 3);
+				final int length = end - start + 1;
+
+				candidates.add(new SimpleImmutableEntry<>((char) (start + RandomUtils.getRandomInt(length)), /* 1.0 / partCount */(double) length / totalCount));
+				index += 5;
+			}
+			else
+			{
+				candidates.add(new SimpleImmutableEntry<>(pattern.charAt(index), 1.0 / stringLength));
+				index++;
+			}
+
+		if (candidates.isEmpty())
+			return '\0';
+
+		candidates.sort(Comparator.comparingDouble(Entry::getValue));
+
+		// 출처: https://skyfe.tistory.com/entry/확률을-적용한-랜덤값-선택하기
+		final double random = RandomUtils.getRandomDouble();
+		double cumulative = 0.0;
+		for (final Entry<Character, Double> candidate : candidates)
+		{
+			cumulative += candidate.getValue();
+			if (random <= cumulative)
+				return candidate.getKey();
+		}
+
+		return '\0'; // Dead code
 	}
 }

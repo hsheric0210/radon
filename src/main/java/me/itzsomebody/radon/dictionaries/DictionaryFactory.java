@@ -18,7 +18,12 @@
 
 package me.itzsomebody.radon.dictionaries;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
+import java.util.Locale;
+
+import me.itzsomebody.radon.Main;
 
 public final class DictionaryFactory
 {
@@ -32,6 +37,19 @@ public final class DictionaryFactory
 		for (final Dictionary dictionary : dictionaries)
 			if (dictionary.getDictionaryName().equals(s))
 				return dictionary;
+
+		if (s.toLowerCase(Locale.ENGLISH).startsWith("file:"))
+		{
+			final String filePath = s.substring(/* "file:".length() */ 5);
+			try
+			{
+				return new CustomDictionary(new File(filePath));
+			}
+			catch (final IOException ioe)
+			{
+				Main.severe(String.format("Failed to load dictionary file '%s'", filePath), ioe);
+			}
+		}
 
 		return new CustomDictionary(s);
 	}
