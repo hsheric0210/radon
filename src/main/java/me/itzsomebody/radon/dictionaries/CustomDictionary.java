@@ -96,6 +96,12 @@ public class CustomDictionary implements Dictionary
 	}
 
 	@Override
+	public final String nextUniqueString(final int index)
+	{
+		return uniqueRandomString(cachedLength);
+	}
+
+	@Override
 	public final String nextUniqueString()
 	{
 		return uniqueRandomString(cachedLength);

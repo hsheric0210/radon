@@ -31,6 +31,7 @@ import org.objectweb.asm.tree.*;
 
 import me.itzsomebody.radon.asm.ClassWrapper;
 import me.itzsomebody.radon.config.Configuration;
+import me.itzsomebody.radon.dictionaries.WrappedDictionary;
 import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.transformers.Transformer;
 import me.itzsomebody.radon.utils.ASMUtils;
@@ -1293,15 +1294,24 @@ public class StringEncryption extends Transformer
 
 	private class MemberNames
 	{
-		final String className = randomClassName();
-		final String cacheFieldName = fieldDictionary.uniqueRandomString();
-		final String bigBoizFieldName = fieldDictionary.uniqueRandomString();
-		final String decryptMethodName = methodDictionary.uniqueRandomString();
-		final List<Integer> randomKeyOrder = Collections.unmodifiableList(RandomUtils.getRandomInts(0, 3));
-		final List<Integer> keyOrder = Collections.unmodifiableList(RandomUtils.getRandomInts(0, 4));
+		final String className;
+
+		final String cacheFieldName;
+		final String bigBoizFieldName;
+		final String decryptMethodName;
+		final List<Integer> randomKeyOrder;
+		final List<Integer> keyOrder;
 
 		MemberNames()
 		{
+			className = randomClassName();
+
+			final WrappedDictionary fieldDictionary = getFieldDictionary(className);
+			cacheFieldName = fieldDictionary.nextUniqueString();
+			bigBoizFieldName = fieldDictionary.nextUniqueString();
+			decryptMethodName = getMethodDictionary(className).nextUniqueString();
+			randomKeyOrder = Collections.unmodifiableList(RandomUtils.getRandomInts(0, 3));
+			keyOrder = Collections.unmodifiableList(RandomUtils.getRandomInts(0, 4));
 		}
 
 		public String[] toStrings()

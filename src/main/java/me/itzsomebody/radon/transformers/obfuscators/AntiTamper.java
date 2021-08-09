@@ -68,7 +68,7 @@ public class AntiTamper extends Transformer
 			if (counter.get() > 0)
 			{
 				for (int i = 0, j = RandomUtils.getRandomInt(1, 120); i < j; i++)
-					cw.addStringConst(genericDictionary.randomString(RandomUtils.getRandomInt(2, 32)));
+					cw.addStringConst(getGenericDictionary().randomString(RandomUtils.getRandomInt(2, 32)));
 
 				final int cpSize = cw.computeConstantPoolSize(radon);
 
@@ -453,7 +453,7 @@ public class AntiTamper extends Transformer
 	private class MemberNames
 	{
 		final String className = randomClassName();
-		final String decryptMethodName = methodDictionary.uniqueRandomString();
+		final String decryptMethodName = getMethodDictionary(className).nextUniqueString();
 
 		MemberNames()
 		{

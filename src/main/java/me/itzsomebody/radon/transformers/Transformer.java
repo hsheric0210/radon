@@ -18,10 +18,7 @@
 
 package me.itzsomebody.radon.transformers;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -46,11 +43,16 @@ import me.itzsomebody.radon.utils.RandomUtils;
 public abstract class Transformer implements Opcodes
 {
 	protected Radon radon;
-	protected WrappedDictionary genericDictionary;
-	protected WrappedDictionary packageDictionary;
-	protected WrappedDictionary classDictionary;
-	protected WrappedDictionary methodDictionary;
-	protected WrappedDictionary fieldDictionary;
+	private WrappedDictionary genericDictionary;
+
+	private WrappedDictionary packageDictionary;
+	private Map<String, WrappedDictionary> packageDictionaries;
+	private WrappedDictionary classDictionary;
+	private Map<String, WrappedDictionary> classDictionaries;
+	private WrappedDictionary methodDictionary;
+	private Map<String, WrappedDictionary> methodDictionaries;
+	private WrappedDictionary fieldDictionary;
+	private Map<String, WrappedDictionary> fieldDictionaries;
 
 	public final void init(final Radon radon)
 	{
@@ -173,4 +175,50 @@ public abstract class Transformer implements Opcodes
 	public abstract ExclusionType getExclusionType();
 
 	public abstract void setConfiguration(Configuration config);
+
+	protected WrappedDictionary getPackageDictionary(final String parentPackagePath)
+	{
+		if (parentPackagePath == null)
+			return classDictionary;
+
+		if (packageDictionaries == null)
+			packageDictionaries = new HashMap<>();
+		return packageDictionaries.computeIfAbsent(parentPackagePath, s -> packageDictionary.copy());
+	}
+
+	protected WrappedDictionary getClassDictionary(final String packagePath)
+	{
+		if (packagePath == null)
+			return classDictionary;
+
+		if (classDictionaries == null)
+			classDictionaries = new HashMap<>();
+
+		return classDictionaries.computeIfAbsent(packagePath, s -> classDictionary.copy());
+	}
+
+	protected WrappedDictionary getMethodDictionary(final String className)
+	{
+		if (className == null)
+			return classDictionary;
+
+		if (methodDictionaries == null)
+			methodDictionaries = new HashMap<>();
+		return methodDictionaries.computeIfAbsent(className, s -> methodDictionary.copy());
+	}
+
+	protected WrappedDictionary getFieldDictionary(final String className)
+	{
+		if (className == null)
+			return classDictionary;
+
+		if (fieldDictionaries == null)
+			fieldDictionaries = new HashMap<>();
+		return fieldDictionaries.computeIfAbsent(className, s -> fieldDictionary.copy());
+	}
+
+	public WrappedDictionary getGenericDictionary()
+	{
+		return genericDictionary;
+	}
 }

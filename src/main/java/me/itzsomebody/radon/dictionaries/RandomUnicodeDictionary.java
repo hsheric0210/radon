@@ -82,7 +82,7 @@ public class RandomUnicodeDictionary implements Dictionary
 	}
 
 	@Override
-	public String nextUniqueString()
+	public String nextUniqueString(final int index)
 	{
 		// copy-pasted from Integer.toString(int i, int radix)
 		final int charsetLength = CHARSET.length;
@@ -101,10 +101,13 @@ public class RandomUnicodeDictionary implements Dictionary
 		}
 		buf[charPos] = CHARSET[-i];
 
-		final String s = new String(buf, charPos, 33 - charPos);
-		lastGenerated = s;
-		index++;
-		return s;
+		return new String(buf, charPos, 33 - charPos);
+	}
+
+	@Override
+	public String nextUniqueString()
+	{
+		return lastGenerated = nextUniqueString(index++);
 	}
 
 	@Override

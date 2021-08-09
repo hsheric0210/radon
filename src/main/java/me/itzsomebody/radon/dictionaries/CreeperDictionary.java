@@ -2,6 +2,8 @@ package me.itzsomebody.radon.dictionaries;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import me.itzsomebody.radon.utils.RandomUtils;
 
@@ -92,18 +94,24 @@ public class CreeperDictionary implements Dictionary
 		return s;
 	}
 
+	public String nextUniqueString(final int index, final int loop)
+	{
+		final String loops = Integer.toString(loop);
+		return IntStream.range(0, 4 - loops.length()).mapToObj(i -> String.valueOf(0)).collect(Collectors.joining("", "", loops)) + "_" + LYRICS[index < 0 ? index : this.index];
+	}
+
+	@Override
+	public String nextUniqueString(final int index)
+	{
+		return nextUniqueString(index % LYRICS.length, index);
+	}
+
 	@Override
 	public String nextUniqueString()
 	{
 		if (index >= LYRICS.length)
 			index = 0;
-
-		String loopStr = String.valueOf(loop);
-
-		while (loopStr.length() < 4)
-			loopStr = "0" + loopStr;
-
-		lastGenerated = loopStr + "_" + LYRICS[index];
+		lastGenerated = nextUniqueString(index, loop);
 		index++;
 		loop++;
 		return lastGenerated;

@@ -52,7 +52,7 @@ public class BogusSwitchJumpInserter extends FlowObfuscation
 		getClassWrappers().stream().filter(this::included).forEach(classWrapper ->
 		{
 			final AtomicBoolean shouldAdd = new AtomicBoolean();
-			final FieldNode predicate = new FieldNode((classWrapper.getAccessFlags() & ACC_INTERFACE) != 0 ? INTERFACE_PRED_ACCESS : CLASS_PRED_ACCESS, fieldDictionary.uniqueRandomString(), "I", null, null);
+			final FieldNode predicate = new FieldNode((classWrapper.getAccessFlags() & ACC_INTERFACE) != 0 ? INTERFACE_PRED_ACCESS : CLASS_PRED_ACCESS, getFieldDictionary(classWrapper.getOriginalName()).nextUniqueString(), "I", null, null);
 
 			classWrapper.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
 			{

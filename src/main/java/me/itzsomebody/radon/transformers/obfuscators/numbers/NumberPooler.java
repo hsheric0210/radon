@@ -48,11 +48,6 @@ public class NumberPooler extends NumberObfuscation
 
 		if (master.canNumberPoolerGlobal())
 		{
-			final String integerPoolFieldName = fieldDictionary.uniqueRandomString();
-			final String longPoolFieldName = fieldDictionary.uniqueRandomString();
-			final String floatPoolFieldName = fieldDictionary.uniqueRandomString();
-			final String doublePoolFieldName = fieldDictionary.uniqueRandomString();
-
 			final Set<Integer> integersToPoolSet = new HashSet<>();
 			final Set<Long> longsToPoolSet = new HashSet<>();
 			final Set<Float> floatsToPoolSet = new HashSet<>();
@@ -186,6 +181,12 @@ public class NumberPooler extends NumberObfuscation
 				classWrapper = new ClassWrapper(fakeNode, false);
 			}
 
+			final WrappedDictionary fieldDictionary = getFieldDictionary(classPath);
+			final String integerPoolFieldName = fieldDictionary.nextUniqueString();
+			final String longPoolFieldName = fieldDictionary.nextUniqueString();
+			final String floatPoolFieldName = fieldDictionary.nextUniqueString();
+			final String doublePoolFieldName = fieldDictionary.nextUniqueString();
+
 			getClassWrappers().stream().filter(this::included).forEach(cw ->
 			{
 				cw.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions()).map(MethodWrapper::getInstructions).forEach(insnList ->
@@ -268,7 +269,7 @@ public class NumberPooler extends NumberObfuscation
 			{
 				if (!inject)
 					classWrapper.getClassNode().visit(V1_5, ACC_PUBLIC | ACC_SUPER | ACC_SYNTHETIC, classPath, null, "java/lang/Object", null);
-				createInitializer(integerReverseMappings, longReverseMappings, floatReverseMappings, doubleReverseMappings, classWrapper, methodDictionary, integerPoolFieldName, longPoolFieldName, floatPoolFieldName, doublePoolFieldName);
+				createInitializer(integerReverseMappings, longReverseMappings, floatReverseMappings, doubleReverseMappings, classWrapper, getMethodDictionary(classPath), integerPoolFieldName, longPoolFieldName, floatPoolFieldName, doublePoolFieldName);
 				if (!inject)
 					getClasses().put(classWrapper.getName(), classWrapper);
 
@@ -283,12 +284,6 @@ public class NumberPooler extends NumberObfuscation
 			// - at me.itzsomebody.radon.Main.<clinit>(Unknown Source)
 			).forEach(cw ->
 			{
-
-				final String integerPoolFieldName = fieldDictionary.uniqueRandomString();
-				final String longPoolFieldName = fieldDictionary.uniqueRandomString();
-				final String floatPoolFieldName = fieldDictionary.uniqueRandomString();
-				final String doublePoolFieldName = fieldDictionary.uniqueRandomString();
-
 				// CHECK: Should use Collections.synchronizedList()?
 				final List<Integer> integersToPool = new ArrayList<>();
 				final List<Long> longsToPool = new ArrayList<>();
@@ -402,6 +397,12 @@ public class NumberPooler extends NumberObfuscation
 							doubleMappings.put(doublesToPool.get(i), i);
 					}
 
+				final WrappedDictionary fieldDictionary = getFieldDictionary(cw.getOriginalName());
+				final String integerPoolFieldName = fieldDictionary.nextUniqueString();
+				final String longPoolFieldName = fieldDictionary.nextUniqueString();
+				final String floatPoolFieldName = fieldDictionary.nextUniqueString();
+				final String doublePoolFieldName = fieldDictionary.nextUniqueString();
+
 				cw.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions()).map(MethodWrapper::getInstructions).forEach(insnList ->
 				{
 					if (poolIntegers)
@@ -478,7 +479,7 @@ public class NumberPooler extends NumberObfuscation
 				});
 
 				if (!integersToPool.isEmpty() || !longsToPool.isEmpty() || !floatsToPool.isEmpty() || !doublesToPool.isEmpty())
-					createInitializer(integerReverseMappings, longReverseMappings, floatReverseMappings, doubleReverseMappings, cw, methodDictionary, integerPoolFieldName, longPoolFieldName, floatPoolFieldName, doublePoolFieldName);
+					createInitializer(integerReverseMappings, longReverseMappings, floatReverseMappings, doubleReverseMappings, cw, getMethodDictionary(cw.getOriginalName()), integerPoolFieldName, longPoolFieldName, floatPoolFieldName, doublePoolFieldName);
 			});
 
 		info(String.format("+ Pooled %d numbers.", counter.get()));
@@ -523,7 +524,7 @@ public class NumberPooler extends NumberObfuscation
 
 		while (true)
 		{
-			final MethodNode mv = new MethodNode(ACC_PRIVATE | ACC_STATIC /* | ACC_SYNTHETIC | ACC_BRIDGE */, methodDictionary.uniqueRandomString(), "()V", null, null);
+			final MethodNode mv = new MethodNode(ACC_PRIVATE | ACC_STATIC /* | ACC_SYNTHETIC | ACC_BRIDGE */, methodDictionary.nextUniqueString(), "()V", null, null);
 			mv.visitCode();
 
 			long leeway = Constants.MAX_CODE_SIZE;

@@ -198,6 +198,11 @@ public class ClassWrapper
 		return classNode.name.substring(0, classNode.name.lastIndexOf('/') + 1);
 	}
 
+	public final String getOriginalPackageName()
+	{
+		return originalName.substring(0, originalName.lastIndexOf('/') + 1);
+	}
+
 	/**
 	 * @return current super class name of wrapped {@link ClassNode}.
 	 */

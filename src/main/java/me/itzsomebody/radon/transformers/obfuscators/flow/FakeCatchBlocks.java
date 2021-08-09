@@ -42,11 +42,11 @@ public class FakeCatchBlocks extends FlowObfuscation
 
 		final ClassNode fakeHandler = new ClassNode();
 		fakeHandler.superName = RandomUtils.getRandomElement(Throwables.getRandomThrowable());
-		fakeHandler.name = classDictionary.uniqueRandomString();
+		fakeHandler.name = randomClassName();
 		fakeHandler.access = ACC_PUBLIC | ACC_SUPER;
 		fakeHandler.version = V1_5;
 
-		final String methodName = methodDictionary.uniqueRandomString();
+		final String methodName = getMethodDictionary(fakeHandler.name).nextUniqueString();
 
 		getClassWrappers().stream().filter(this::included).forEach(classWrapper -> classWrapper.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions() && !"<init>".equals(mw.getOriginalName())).forEach(methodWrapper ->
 		{

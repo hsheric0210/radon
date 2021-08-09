@@ -51,6 +51,7 @@ public class Renamer extends Transformer
 	private boolean dumpMappings;
 	private String repackageName;
 	private Map<String, String> mappings;
+	private Map<String, String> reverseMappings; // To check member duplications
 	private List<String> mappingsToDump;
 
 	private static boolean methodCanBeRenamed(final MethodWrapper wrapper)
@@ -63,8 +64,11 @@ public class Renamer extends Transformer
 	{
 		radon.buildInheritance();
 		mappings = new HashMap<>();
+		reverseMappings = new HashMap<>();
+
 		if (dumpMappings)
 			mappingsToDump = new ArrayList<>();
+
 		final Map<String, String> packageMappings = new HashMap<>();
 
 		info("Generating mappings.");
@@ -77,7 +81,7 @@ public class Renamer extends Transformer
 				final Set<String> visited = new HashSet<>();
 
 				if (!cannotRenameMethod(radon.getTree(classWrapper.getOriginalName()), methodWrapper, visited))
-					genMethodMappings(methodWrapper, methodWrapper.getOwner().getOriginalName(), methodDictionary.nextUniqueString());
+					genMethodMappings(methodWrapper, methodWrapper.getOwner().getOriginalName(), getMethodDictionary(null /* TODO: Override methods agressively */).nextUniqueString());
 			});
 
 			classWrapper.getFields().forEach(fieldWrapper ->
@@ -85,7 +89,7 @@ public class Renamer extends Transformer
 				final Set<String> visited = new HashSet<>();
 
 				if (!cannotRenameField(radon.getTree(classWrapper.getOriginalName()), fieldWrapper, visited))
-					genFieldMappings(fieldWrapper, fieldWrapper.getOwner().getOriginalName(), fieldDictionary.nextUniqueString());
+					genFieldMappings(fieldWrapper, fieldWrapper.getOwner().getOriginalName(), getFieldDictionary(null /* TODO: Override fields agressively */).nextUniqueString());
 			});
 
 			if (included(classWrapper))
@@ -93,19 +97,14 @@ public class Renamer extends Transformer
 				String newName;
 
 				if (repackageName == null)
-				{
-					final String mappedPackageName = packageDictionary.randomString();
-
-					packageMappings.putIfAbsent(classWrapper.getPackageName(), mappedPackageName);
-					newName = packageMappings.get(classWrapper.getPackageName());
-				}
+					newName = packageMappings.computeIfAbsent(classWrapper.getPackageName(), n -> getPackageDictionary(classWrapper.getOriginalPackageName()).nextUniqueString());
 				else
 					newName = repackageName;
 
 				if (!newName.isEmpty())
-					newName += '/' + classDictionary.nextUniqueString();
+					newName += '/' + getClassDictionary(newName).nextUniqueString();
 				else
-					newName = classDictionary.nextUniqueString();
+					newName = getClassDictionary(newName).nextUniqueString();
 
 				mappings.put(classWrapper.getOriginalName(), newName);
 				if (dumpMappings)
@@ -182,21 +181,23 @@ public class Renamer extends Transformer
 		final String originalName = mw.getOriginalName();
 		final String originalDesc = mw.getOriginalDescription();
 		final String key = owner + '.' + originalName + originalDesc;
+		final String reverseKey = owner + '.' + newName + originalDesc;
 
 		// This (supposedly) will always stop the recursion because the tree was already renamed
 		if (mappings.containsKey(key))
 			return;
 
 		mappings.put(key, newName);
+		reverseMappings.put(reverseKey, originalName);
+
+		final ClassTree tree = radon.getTree(owner);
 
 		if (dumpMappings)
 		{
-			final ClassWrapper classWrapper = radon.getTree(owner).getClassWrapper();
+			final ClassWrapper classWrapper = tree.getClassWrapper();
 			if (included(classWrapper) && classWrapper.getMethods().stream().filter(this::included).anyMatch(m -> originalName.equals(m.getOriginalName()) && originalDesc.equals(m.getOriginalDescription())))
 				mappingsToDump.add(String.format("Method: %1$s.%2$s%3$s -> %4$s", owner, originalName, originalDesc, newName));
 		}
-
-		final ClassTree tree = radon.getTree(owner);
 
 		// Static methods can't be overridden, BUT sometimes it's accessed via instance.
 		// Recursively rename parents and sub-methods
@@ -247,9 +248,11 @@ public class Renamer extends Transformer
 
 		mappings.put(check, newName);
 
+		final ClassTree tree = radon.getTree(owner);
+
 		if (dumpMappings)
 		{
-			final ClassWrapper classWrapper = radon.getTree(owner).getClassWrapper();
+			final ClassWrapper classWrapper = tree.getClassWrapper();
 			if (included(classWrapper) && classWrapper.getFields().stream().filter(this::included).anyMatch(m -> originalName.equals(m.getOriginalName()) && originalDesc.equals(m.getOriginalDescription())))
 				mappingsToDump.add(String.format("Field: %1$s.%2$s.%3$s -> %4$s", owner, originalName, originalDesc, newName));
 		}
@@ -257,8 +260,6 @@ public class Renamer extends Transformer
 		// Static fields can't be inherited
 		if (!fw.getAccess().isStatic())
 		{
-			final ClassTree tree = radon.getTree(owner);
-
 			// Recursively check parents and sub-fields
 			tree.getParentClasses().forEach(parentClass -> genFieldMappings(fw, parentClass, newName));
 			tree.getSubClasses().forEach(subClass -> genFieldMappings(fw, subClass, newName));

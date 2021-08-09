@@ -187,7 +187,7 @@ public class Packer extends Transformer
 
 		cw.visit(V1_5, ACC_PUBLIC | ACC_SUPER, memberNames.className, null, "java/lang/ClassLoader", null);
 
-		fv = cw.visitField(ACC_PRIVATE | ACC_FINAL | ACC_STATIC, memberNames.resourcesFieldName, "Ljava/util/Map;", "Ljava/util/Map<Ljava/lang/String;[B>;", null);
+		fv = cw.visitField(ACC_PRIVATE | ACC_STATIC | ACC_FINAL, memberNames.resourcesFieldName, "Ljava/util/Map;", "Ljava/util/Map<Ljava/lang/String;[B>;", null);
 		fv.visitEnd();
 		{
 			mv = cw.visitMethod(ACC_PRIVATE, "<init>", "()V", null, new String[]
@@ -435,9 +435,9 @@ public class Packer extends Transformer
 
 	private class MemberNames
 	{
-		final String className = classDictionary.uniqueRandomString();
-		final String resourcesFieldName = fieldDictionary.uniqueRandomString();
-		final String stubName = '/' + genericDictionary.uniqueRandomString();
+		final String className = getClassDictionary(null).nextUniqueString();
+		final String resourcesFieldName = getFieldDictionary(className).nextUniqueString();
+		final String stubName = '/' + getGenericDictionary().nextUniqueString();
 
 		MemberNames()
 		{

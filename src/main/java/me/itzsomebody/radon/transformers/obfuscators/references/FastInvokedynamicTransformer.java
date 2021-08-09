@@ -32,6 +32,7 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 
 import me.itzsomebody.radon.asm.ClassWrapper;
+import me.itzsomebody.radon.dictionaries.WrappedDictionary;
 import me.itzsomebody.radon.utils.*;
 
 /**
@@ -390,9 +391,10 @@ public class FastInvokedynamicTransformer extends ReferenceObfuscation
 		{
 			className = randomClassName();
 
-			bootstrapMethodName = methodDictionary.uniqueRandomString();
-			getMethodHandleMethodName = methodDictionary.uniqueRandomString();
-			decryptMethodName = methodDictionary.uniqueRandomString();
+			final WrappedDictionary methodDictionary = getMethodDictionary(className);
+			bootstrapMethodName = methodDictionary.nextUniqueString();
+			getMethodHandleMethodName = methodDictionary.nextUniqueString();
+			decryptMethodName = methodDictionary.nextUniqueString();
 
 			invokeStaticFlag = (char) RandomUtils.getRandomInt(Character.MIN_VALUE + 1, Character.MAX_VALUE);
 			separator = "\u0000\u0000";

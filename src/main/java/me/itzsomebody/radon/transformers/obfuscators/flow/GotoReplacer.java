@@ -52,7 +52,7 @@ public class GotoReplacer extends FlowObfuscation
 			final String predicateDescriptor = predicateType.getDescriptor();
 			final Object predicateInitialValue = RandomUtils.getRandomBoolean() ? RandomUtils.getRandomValue(predicateType) : null;
 
-			final FieldNode predicate = new FieldNode((cw.getAccessFlags() & ACC_INTERFACE) != 0 ? INTERFACE_PRED_ACCESS : CLASS_PRED_ACCESS, fieldDictionary.uniqueRandomString(), predicateDescriptor, null, predicateInitialValue);
+			final FieldNode predicate = new FieldNode((cw.getAccessFlags() & ACC_INTERFACE) != 0 ? INTERFACE_PRED_ACCESS : CLASS_PRED_ACCESS, getFieldDictionary(cw.getOriginalName()).nextUniqueString(), predicateDescriptor, null, predicateInitialValue);
 
 			cw.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
 			{

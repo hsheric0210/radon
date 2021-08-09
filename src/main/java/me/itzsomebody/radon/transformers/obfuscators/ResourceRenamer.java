@@ -66,7 +66,7 @@ public class ResourceRenamer extends Transformer
 						((LdcInsnNode) insn).cst = mappings.get(resourceName);
 					else
 					{
-						final String newName = '/' + genericDictionary.uniqueRandomString();
+						final String newName = '/' + getGenericDictionary().nextUniqueString();
 						((LdcInsnNode) insn).cst = newName;
 						mappings.put(resourceName, newName);
 					}

@@ -81,7 +81,7 @@ public class SpacesDictionary implements Dictionary
 	}
 
 	@Override
-	public String nextUniqueString()
+	public String nextUniqueString(final int index)
 	{
 		// copy-pasted from Integer.toString(int i, int radix)
 		final int charsetLength = CHARSET.length;
@@ -102,8 +102,13 @@ public class SpacesDictionary implements Dictionary
 
 		final String s = new String(buf, charPos, 33 - charPos);
 		lastGenerated = s;
-		index++;
 		return s;
+	}
+
+	@Override
+	public String nextUniqueString()
+	{
+		return lastGenerated = nextUniqueString(index++);
 	}
 
 	@Override

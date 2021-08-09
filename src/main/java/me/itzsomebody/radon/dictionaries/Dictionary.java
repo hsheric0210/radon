@@ -42,7 +42,13 @@ public interface Dictionary
 	String uniqueRandomString(int length);
 
 	/**
-	 * @return next unique string.
+	 * @return       next unique string.
+	 * @param  index
+	 */
+	String nextUniqueString(int index);
+
+	/**
+	 * @return       next unique string.
 	 */
 	String nextUniqueString();
 

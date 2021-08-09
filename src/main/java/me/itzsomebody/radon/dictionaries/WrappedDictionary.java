@@ -36,6 +36,11 @@ public class WrappedDictionary
 		return dictionary.uniqueRandomString(RandomUtils.getRandomInt(minLength, maxLength));
 	}
 
+	public final String nextUniqueString(final int index)
+	{
+		return dictionary.nextUniqueString(index);
+	}
+
 	public final String nextUniqueString()
 	{
 		return dictionary.nextUniqueString();

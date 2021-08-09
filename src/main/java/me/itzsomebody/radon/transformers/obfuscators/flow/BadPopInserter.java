@@ -114,7 +114,7 @@ public class BadPopInserter extends FlowObfuscation
 	{
 		if (RandomUtils.getRandomInt(50) == 0)
 			return new LdcInsnNode(Main.ATTRIBUTION);
-		return new LdcInsnNode(genericDictionary.randomString());
+		return new LdcInsnNode(getGenericDictionary().randomString());
 	}
 
 	@Override

@@ -18,8 +18,6 @@
 
 package me.itzsomebody.radon.transformers.obfuscators;
 
-import static me.itzsomebody.radon.config.ConfigurationSetting.ANTI_DEBUG;
-
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -30,6 +28,8 @@ import me.itzsomebody.radon.config.Configuration;
 import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.transformers.Transformer;
 import me.itzsomebody.radon.utils.RandomUtils;
+
+import static me.itzsomebody.radon.config.ConfigurationSetting.ANTI_DEBUG;
 
 /**
  * Blocks debugging options on the commandline.
@@ -96,7 +96,7 @@ public class AntiDebug extends Transformer
 		{
 			String message = this.message;
 			if (message == null)
-				message = genericDictionary.randomString();
+				message = getGenericDictionary().randomString();
 
 			insnList.add(new TypeInsnNode(NEW, "java/lang/RuntimeException"));
 			insnList.add(new InsnNode(DUP));

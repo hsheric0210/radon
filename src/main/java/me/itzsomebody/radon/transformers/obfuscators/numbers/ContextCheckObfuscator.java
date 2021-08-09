@@ -27,6 +27,7 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.tree.*;
 
 import me.itzsomebody.radon.asm.ClassWrapper;
+import me.itzsomebody.radon.dictionaries.WrappedDictionary;
 import me.itzsomebody.radon.utils.ASMUtils;
 import me.itzsomebody.radon.utils.RandomUtils;
 
@@ -608,14 +609,17 @@ public class ContextCheckObfuscator extends NumberObfuscation
 		MemberNames()
 		{
 			className = randomClassName();
-			constantFieldName = fieldDictionary.uniqueRandomString();
-			indicatorFieldName = fieldDictionary.uniqueRandomString();
-			elementFieldName = fieldDictionary.uniqueRandomString();
-			indexFieldName = fieldDictionary.uniqueRandomString();
-			threadStarterMethodName = methodDictionary.uniqueRandomString();
-			decodeDwordMethodName = methodDictionary.uniqueRandomString();
-			decodeQwordMethodName = methodDictionary.uniqueRandomString();
-			decodeConstantMethodName = methodDictionary.uniqueRandomString();
+
+			final WrappedDictionary fieldDictionary = getFieldDictionary(className);
+			final WrappedDictionary methodDictionary = getMethodDictionary(className);
+			constantFieldName = fieldDictionary.nextUniqueString();
+			indicatorFieldName = fieldDictionary.nextUniqueString();
+			elementFieldName = fieldDictionary.nextUniqueString();
+			indexFieldName = fieldDictionary.nextUniqueString();
+			threadStarterMethodName = methodDictionary.nextUniqueString();
+			decodeDwordMethodName = methodDictionary.nextUniqueString();
+			decodeQwordMethodName = methodDictionary.nextUniqueString();
+			decodeConstantMethodName = methodDictionary.nextUniqueString();
 		}
 
 		public String[] toStrings()

@@ -91,7 +91,7 @@ public class StringPooler extends StringEncryption
 			}
 
 			// Update usages
-			final String fieldName = fieldDictionary.uniqueRandomString();
+			final String fieldName = getFieldDictionary(classPath).nextUniqueString();
 			getClassWrappers().stream().filter(this::included).forEach(cw -> cw.getMethods().stream().filter(methodWrapper -> included(methodWrapper) && methodWrapper.hasInstructions()).map(MethodWrapper::getMethodNode).forEach(methodNode -> Stream.of(methodNode.instructions.toArray()).filter(insn -> insn instanceof LdcInsnNode).map(insn -> (LdcInsnNode) insn).filter(ldc -> ldc.cst instanceof String && !master.excludedString((String) ldc.cst)).forEach(ldc ->
 			{
 				if (mappings.containsKey((String) ldc.cst))
@@ -109,7 +109,7 @@ public class StringPooler extends StringEncryption
 			{
 				if (!inject)
 					classWrapper.getClassNode().visit(V1_5, ACC_PUBLIC | ACC_SUPER | ACC_SYNTHETIC, classPath, null, "java/lang/Object", null);
-				createInitializer(reverseMappings, classWrapper, methodDictionary, fieldName);
+				createInitializer(reverseMappings, classWrapper, getMethodDictionary(classPath), fieldName);
 				if (!inject)
 					getClasses().put(classWrapper.getName(), classWrapper);
 
@@ -150,7 +150,7 @@ public class StringPooler extends StringEncryption
 						mappings.put(totalStrings.get(i), i);
 				}
 
-				final String fieldName = fieldDictionary.uniqueRandomString();
+				final String fieldName = getFieldDictionary(cw.getOriginalName()).nextUniqueString();
 				cw.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions()).map(MethodWrapper::getInstructions).forEach(insnList -> Stream.of(insnList.toArray()).filter(insn -> insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof String).forEach(insn ->
 				{
 					final String stringToPool = (String) ((LdcInsnNode) insn).cst;
@@ -165,7 +165,7 @@ public class StringPooler extends StringEncryption
 				}));
 
 				if (!totalStrings.isEmpty())
-					createInitializer(reverseMappings, cw, methodDictionary, fieldName);
+					createInitializer(reverseMappings, cw, getMethodDictionary(cw.getOriginalName()), fieldName);
 			});
 
 		info(String.format("+ Pooled %d strings.", counter.get()));
@@ -214,7 +214,7 @@ public class StringPooler extends StringEncryption
 
 		while (true)
 		{
-			final MethodNode mv = new MethodNode(ACC_PRIVATE | ACC_STATIC | ACC_SYNTHETIC | ACC_BRIDGE, methodDictionary.uniqueRandomString(), "()V", null, null);
+			final MethodNode mv = new MethodNode(ACC_PRIVATE | ACC_STATIC | ACC_SYNTHETIC | ACC_BRIDGE, methodDictionary.nextUniqueString(), "()V", null, null);
 
 			mv.visitCode();
 

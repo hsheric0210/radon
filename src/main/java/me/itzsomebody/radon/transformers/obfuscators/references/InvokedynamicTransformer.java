@@ -30,6 +30,7 @@ import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
 
 import me.itzsomebody.radon.asm.ClassWrapper;
+import me.itzsomebody.radon.dictionaries.WrappedDictionary;
 import me.itzsomebody.radon.utils.ASMUtils;
 import me.itzsomebody.radon.utils.Constants;
 import me.itzsomebody.radon.utils.RandomUtils;
@@ -957,13 +958,16 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 		MemberNames()
 		{
 			className = randomClassName();
-			methodCacheFieldName = fieldDictionary.uniqueRandomString();
-			fieldCacheFieldName = fieldDictionary.uniqueRandomString();
-			hashMethodName = methodDictionary.uniqueRandomString();
-			findMethodMethodName = methodDictionary.uniqueRandomString();
-			findFieldMethodName = methodDictionary.uniqueRandomString();
-			resolveMethodHandleMethodName = methodDictionary.uniqueRandomString();
-			bootstrapMethodName = methodDictionary.uniqueRandomString();
+
+			final WrappedDictionary fieldDictionary = getFieldDictionary(className);
+			final WrappedDictionary methodDictionary = getMethodDictionary(className);
+			methodCacheFieldName = fieldDictionary.nextUniqueString();
+			fieldCacheFieldName = fieldDictionary.nextUniqueString();
+			hashMethodName = methodDictionary.nextUniqueString();
+			findMethodMethodName = methodDictionary.nextUniqueString();
+			findFieldMethodName = methodDictionary.nextUniqueString();
+			resolveMethodHandleMethodName = methodDictionary.nextUniqueString();
+			bootstrapMethodName = methodDictionary.nextUniqueString();
 			nameLength = 5; // Make customizable
 			separator = "\u0000\u0000";
 
