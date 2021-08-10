@@ -62,6 +62,9 @@ public class Renamer extends Transformer
 	@Override
 	public void transform()
 	{
+		for (int i = 0; i < 1000; i++)
+			verboseInfo(() -> getMethodDictionary("test").nextUniqueString());
+
 		radon.buildInheritance();
 		mappings = new HashMap<>();
 		reverseMappings = new HashMap<>();
@@ -194,13 +197,12 @@ public class Renamer extends Transformer
 
 		if (dumpMappings)
 		{
-			final ClassWrapper classWrapper = tree.getClassWrapper();
-			if (included(classWrapper) && classWrapper.getMethods().stream().filter(this::included).anyMatch(m -> originalName.equals(m.getOriginalName()) && originalDesc.equals(m.getOriginalDescription())))
+			final ClassWrapper cw = tree.getClassWrapper();
+			if (included(cw) && cw.getMethods().stream().filter(this::included).anyMatch(m -> originalName.equals(m.getOriginalName()) && originalDesc.equals(m.getOriginalDescription())))
 				mappingsToDump.add(String.format("Method: %1$s.%2$s%3$s -> %4$s", owner, originalName, originalDesc, newName));
 		}
 
-		// Static methods can't be overridden, BUT sometimes it's accessed via instance.
-		// Recursively rename parents and sub-methods
+		// Static methods can't be overridden, BUT sometimes it can be accessed via instance.
 		tree.getParentClasses().forEach(parentClass -> genMethodMappings(mw, parentClass, newName));
 		tree.getSubClasses().forEach(subClass -> genMethodMappings(mw, subClass, newName));
 	}
@@ -208,10 +210,11 @@ public class Renamer extends Transformer
 	private boolean cannotRenameMethod(final ClassTree tree, final MethodWrapper wrapper, final Set<? super String> visited)
 	{
 		final ClassWrapper cw = tree.getClassWrapper();
+		final String originalClassName = cw.getOriginalName();
 		final String originalName = wrapper.getOriginalName();
 		final String originalDesc = wrapper.getOriginalDescription();
 
-		final String check = cw.getOriginalName() + '.' + originalName + originalDesc;
+		final String check = originalClassName + '.' + originalName + originalDesc;
 
 		// Don't check these
 		if (visited.contains(check))
@@ -220,17 +223,41 @@ public class Renamer extends Transformer
 		visited.add(check);
 
 		// If excluded, we don't want to rename.
-		if (!included(check)
-				// If we already mapped the tree, we don't want to waste time doing it again.
-				|| mappings.containsKey(check))
+		if (!included(check) && cw.getMethods().stream().anyMatch(m -> originalName.equals(m.getOriginalName()) && originalDesc.equals(m.getOriginalDescription())))
+		{
+			verboseWarn(() -> "Can't rename method: " + originalClassName + "." + originalName + originalDesc + " : excluded");
 			return true;
+		}
+
+		if (mappings.containsKey(check))
+		{
+			verboseWarn(() -> "Can't rename method: " + originalClassName + "." + originalName + originalDesc + " :  already mapped");
+			return true;
+		}
 
 		// Methods which are static don't need to be checked for inheritance
 		if (!wrapper.getAccess().isStatic())
-			// We can't rename members which inherit methods from external libraries
-			return cw != wrapper.getOwner() && cw.isLibraryNode() && cw.getMethods().stream().anyMatch(mw -> mw.getOriginalName().equals(originalName) && mw.getOriginalDescription().equals(originalDesc))
-					// Recursively check parents and sub-methods
-					|| tree.getParentClasses().stream().anyMatch(parent -> cannotRenameMethod(radon.getTree(parent), wrapper, visited)) || tree.getSubClasses().stream().anyMatch(sub -> cannotRenameMethod(radon.getTree(sub), wrapper, visited));
+		// We can't rename members which inherit methods from external libraries
+		{
+			if (cw != wrapper.getOwner())
+				if (cw.isLibraryNode())
+					if (cw.getMethods().stream().anyMatch(mw -> mw.getOriginalName().equals(originalName) && mw.getOriginalDescription().equals(originalDesc)))
+					{
+						verboseWarn(() -> "Can't rename method: " + originalClassName + "." + originalName + originalDesc + " : external");
+						return true;
+					}
+			if (tree.getParentClasses().stream().anyMatch(parent -> cannotRenameMethod(radon.getTree(parent), wrapper, visited)))
+			{
+				verboseWarn(() -> "Can't rename method: " + originalClassName + "." + originalName + originalDesc + " : recursive-parent");
+				return true;
+			}
+			if (tree.getSubClasses().stream().anyMatch(sub -> cannotRenameMethod(radon.getTree(sub), wrapper, visited)))
+			{
+				verboseWarn(() -> "Can't rename method: " + originalClassName + "." + originalName + originalDesc + " : recursive-sub");
+				return true;
+			}
+			return false;
+		}
 
 		// Enum.valueOf() and Enum.values() are must not be renamed
 		return cw.getAccess().isEnum() && ("valueOf".equals(originalName) || "values".equals(originalName));
@@ -252,23 +279,22 @@ public class Renamer extends Transformer
 
 		if (dumpMappings)
 		{
-			final ClassWrapper classWrapper = tree.getClassWrapper();
-			if (included(classWrapper) && classWrapper.getFields().stream().filter(this::included).anyMatch(m -> originalName.equals(m.getOriginalName()) && originalDesc.equals(m.getOriginalDescription())))
+			final ClassWrapper cw = tree.getClassWrapper();
+			if (included(cw) && cw.getFields().stream().filter(this::included).anyMatch(f -> originalName.equals(f.getOriginalName()) && originalDesc.equals(f.getOriginalDescription())))
 				mappingsToDump.add(String.format("Field: %1$s.%2$s.%3$s -> %4$s", owner, originalName, originalDesc, newName));
 		}
 
-		// Static fields can't be inherited
-		if (!fw.getAccess().isStatic())
-		{
-			// Recursively check parents and sub-fields
-			tree.getParentClasses().forEach(parentClass -> genFieldMappings(fw, parentClass, newName));
-			tree.getSubClasses().forEach(subClass -> genFieldMappings(fw, subClass, newName));
-		}
+		// Static fields can't be inherited, BUT sometimes it can be accessed via instance.
+		tree.getParentClasses().forEach(parentClass -> genFieldMappings(fw, parentClass, newName));
+		tree.getSubClasses().forEach(subClass -> genFieldMappings(fw, subClass, newName));
 	}
 
 	private boolean cannotRenameField(final ClassTree tree, final FieldWrapper wrapper, final Set<? super String> visited)
 	{
-		final String check = tree.getClassWrapper().getOriginalName() + '.' + wrapper.getOriginalName() + '.' + wrapper.getOriginalDescription();
+		final ClassWrapper cw = tree.getClassWrapper();
+		final String originalName = wrapper.getOriginalName();
+		final String originalDesc = wrapper.getOriginalDescription();
+		final String check = cw.getOriginalName() + '.' + originalName + '.' + originalDesc;
 
 		// Don't check these
 		if (visited.contains(check))
@@ -277,13 +303,13 @@ public class Renamer extends Transformer
 		visited.add(check);
 
 		// If excluded, we don't want to rename.
-		return !included(check)
+		return !included(check) && cw.getFields().stream().anyMatch(f -> originalName.equals(f.getOriginalName()) && originalDesc.equals(f.getOriginalDescription()))
 				// If we already mapped the tree, we don't want to waste time doing it again.
 				|| mappings.containsKey(check)
 				// Fields which are static don't need to be checked for inheritance
 				|| !wrapper.getAccess().isStatic()
 						// We can't rename members which inherit methods from external libraries
-						&& (tree.getClassWrapper() != wrapper.getOwner() && tree.getClassWrapper().isLibraryNode() && tree.getClassWrapper().getFields().stream().anyMatch(fw -> fw.getOriginalName().equals(wrapper.getOriginalName()) && fw.getOriginalDescription().equals(wrapper.getOriginalDescription()))
+						&& (cw != wrapper.getOwner() && cw.isLibraryNode() && cw.getFields().stream().anyMatch(fw -> fw.getOriginalName().equals(originalName) && fw.getOriginalDescription().equals(originalDesc))
 								// Recursively check parents and sub-fields
 								|| tree.getParentClasses().stream().anyMatch(parent -> cannotRenameField(radon.getTree(parent), wrapper, visited)) || tree.getSubClasses().stream().anyMatch(sub -> cannotRenameField(radon.getTree(sub), wrapper, visited)));
 	}

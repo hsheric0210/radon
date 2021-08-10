@@ -18,122 +18,23 @@
 
 package me.itzsomebody.radon.dictionaries;
 
-import java.util.Collection;
-import java.util.HashSet;
-
-import me.itzsomebody.radon.utils.RandomUtils;
-
 /**
  * Generates strings not recognized by the JVM.
  *
  * @author ItzSomebody
  */
-public class UnrecognizedDictionary implements Dictionary
+public class UnrecognizedDictionary extends SimpleDictionary
 {
 	private static final char[] CHARSET = new char[33];
-	private final Collection<String> cache = new HashSet<>();
-	private int index;
-	private int cachedLength;
-	private String lastGenerated;
 
 	static
 	{
 		for (int i = 0, j = CHARSET.length; i < j; i++)
-			CHARSET[i] = (char) ('\ua6ac' + i);
+			CHARSET[i] = (char) ('\uA6AC' + i);
 	}
 
-	@Override
-	public String randomString(final int length)
+	public UnrecognizedDictionary()
 	{
-		final char[] c = new char[length];
-
-		for (int i = 0; i < length; i++)
-			c[i] = CHARSET[RandomUtils.getRandomInt(CHARSET.length)];
-
-		return new String(c);
-	}
-
-	@Override
-	public String uniqueRandomString(int length)
-	{
-		if (cachedLength > length)
-			length = cachedLength;
-
-		int count = 0;
-		final int arrLen = CHARSET.length;
-		String s;
-
-		do
-		{
-			s = randomString(length);
-
-			if (count++ >= arrLen)
-			{
-				length++;
-				count = 0;
-			}
-		}
-		while (cache.contains(s));
-
-		cache.add(s);
-		cachedLength = length;
-		return s;
-	}
-
-	@Override
-	public String nextUniqueString(final int index)
-	{
-		// copy-pasted from Integer.toString(int i, int radix)
-		final int charsetLength = CHARSET.length;
-		int i = index;
-		final char[] buf = new char[33];
-		final boolean negative = i < 0;
-		int charPos = 32;
-
-		if (!negative)
-			i = -i;
-
-		while (i <= -charsetLength)
-		{
-			buf[charPos--] = CHARSET[-(i % charsetLength)];
-			i /= charsetLength;
-		}
-		buf[charPos] = CHARSET[-i];
-
-		final String s = new String(buf, charPos, 33 - charPos);
-		lastGenerated = s;
-		return s;
-	}
-
-	@Override
-	public String nextUniqueString()
-	{
-		return lastGenerated = nextUniqueString(index++);
-	}
-
-	@Override
-	public String lastUniqueString()
-	{
-		return lastGenerated;
-	}
-
-	@Override
-	public String getDictionaryName()
-	{
-		return "unrecognized";
-	}
-
-	@Override
-	public void reset()
-	{
-		cache.clear();
-		index = 0;
-		lastGenerated = null;
-	}
-
-	@Override
-	public Dictionary copy()
-	{
-		return new UnrecognizedDictionary();
+		super("unrecognized", CHARSET);
 	}
 }

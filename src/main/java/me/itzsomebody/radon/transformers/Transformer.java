@@ -65,7 +65,7 @@ public abstract class Transformer implements Opcodes
 		fieldDictionary = new WrappedDictionary(config.getFieldDictionary(), config.getFieldMinRandomizedStringLength(), config.getFieldMaxRandomizedStringLength());
 	}
 
-	protected final boolean included(final String str)
+	protected boolean included(final String str)
 	{
 		return !radon.getConfig().getExclusionManager().isExcluded(str, getExclusionType());
 	}
@@ -179,7 +179,7 @@ public abstract class Transformer implements Opcodes
 	protected WrappedDictionary getPackageDictionary(final String parentPackagePath)
 	{
 		if (parentPackagePath == null)
-			return classDictionary;
+			return packageDictionary;
 
 		if (packageDictionaries == null)
 			packageDictionaries = new HashMap<>();
@@ -200,7 +200,7 @@ public abstract class Transformer implements Opcodes
 	protected WrappedDictionary getMethodDictionary(final String className)
 	{
 		if (className == null)
-			return classDictionary;
+			return methodDictionary;
 
 		if (methodDictionaries == null)
 			methodDictionaries = new HashMap<>();
@@ -210,7 +210,7 @@ public abstract class Transformer implements Opcodes
 	protected WrappedDictionary getFieldDictionary(final String className)
 	{
 		if (className == null)
-			return classDictionary;
+			return fieldDictionary;
 
 		if (fieldDictionaries == null)
 			fieldDictionaries = new HashMap<>();

@@ -19,23 +19,14 @@
 package me.itzsomebody.radon.dictionaries;
 
 /**
- * Generates strings full of spaces.
+ * Generates alphanumberic strings.
  *
  * @author ItzSomebody
  */
-public class SpacesDictionary extends SimpleDictionary
+public class NumericDictionary extends SimpleDictionary
 {
-	private static final char[] CHARSET = new char[0xF + 1];
-
-	static
+	public NumericDictionary()
 	{
-		// TODO: Add more white-space characters
-		for (int i = 0, j = CHARSET.length; i < j; i++)
-			CHARSET[i] = (char) ('\u2000' + i);
-	}
-
-	public SpacesDictionary()
-	{
-		super("spaces", CHARSET);
+		super("numeric", "0123456789".toCharArray());
 	}
 }
