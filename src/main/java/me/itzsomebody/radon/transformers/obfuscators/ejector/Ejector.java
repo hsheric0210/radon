@@ -74,7 +74,7 @@ public class Ejector extends Transformer
 		if ((classWrapper.getAccessFlags() & ACC_INTERFACE) != 0)
 			return;
 
-		new ArrayList<>(classWrapper.getMethods()).stream().filter(this::included).filter(methodWrapper -> !"<init>".equals(methodWrapper.getMethodNode().name)).forEach(methodWrapper ->
+		new ArrayList<>(classWrapper.methods).stream().filter(this::included).filter(methodWrapper -> !"<init>".equals(methodWrapper.methodNode.name)).forEach(methodWrapper ->
 		{
 			final EjectorContext ejectorContext = new EjectorContext(counter, classWrapper, junkArguments, junkArgumentStrength);
 			getPhases(ejectorContext).forEach(ejectPhase ->
@@ -89,13 +89,13 @@ public class Ejector extends Transformer
 				final ConstantAnalyzer constantAnalyzer = new ConstantAnalyzer();
 				try
 				{
-					final Frame<AbstractValue>[] frames = constantAnalyzer.analyze(classWrapper.getName(), methodWrapper.getMethodNode());
+					final Frame<AbstractValue>[] frames = constantAnalyzer.analyze(classWrapper.getName(), methodWrapper.methodNode);
 
 					ejectPhase.process(methodWrapper, frames);
 				}
 				catch (final AnalyzerException e)
 				{
-					warn("Can't analyze method: " + classWrapper.getOriginalName() + "::" + methodWrapper.getOriginalName() + methodWrapper.getOriginalDescription(), e);
+					warn("Can't analyze method: " + classWrapper.originalName + "::" + methodWrapper.originalName + methodWrapper.originalDescription, e);
 				}
 
 				methodWrapper.setMaxStack(maxStack);
@@ -122,36 +122,6 @@ public class Ejector extends Transformer
 		ejectMethodCalls = config.getOrDefault(EJECTOR + ".eject_call", false);
 		ejectFieldSet = config.getOrDefault(EJECTOR + ".eject_field_set", false);
 		junkArguments = config.getOrDefault(EJECTOR + ".junk_arguments", false);
-		setJunkArgumentStrength(config.getOrDefault(EJECTOR + ".junk_argument_strength", 5));
-	}
-
-	private boolean isEjectMethodCalls()
-	{
-		return ejectMethodCalls;
-	}
-
-	private void setEjectMethodCalls(final boolean ejectMethodCalls)
-	{
-		this.ejectMethodCalls = ejectMethodCalls;
-	}
-
-	private boolean isEjectFieldSet()
-	{
-		return ejectFieldSet;
-	}
-
-	private void setEjectFieldSet(final boolean ejectFieldSet)
-	{
-		this.ejectFieldSet = ejectFieldSet;
-	}
-
-	private void setJunkArguments(final boolean junkArguments)
-	{
-		this.junkArguments = junkArguments;
-	}
-
-	private void setJunkArgumentStrength(final int junkArgumentStrength)
-	{
-		this.junkArgumentStrength = Math.min(junkArgumentStrength, 50);
+		junkArgumentStrength = Math.min(config.getOrDefault(EJECTOR + ".junk_argument_strength", 5), 50);
 	}
 }

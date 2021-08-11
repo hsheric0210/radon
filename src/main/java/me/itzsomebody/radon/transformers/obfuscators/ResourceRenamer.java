@@ -47,9 +47,9 @@ public class ResourceRenamer extends Transformer
 		final AtomicInteger counter = new AtomicInteger();
 		final Set<String> resourceNames = getResources().keySet();
 
-		getClassWrappers().stream().filter(this::included).forEach(classWrapper -> classWrapper.getMethods().stream().filter(methodWrapper -> included(methodWrapper) && methodWrapper.hasInstructions()).forEach(methodWrapper ->
+		getClassWrappers().stream().filter(this::included).forEach(classWrapper -> classWrapper.methods.stream().filter(methodWrapper -> included(methodWrapper) && methodWrapper.hasInstructions()).forEach(methodWrapper ->
 		{
-			final MethodNode methodNode = methodWrapper.getMethodNode();
+			final MethodNode methodNode = methodWrapper.methodNode;
 
 			Stream.of(methodNode.instructions.toArray()).filter(insn -> insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof String).forEach(insn ->
 			{
@@ -59,7 +59,7 @@ public class ResourceRenamer extends Transformer
 				if (!s.isEmpty() && s.charAt(0) == '/')
 					resourceName = s.substring(1);
 				else
-					resourceName = classWrapper.getOriginalName().substring(0, classWrapper.getOriginalName().lastIndexOf('/') + 1) + s;
+					resourceName = classWrapper.originalName.substring(0, classWrapper.originalName.lastIndexOf('/') + 1) + s;
 
 				if (resourceNames.contains(resourceName))
 					if (mappings.containsKey(resourceName))

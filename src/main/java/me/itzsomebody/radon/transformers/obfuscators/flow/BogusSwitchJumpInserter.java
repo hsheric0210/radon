@@ -52,17 +52,17 @@ public class BogusSwitchJumpInserter extends FlowObfuscation
 		getClassWrappers().stream().filter(this::included).forEach(classWrapper ->
 		{
 			final AtomicBoolean shouldAdd = new AtomicBoolean();
-			final FieldNode predicate = new FieldNode((classWrapper.getAccessFlags() & ACC_INTERFACE) != 0 ? INTERFACE_PRED_ACCESS : CLASS_PRED_ACCESS, getFieldDictionary(classWrapper.getOriginalName()).nextUniqueString(), "I", null, null);
+			final FieldNode predicate = new FieldNode((classWrapper.getAccessFlags() & ACC_INTERFACE) != 0 ? INTERFACE_PRED_ACCESS : CLASS_PRED_ACCESS, getFieldDictionary(classWrapper.originalName).nextUniqueString(), "I", null, null);
 
-			classWrapper.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
+			classWrapper.methods.stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
 			{
 				final InsnList insns = mw.getInstructions();
 
 				final int leeway = mw.getLeewaySize();
 				final int varIndex = mw.getMaxLocals();
-				mw.getMethodNode().maxLocals++; // Prevents breaking of other transformers which rely on this field.
+				mw.methodNode.maxLocals++; // Prevents breaking of other transformers which rely on this field.
 
-				final StackHeightZeroFinder shzf = new StackHeightZeroFinder(mw.getMethodNode(), insns.getLast());
+				final StackHeightZeroFinder shzf = new StackHeightZeroFinder(mw.methodNode, insns.getLast());
 				try
 				{
 					shzf.execute(false);

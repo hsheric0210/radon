@@ -44,7 +44,7 @@ public abstract class AbstractEjectPhase implements Opcodes
 
 	static String getProxyMethodName(final MethodWrapper mw)
 	{
-		final String ownerName = mw.getOwner().getName();
+		final String ownerName = mw.owner.getName();
 		final int ownerNameLength = ownerName.length();
 
 		final String name = mw.getName();

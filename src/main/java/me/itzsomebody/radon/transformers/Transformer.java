@@ -30,7 +30,6 @@ import me.itzsomebody.radon.asm.ClassWrapper;
 import me.itzsomebody.radon.asm.FieldWrapper;
 import me.itzsomebody.radon.asm.MethodWrapper;
 import me.itzsomebody.radon.config.Configuration;
-import me.itzsomebody.radon.config.ObfuscationConfiguration;
 import me.itzsomebody.radon.dictionaries.WrappedDictionary;
 import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.utils.RandomUtils;
@@ -43,46 +42,35 @@ import me.itzsomebody.radon.utils.RandomUtils;
 public abstract class Transformer implements Opcodes
 {
 	protected Radon radon;
-	private WrappedDictionary genericDictionary;
 
-	private WrappedDictionary packageDictionary;
 	private Map<String, WrappedDictionary> packageDictionaries;
-	private WrappedDictionary classDictionary;
 	private Map<String, WrappedDictionary> classDictionaries;
-	private WrappedDictionary methodDictionary;
 	private Map<String, WrappedDictionary> methodDictionaries;
-	private WrappedDictionary fieldDictionary;
 	private Map<String, WrappedDictionary> fieldDictionaries;
 
 	public final void init(final Radon radon)
 	{
 		this.radon = radon;
-		final ObfuscationConfiguration config = radon.getConfig();
-		genericDictionary = new WrappedDictionary(config.getGenericDictionary(), config.getGenericMinRandomizedStringLength(), config.getGenericMaxRandomizedStringLength());
-		packageDictionary = new WrappedDictionary(config.getPackageDictionary(), config.getPackageMinRandomizedStringLength(), config.getPackageMaxRandomizedStringLength());
-		classDictionary = new WrappedDictionary(config.getClassDictionary(), config.getClassMinRandomizedStringLength(), config.getClassMaxRandomizedStringLength());
-		methodDictionary = new WrappedDictionary(config.getMethodDictionary(), config.getMethodMinRandomizedStringLength(), config.getMethodMaxRandomizedStringLength());
-		fieldDictionary = new WrappedDictionary(config.getFieldDictionary(), config.getFieldMinRandomizedStringLength(), config.getFieldMaxRandomizedStringLength());
 	}
 
 	protected boolean included(final String str)
 	{
-		return !radon.getConfig().getExclusionManager().isExcluded(str, getExclusionType());
+		return !radon.config.exclusionManager.isExcluded(str, getExclusionType());
 	}
 
 	protected final boolean included(final ClassWrapper classWrapper)
 	{
-		return included(classWrapper.getOriginalName());
+		return included(classWrapper.originalName);
 	}
 
 	protected final boolean included(final MethodWrapper methodWrapper)
 	{
-		return included(methodWrapper.getOwner().getOriginalName() + '.' + methodWrapper.getOriginalName() + methodWrapper.getOriginalDescription());
+		return included(methodWrapper.owner.originalName + '.' + methodWrapper.originalName + methodWrapper.originalDescription);
 	}
 
 	protected final boolean included(final FieldWrapper fieldWrapper)
 	{
-		return included(fieldWrapper.getOwner().getOriginalName() + '.' + fieldWrapper.getOriginalName() + '.' + fieldWrapper.getOriginalDescription());
+		return included(fieldWrapper.owner.originalName + '.' + fieldWrapper.originalName + '.' + fieldWrapper.originalDescription);
 	}
 
 	public static String tookThisLong(final long nanoTime)
@@ -126,7 +114,7 @@ public abstract class Transformer implements Opcodes
 
 	protected boolean enableVerboseLogging()
 	{
-		return radon.getConfig().enableVerboseLogging();
+		return radon.config.verboseLogging;
 	}
 
 	protected final void verboseInfo(final Supplier<String> verboseMessage)
@@ -178,6 +166,7 @@ public abstract class Transformer implements Opcodes
 
 	protected WrappedDictionary getPackageDictionary(final String parentPackagePath)
 	{
+		final WrappedDictionary packageDictionary = radon.config.packageDictionary;
 		if (parentPackagePath == null)
 			return packageDictionary;
 
@@ -188,6 +177,7 @@ public abstract class Transformer implements Opcodes
 
 	protected WrappedDictionary getClassDictionary(final String packagePath)
 	{
+		final WrappedDictionary classDictionary = radon.config.classDictionary;
 		if (packagePath == null)
 			return classDictionary;
 
@@ -199,6 +189,7 @@ public abstract class Transformer implements Opcodes
 
 	protected WrappedDictionary getMethodDictionary(final String className)
 	{
+		final WrappedDictionary methodDictionary = radon.config.methodDictionary;
 		if (className == null)
 			return methodDictionary;
 
@@ -209,6 +200,7 @@ public abstract class Transformer implements Opcodes
 
 	protected WrappedDictionary getFieldDictionary(final String className)
 	{
+		final WrappedDictionary fieldDictionary = radon.config.fieldDictionary;
 		if (className == null)
 			return fieldDictionary;
 
@@ -219,6 +211,6 @@ public abstract class Transformer implements Opcodes
 
 	public WrappedDictionary getGenericDictionary()
 	{
-		return genericDictionary;
+		return radon.config.genericDictionary;
 	}
 }

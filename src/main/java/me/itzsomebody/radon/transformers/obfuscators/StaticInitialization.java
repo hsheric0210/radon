@@ -43,11 +43,11 @@ public class StaticInitialization extends Transformer
 
 		getClassWrappers().stream().filter(this::included).forEach(classWrapper ->
 		{
-			final MethodNode clinit = classWrapper.getOrCreateClinit();
+			final MethodNode clinit = classWrapper.getOrCreateStaticBlock();
 
-			classWrapper.getFields().stream().filter(fieldWrapper -> included(fieldWrapper) && Modifier.isStatic(fieldWrapper.getFieldNode().access) && fieldWrapper.getFieldNode().value != null).forEach(fieldWrapper ->
+			classWrapper.fields.stream().filter(fieldWrapper -> included(fieldWrapper) && Modifier.isStatic(fieldWrapper.fieldNode.access) && fieldWrapper.fieldNode.value != null).forEach(fieldWrapper ->
 			{
-				final FieldNode fieldNode = fieldWrapper.getFieldNode();
+				final FieldNode fieldNode = fieldWrapper.fieldNode;
 				final Object val = fieldNode.value;
 
 				exit:

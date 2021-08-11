@@ -18,8 +18,6 @@
 
 package me.itzsomebody.radon.transformers.miscellaneous;
 
-import static me.itzsomebody.radon.config.ConfigurationSetting.EXPIRATION;
-
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -27,11 +25,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.tree.*;
 
-import me.itzsomebody.radon.asm.ClassWrapper;
 import me.itzsomebody.radon.config.Configuration;
 import me.itzsomebody.radon.exceptions.RadonException;
 import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.transformers.Transformer;
+
+import static me.itzsomebody.radon.config.ConfigurationSetting.EXPIRATION;
 
 /**
  * Inserts an expiration block of instructions in each constructor method.
@@ -49,7 +48,7 @@ public class Expiration extends Transformer
 	{
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(this::included).map(ClassWrapper::getClassNode).forEach(classNode -> classNode.methods.stream().filter(methodNode -> "<init>".equals(methodNode.name)).forEach(methodNode ->
+		getClassWrappers().stream().filter(this::included).map(classWrapper -> classWrapper.classNode).forEach(classNode -> classNode.methods.stream().filter(methodNode -> "<init>".equals(methodNode.name)).forEach(methodNode ->
 		{
 			final InsnList expirationCode = createExpirationInstructions();
 			methodNode.instructions.insertBefore(methodNode.instructions.getFirst(), expirationCode);
@@ -105,46 +104,16 @@ public class Expiration extends Transformer
 	@Override
 	public void setConfiguration(final Configuration config)
 	{
-		setExpires(config.getOrDefault(EXPIRATION.getConfigName() + ".expiration_date", "12/31/2021"));
-		injectJOptionPaneEnabled = config.getOrDefault(EXPIRATION.getConfigName() + ".inject_joptionpane", false);
-		message = config.getOrDefault(EXPIRATION.getConfigName() + ".expiration_message", "Your trial has expired!");
-	}
-
-	private String getMessage()
-	{
-		return message;
-	}
-
-	private void setMessage(final String message)
-	{
-		this.message = message;
-	}
-
-	private long getExpires()
-	{
-		return expires;
-	}
-
-	private void setExpires(final String expires)
-	{
 		try
 		{
-			this.expires = new SimpleDateFormat("MM/dd/yyyy").parse(expires).getTime();
+			expires = new SimpleDateFormat("MM/dd/yyyy").parse(config.getOrDefault(EXPIRATION.getConfigName() + ".expiration_date", "12/31/2021")).getTime();
 		}
 		catch (final ParseException e)
 		{
 			severe("Error while parsing expiration date.", e);
 			throw new RadonException(e);
 		}
-	}
-
-	private boolean isInjectJOptionPaneEnabled()
-	{
-		return injectJOptionPaneEnabled;
-	}
-
-	private void setInjectJOptionPaneEnabled(final boolean injectJOptionPaneEnabled)
-	{
-		this.injectJOptionPaneEnabled = injectJOptionPaneEnabled;
+		injectJOptionPaneEnabled = config.getOrDefault(EXPIRATION.getConfigName() + ".inject_joptionpane", false);
+		message = config.getOrDefault(EXPIRATION.getConfigName() + ".expiration_message", "Your trial has expired!");
 	}
 }

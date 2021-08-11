@@ -36,7 +36,7 @@ public class SignatureRemover extends Shrinker
 
 		getClassWrappers().stream().filter(this::included).forEach(classWrapper ->
 		{
-			final ClassNode classNode = classWrapper.getClassNode();
+			final ClassNode classNode = classWrapper.classNode;
 
 			if (classNode.signature != null)
 			{
@@ -44,15 +44,15 @@ public class SignatureRemover extends Shrinker
 				counter.incrementAndGet();
 			}
 
-			classWrapper.getMethods().stream().filter(methodWrapper -> included(methodWrapper) && methodWrapper.getMethodNode().signature != null).forEach(methodWrapper ->
+			classWrapper.methods.stream().filter(methodWrapper -> included(methodWrapper) && methodWrapper.methodNode.signature != null).forEach(methodWrapper ->
 			{
-				methodWrapper.getMethodNode().signature = null;
+				methodWrapper.methodNode.signature = null;
 				counter.incrementAndGet();
 			});
 
-			classWrapper.getFields().stream().filter(fieldWrapper -> included(fieldWrapper) && fieldWrapper.getFieldNode().signature != null).forEach(fieldWrapper ->
+			classWrapper.fields.stream().filter(fieldWrapper -> included(fieldWrapper) && fieldWrapper.fieldNode.signature != null).forEach(fieldWrapper ->
 			{
-				fieldWrapper.getFieldNode().signature = null;
+				fieldWrapper.fieldNode.signature = null;
 				counter.incrementAndGet();
 			});
 		});

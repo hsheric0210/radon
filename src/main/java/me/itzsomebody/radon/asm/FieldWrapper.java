@@ -30,12 +30,12 @@ import me.itzsomebody.radon.asm.accesses.FieldAccess;
  */
 public class FieldWrapper
 {
-	private FieldNode fieldNode;
-	private final String originalName;
-	private final String originalDescription;
+	public FieldNode fieldNode;
+	public final String originalName;
+	public final String originalDescription;
 
-	private final Access access;
-	private final ClassWrapper owner;
+	public final Access access;
+	public final ClassWrapper owner;
 
 	/**
 	 * Creates a FieldWrapper object.
@@ -55,43 +55,6 @@ public class FieldWrapper
 	}
 
 	/**
-	 * @return wrapped {@link FieldNode}.
-	 */
-	public FieldNode getFieldNode()
-	{
-		return fieldNode;
-	}
-
-	public void setFieldNode(final FieldNode fieldNode)
-	{
-		this.fieldNode = fieldNode;
-	}
-
-	/**
-	 * @return owner of this wrapper.
-	 */
-	public ClassWrapper getOwner()
-	{
-		return owner;
-	}
-
-	/**
-	 * @return original name of wrapped {@link FieldNode}.
-	 */
-	public String getOriginalName()
-	{
-		return originalName;
-	}
-
-	/**
-	 * @return original description of wrapped {@link FieldNode}
-	 */
-	public String getOriginalDescription()
-	{
-		return originalDescription;
-	}
-
-	/**
 	 * @return the current name of the wrapped {@link FieldNode}.
 	 */
 	public String getName()
@@ -105,14 +68,6 @@ public class FieldWrapper
 	public String getDescription()
 	{
 		return fieldNode.desc;
-	}
-
-	/**
-	 * @return {@link FieldAccess} wrapper of represented {@link FieldNode}'s access flags.
-	 */
-	public Access getAccess()
-	{
-		return access;
 	}
 
 	/**

@@ -52,7 +52,7 @@ public class AntiDebug extends Transformer
 		final AtomicInteger counter = new AtomicInteger();
 		debugOptionIndex = new AtomicInteger();
 
-		getClassWrappers().stream().filter(cw -> !cw.getAccess().isInterface() && included(cw)).map(ClassWrapper::getOrCreateClinit).forEach(clinit ->
+		getClassWrappers().stream().filter(cw -> !cw.access.isInterface() && included(cw)).map(ClassWrapper::getOrCreateStaticBlock).forEach(clinit ->
 		{
 			final int checkCount = RandomUtils.getRandomInt(1, DEBUG_OPTIONS.length);
 			for (int i = 0; i < checkCount; i++)
@@ -144,15 +144,5 @@ public class AntiDebug extends Transformer
 	public void setConfiguration(final Configuration config)
 	{
 		message = config.getOrDefault(ANTI_DEBUG + ".message", "Debugger properties detected");
-	}
-
-	private void setMessage(final String message)
-	{
-		this.message = message;
-	}
-
-	private String getMessage()
-	{
-		return message;
 	}
 }

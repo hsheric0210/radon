@@ -20,7 +20,6 @@ package me.itzsomebody.radon.transformers.obfuscators.flow;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 
@@ -37,44 +36,47 @@ public class ReturnMutilator extends FlowObfuscation
 	{
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(this::included).forEach(cw -> cw.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
+		getClassWrappers().stream().filter(this::included).forEach(cw ->
 		{
-			final MethodNode mn = mw.getMethodNode();
-
-			final LabelNode returnLabel = new LabelNode();
-			final Type returnType = Type.getReturnType(mn.desc);
-			final boolean isVoidType = returnType.getSort() == Type.VOID;
-			int returnSlot = -1;
-
-			if (!isVoidType)
-				returnSlot = mn.maxLocals++;
-
-			final InsnList insns = mn.instructions;
-			for (final AbstractInsnNode insn : insns.toArray())
-				if (insn.getOpcode() >= IRETURN && insn.getOpcode() <= RETURN)
-				{
-					final InsnList insnList = new InsnList();
-
-					if (!isVoidType)
-						insnList.add(new VarInsnNode(returnType.getOpcode(ISTORE), returnSlot));
-
-					insnList.add(new JumpInsnNode(GOTO, returnLabel));
-
-					insns.insert(insn, insnList);
-					insns.remove(insn);
-
-					counter.incrementAndGet();
-				}
-
-			insns.add(returnLabel);
-			if (isVoidType)
-				insns.add(new InsnNode(RETURN));
-			else
+			cw.methods.stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
 			{
-				insns.add(new VarInsnNode(returnType.getOpcode(ILOAD), returnSlot));
-				insns.add(new InsnNode(returnType.getOpcode(IRETURN)));
-			}
-		}));
+				final MethodNode mn = mw.methodNode;
+
+				final LabelNode returnLabel = new LabelNode();
+				final Type returnType = Type.getReturnType(mn.desc);
+				final boolean isVoidType = returnType.getSort() == Type.VOID;
+				int returnSlot = -1;
+
+				if (!isVoidType)
+					returnSlot = mn.maxLocals++;
+
+				final InsnList insns = mn.instructions;
+				for (final AbstractInsnNode insn : insns.toArray())
+					if (insn.getOpcode() >= IRETURN && insn.getOpcode() <= RETURN)
+					{
+						final InsnList insnList = new InsnList();
+
+						if (!isVoidType)
+							insnList.add(new VarInsnNode(returnType.getOpcode(ISTORE), returnSlot));
+
+						insnList.add(new JumpInsnNode(GOTO, returnLabel));
+
+						insns.insert(insn, insnList);
+						insns.remove(insn);
+
+						counter.incrementAndGet();
+					}
+
+				insns.add(returnLabel);
+				if (isVoidType)
+					insns.add(new InsnNode(RETURN));
+				else
+				{
+					insns.add(new VarInsnNode(returnType.getOpcode(ILOAD), returnSlot));
+					insns.add(new InsnNode(returnType.getOpcode(IRETURN)));
+				}
+			});
+		});
 
 		info("+ Mutilated " + counter.get() + " returns");
 	}

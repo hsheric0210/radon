@@ -32,9 +32,9 @@ public class SourceDebugRemover extends Shrinker
 	{
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(classWrapper -> included(classWrapper) && classWrapper.getClassNode().sourceDebug != null).forEach(classWrapper ->
+		getClassWrappers().stream().filter(classWrapper -> included(classWrapper) && classWrapper.classNode.sourceDebug != null).forEach(classWrapper ->
 		{
-			classWrapper.getClassNode().sourceDebug = null;
+			classWrapper.classNode.sourceDebug = null;
 			counter.incrementAndGet();
 		});
 

@@ -36,16 +36,19 @@ public class LineNumberRemover extends Shrinker
 	{
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(this::included).forEach(classWrapper -> classWrapper.getMethods().stream().filter(methodWrapper -> included(methodWrapper) && methodWrapper.hasInstructions()).forEach(methodWrapper ->
+		getClassWrappers().stream().filter(this::included).forEach(classWrapper ->
 		{
-			final MethodNode methodNode = methodWrapper.getMethodNode();
-
-			Stream.of(methodNode.instructions.toArray()).filter(insn -> insn instanceof LineNumberNode).forEach(insn ->
+			classWrapper.methods.stream().filter(methodWrapper -> included(methodWrapper) && methodWrapper.hasInstructions()).forEach(methodWrapper ->
 			{
-				methodNode.instructions.remove(insn);
-				counter.incrementAndGet();
+				final MethodNode methodNode = methodWrapper.methodNode;
+
+				Stream.of(methodNode.instructions.toArray()).filter(insn -> insn instanceof LineNumberNode).forEach(insn ->
+				{
+					methodNode.instructions.remove(insn);
+					counter.incrementAndGet();
+				});
 			});
-		}));
+		});
 
 		info(String.format("- Removed %d line numbers.", counter.get()));
 	}

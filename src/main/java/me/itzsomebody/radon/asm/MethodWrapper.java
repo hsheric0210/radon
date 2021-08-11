@@ -36,13 +36,12 @@ import me.itzsomebody.radon.utils.Constants;
  */
 public class MethodWrapper
 {
+	public MethodNode methodNode;
+	public final String originalName;
+	public final String originalDescription;
 
-	private MethodNode methodNode;
-	private final String originalName;
-	private final String originalDescription;
-
-	private final Access access;
-	private final ClassWrapper owner;
+	public final Access access;
+	public final ClassWrapper owner;
 
 	/**
 	 * Creates a MethodWrapper object.
@@ -59,43 +58,6 @@ public class MethodWrapper
 		originalDescription = methodNode.desc;
 		access = new MethodAccess(this);
 		this.owner = owner;
-	}
-
-	/**
-	 * Attached MethodNode.
-	 */
-	public MethodNode getMethodNode()
-	{
-		return methodNode;
-	}
-
-	public void setMethodNode(final MethodNode methodNode)
-	{
-		this.methodNode = methodNode;
-	}
-
-	/**
-	 * @return owner of this wrapper.
-	 */
-	public ClassWrapper getOwner()
-	{
-		return owner;
-	}
-
-	/**
-	 * @return original name of wrapped {@link MethodNode}.
-	 */
-	public String getOriginalName()
-	{
-		return originalName;
-	}
-
-	/**
-	 * @return original description of wrapped {@link MethodNode}
-	 */
-	public String getOriginalDescription()
-	{
-		return originalDescription;
 	}
 
 	/**
@@ -133,14 +95,6 @@ public class MethodWrapper
 	public List<TryCatchBlockNode> getTryCatchBlocks()
 	{
 		return methodNode.tryCatchBlocks;
-	}
-
-	/**
-	 * @return {@link MethodAccess} wrapper of represented {@link MethodNode}'s access flags.
-	 */
-	public Access getAccess()
-	{
-		return access;
 	}
 
 	/**

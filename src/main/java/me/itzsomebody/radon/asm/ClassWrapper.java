@@ -45,15 +45,15 @@ public class ClassWrapper
 	private static final int INPUT_FLAGS = ClassReader.SKIP_FRAMES;
 	private static final String DEFAULT_ENTRY_PREFIX = "";
 
-	private ClassNode classNode;
-	private final String originalName;
-	private final boolean libraryNode;
+	public ClassNode classNode;
+	public final String originalName;
+	public final boolean libraryNode;
 
-	private String entryPrefix;
-	private final Access access;
-	private final List<MethodWrapper> methods = new ArrayList<>();
-	private final List<FieldWrapper> fields = new ArrayList<>();
-	private final List<String> strConsts = new ArrayList<>();
+	public String entryPrefix;
+	public final Access access;
+	public final List<MethodWrapper> methods = new ArrayList<>();
+	public final List<FieldWrapper> fields = new ArrayList<>();
+	public final List<String> strConsts = new ArrayList<>();
 
 	public ClassWrapper(final ClassReader cr, final boolean libraryNode)
 	{
@@ -108,7 +108,7 @@ public class ClassWrapper
 		return classNode.methods.stream().filter(methodNode -> name.equals(methodNode.name) && desc.equals(methodNode.desc)).findAny().orElse(null);
 	}
 
-	public MethodNode getOrCreateClinit()
+	public MethodNode getOrCreateStaticBlock()
 	{
 		MethodNode clinit = getMethod("<clinit>", "()V");
 
@@ -130,56 +130,6 @@ public class ClassWrapper
 	public boolean isFieldPresent(final String name, final String desc)
 	{
 		return classNode.fields.stream().anyMatch(fieldNode -> fieldNode.name.equals(name) && fieldNode.desc.equals(desc));
-	}
-
-	/**
-	 * Attached class node.
-	 */
-	public ClassNode getClassNode()
-	{
-		return classNode;
-	}
-
-	public void setClassNode(final ClassNode classNode)
-	{
-		this.classNode = classNode;
-	}
-
-	/**
-	 * @return original name of wrapped {@link ClassNode}.
-	 */
-	public String getOriginalName()
-	{
-		return originalName;
-	}
-
-	/**
-	 * @return true if this wrapper represents a library class.
-	 */
-	public boolean isLibraryNode()
-	{
-		return libraryNode;
-	}
-
-	/**
-	 * @return {@link ArrayList} of {@link MethodWrapper}s this wrapper contains.
-	 */
-	public List<MethodWrapper> getMethods()
-	{
-		return methods;
-	}
-
-	/**
-	 * @return {@link ArrayList} of {@link FieldWrapper}s this wrapper contains.
-	 */
-	public List<FieldWrapper> getFields()
-	{
-		return fields;
-	}
-
-	public List<String> getStrConsts()
-	{
-		return strConsts;
 	}
 
 	/**
@@ -217,14 +167,6 @@ public class ClassWrapper
 	public List<String> getInterfaces()
 	{
 		return classNode.interfaces;
-	}
-
-	/**
-	 * @return {@link ClassAccess} wrapper of represented {@link ClassNode}'s access flags.
-	 */
-	public Access getAccess()
-	{
-		return access;
 	}
 
 	/**
@@ -309,11 +251,6 @@ public class ClassWrapper
 
 			return writer.toByteArray();
 		}
-	}
-
-	public void setEntryPrefix(final String entryPrefix)
-	{
-		this.entryPrefix = entryPrefix;
 	}
 
 	public String getEntryName()

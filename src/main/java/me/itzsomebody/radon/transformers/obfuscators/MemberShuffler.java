@@ -18,14 +18,14 @@
 
 package me.itzsomebody.radon.transformers.obfuscators;
 
-import static me.itzsomebody.radon.config.ConfigurationSetting.MEMBER_SHUFFLER;
-
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import me.itzsomebody.radon.config.Configuration;
 import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.transformers.Transformer;
+
+import static me.itzsomebody.radon.config.ConfigurationSetting.MEMBER_SHUFFLER;
 
 /**
  * Randomizes the order of methods and fields in a class.
@@ -46,14 +46,14 @@ public class MemberShuffler extends Transformer
 		{
 			if (shuffleMethodsEnabled)
 			{
-				Collections.shuffle(classWrapper.getClassNode().methods);
-				counter.addAndGet(classWrapper.getClassNode().methods.size());
+				Collections.shuffle(classWrapper.classNode.methods);
+				counter.addAndGet(classWrapper.classNode.methods.size());
 			}
 
-			if (shuffleFieldsEnabled && classWrapper.getClassNode().fields != null)
+			if (shuffleFieldsEnabled && classWrapper.classNode.fields != null)
 			{
-				Collections.shuffle(classWrapper.getClassNode().fields);
-				counter.addAndGet(classWrapper.getClassNode().fields.size());
+				Collections.shuffle(classWrapper.classNode.fields);
+				counter.addAndGet(classWrapper.classNode.fields.size());
 			}
 		});
 
@@ -77,25 +77,5 @@ public class MemberShuffler extends Transformer
 	{
 		shuffleFieldsEnabled = config.getOrDefault(MEMBER_SHUFFLER + ".shuffle_fields", false);
 		shuffleMethodsEnabled = config.getOrDefault(MEMBER_SHUFFLER + ".shuffle_methods", false);
-	}
-
-	private boolean isShuffleMethodsEnabled()
-	{
-		return shuffleMethodsEnabled;
-	}
-
-	private void setShuffleMethodsEnabled(final boolean shuffleMethodsEnabled)
-	{
-		this.shuffleMethodsEnabled = shuffleMethodsEnabled;
-	}
-
-	private boolean isShuffleFieldsEnabled()
-	{
-		return shuffleFieldsEnabled;
-	}
-
-	private void setShuffleFieldsEnabled(final boolean shuffleFieldsEnabled)
-	{
-		this.shuffleFieldsEnabled = shuffleFieldsEnabled;
 	}
 }

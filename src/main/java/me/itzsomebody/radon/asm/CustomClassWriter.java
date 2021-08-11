@@ -64,7 +64,7 @@ public class CustomClassWriter extends ClassWriter
 		if (radon.isAssignableFrom(type2, type1))
 			return type2;
 
-		if (first.getAccess().isInterface() || second.getAccess().isInterface())
+		if (first.access.isInterface() || second.access.isInterface())
 			return "java/lang/Object";
 
 		String temp;

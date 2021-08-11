@@ -62,7 +62,7 @@ public class TrashClasses extends Transformer
 		for (int i = 0, j = classNames.size() % 20; i < j; i++)
 			DESCRIPTORS.add("L" + classNames.get(RandomUtils.getRandomInt(classNames.size())) + ";");
 
-		for (int i = 0, j = radon.getConfig().getnTrashClasses(); i < j; i++)
+		for (int i = 0, j = radon.config.nTrashClasses; i < j; i++)
 		{
 			final ClassNode classNode = generateClass();
 			final ClassWriter cw = new ClassWriter(0);
@@ -72,7 +72,7 @@ public class TrashClasses extends Transformer
 			getResources().put(classNode.name + ".class", cw.toByteArray());
 		}
 
-		info(String.format("+ Generated %d trash classes.", radon.getConfig().getnTrashClasses()));
+		info(String.format("+ Generated %d trash classes.", radon.config.nTrashClasses));
 	}
 
 	private ClassNode generateClass()

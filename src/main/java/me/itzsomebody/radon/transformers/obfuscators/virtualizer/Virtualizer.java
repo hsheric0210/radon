@@ -63,22 +63,25 @@ public class Virtualizer extends Transformer implements VMOpcodes
 		final AtomicInteger counter = new AtomicInteger();
 		final StubCreator stubCreator = new StubCreator();
 
-		getClassWrappers().stream().filter(this::included).forEach(classWrapper -> classWrapper.getMethods().stream().filter(mw -> !"<init>".equals(mw.getOriginalName()) && included(mw) && mw.hasInstructions()).forEach(methodWrapper ->
+		getClassWrappers().stream().filter(this::included).forEach(classWrapper ->
 		{
-			final MethodNode methodNode = methodWrapper.getMethodNode();
+			classWrapper.methods.stream().filter(mw -> !"<init>".equals(mw.originalName) && included(mw) && mw.hasInstructions()).forEach(methodWrapper ->
+			{
+				final MethodNode methodNode = methodWrapper.methodNode;
 
-			final int leeway = methodWrapper.getLeewaySize();
-			if (leeway <= 30000 || !canProtect(methodNode.instructions)) // Virtualization of big method = mega bad
-				return;
+				final int leeway = methodWrapper.getLeewaySize();
+				if (leeway <= 30000 || !canProtect(methodNode.instructions)) // Virtualization of big method = mega bad
+					return;
 
-			final VirtualizerResult result = translate(methodNode, counter.get());
-			stubCreator.addInstructionList(result.getVMInstructions());
-			methodNode.instructions = result.getVMCall();
-			methodNode.localVariables = null;
-			methodNode.tryCatchBlocks = null;
+				final VirtualizerResult result = translate(methodNode, counter.get());
+				stubCreator.addInstructionList(result.getVMInstructions());
+				methodNode.instructions = result.getVMCall();
+				methodNode.localVariables = null;
+				methodNode.tryCatchBlocks = null;
 
-			counter.incrementAndGet();
-		}));
+				counter.incrementAndGet();
+			});
+		});
 
 		try
 		{

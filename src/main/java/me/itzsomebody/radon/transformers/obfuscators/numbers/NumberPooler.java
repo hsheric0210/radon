@@ -39,34 +39,37 @@ public class NumberPooler extends NumberObfuscation
 	{
 		final AtomicInteger counter = new AtomicInteger();
 
-		final boolean poolIntegers = master.canPoolInteger();
-		final boolean poolLongs = master.canPoolLong();
-		final boolean poolFloats = master.canPoolFloat();
-		final boolean poolDoubles = master.canPoolDouble();
+		final boolean poolIntegers = master.poolInteger;
+		final boolean poolLongs = master.poolLong;
+		final boolean poolFloats = master.poolFloat;
+		final boolean poolDoubles = master.poolDouble;
 
-		final boolean randomOrder = master.isNumberPoolerRandomOrder();
+		final boolean randomOrder = master.numberPoolerRandomOrder;
 
-		if (master.canNumberPoolerGlobal())
+		if (master.numberPoolerGlobal)
 		{
 			final Set<Integer> integersToPoolSet = new HashSet<>();
 			final Set<Long> longsToPoolSet = new HashSet<>();
 			final Set<Float> floatsToPoolSet = new HashSet<>();
 			final Set<Double> doublesToPoolSet = new HashSet<>();
 
-			getClassWrappers().stream().filter(this::included).forEach(cw -> cw.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions()).map(MethodWrapper::getInstructions).forEach(insnList ->
+			getClassWrappers().stream().filter(this::included).forEach(cw ->
 			{
-				if (poolIntegers)
-					Stream.of(insnList.toArray()).filter(ASMUtils::isIntInsn).mapToInt(ASMUtils::getIntegerFromInsn).filter(integer -> !integersToPoolSet.contains(integer)).forEach(integersToPoolSet::add);
+				cw.methods.stream().filter(mw -> included(mw) && mw.hasInstructions()).map(MethodWrapper::getInstructions).forEach(insnList ->
+				{
+					if (poolIntegers)
+						Stream.of(insnList.toArray()).filter(ASMUtils::isIntInsn).mapToInt(ASMUtils::getIntegerFromInsn).filter(integer -> !integersToPoolSet.contains(integer)).forEach(integersToPoolSet::add);
 
-				if (poolLongs)
-					Stream.of(insnList.toArray()).filter(ASMUtils::isLongInsn).mapToLong(ASMUtils::getLongFromInsn).filter(_long -> !longsToPoolSet.contains(_long)).forEach(longsToPoolSet::add);
+					if (poolLongs)
+						Stream.of(insnList.toArray()).filter(ASMUtils::isLongInsn).mapToLong(ASMUtils::getLongFromInsn).filter(_long -> !longsToPoolSet.contains(_long)).forEach(longsToPoolSet::add);
 
-				if (poolFloats)
-					Stream.of(insnList.toArray()).filter(ASMUtils::isFloatInsn).map(ASMUtils::getFloatFromInsn).filter(_float -> !floatsToPoolSet.contains(_float)).forEach(floatsToPoolSet::add);
+					if (poolFloats)
+						Stream.of(insnList.toArray()).filter(ASMUtils::isFloatInsn).map(ASMUtils::getFloatFromInsn).filter(_float -> !floatsToPoolSet.contains(_float)).forEach(floatsToPoolSet::add);
 
-				if (poolDoubles)
-					Stream.of(insnList.toArray()).filter(ASMUtils::isDoubleInsn).mapToDouble(ASMUtils::getDoubleFromInsn).filter(_double -> !doublesToPoolSet.contains(_double)).forEach(doublesToPoolSet::add);
-			}));
+					if (poolDoubles)
+						Stream.of(insnList.toArray()).filter(ASMUtils::isDoubleInsn).mapToDouble(ASMUtils::getDoubleFromInsn).filter(_double -> !doublesToPoolSet.contains(_double)).forEach(doublesToPoolSet::add);
+				});
+			});
 
 			final List<Integer> integersToPool = new ArrayList<>(integersToPoolSet);
 			final List<Long> longsToPool = new ArrayList<>(longsToPoolSet);
@@ -165,7 +168,7 @@ public class NumberPooler extends NumberObfuscation
 						doubleMappings.put(doublesToPool.get(i), i);
 				}
 
-			final boolean inject = master.canNumberPoolerInjectGlobalPool();
+			final boolean inject = master.numberPoolerInjectGlobalPool;
 			final ClassWrapper classWrapper;
 			final String classPath;
 			if (inject)
@@ -189,7 +192,7 @@ public class NumberPooler extends NumberObfuscation
 
 			getClassWrappers().stream().filter(this::included).forEach(cw ->
 			{
-				cw.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions()).map(MethodWrapper::getInstructions).forEach(insnList ->
+				cw.methods.stream().filter(mw -> included(mw) && mw.hasInstructions()).map(MethodWrapper::getInstructions).forEach(insnList ->
 				{
 					if (poolIntegers)
 						Stream.of(insnList.toArray()).filter(ASMUtils::isIntInsn).forEach(insn ->
@@ -268,7 +271,7 @@ public class NumberPooler extends NumberObfuscation
 			if (!integersToPool.isEmpty() || !longsToPool.isEmpty() || !floatsToPool.isEmpty() || !doublesToPool.isEmpty())
 			{
 				if (!inject)
-					classWrapper.getClassNode().visit(V1_5, ACC_PUBLIC | ACC_SUPER | ACC_SYNTHETIC, classPath, null, "java/lang/Object", null);
+					classWrapper.classNode.visit(V1_5, ACC_PUBLIC | ACC_SUPER | ACC_SYNTHETIC, classPath, null, "java/lang/Object", null);
 				createInitializer(integerReverseMappings, longReverseMappings, floatReverseMappings, doubleReverseMappings, classWrapper, getMethodDictionary(classPath), integerPoolFieldName, longPoolFieldName, floatPoolFieldName, doublePoolFieldName);
 				if (!inject)
 					getClasses().put(classWrapper.getName(), classWrapper);
@@ -290,7 +293,7 @@ public class NumberPooler extends NumberObfuscation
 				final List<Float> floatsToPool = new ArrayList<>();
 				final List<Double> doublesToPool = new ArrayList<>();
 
-				cw.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions()).map(MethodWrapper::getInstructions).forEach(insnList ->
+				cw.methods.stream().filter(mw -> included(mw) && mw.hasInstructions()).map(MethodWrapper::getInstructions).forEach(insnList ->
 				{
 					if (poolIntegers)
 						Stream.of(insnList.toArray()).filter(ASMUtils::isIntInsn).mapToInt(ASMUtils::getIntegerFromInsn).filter(integer -> !integersToPool.contains(integer)).forEach(integersToPool::add);
@@ -397,13 +400,13 @@ public class NumberPooler extends NumberObfuscation
 							doubleMappings.put(doublesToPool.get(i), i);
 					}
 
-				final WrappedDictionary fieldDictionary = getFieldDictionary(cw.getOriginalName());
+				final WrappedDictionary fieldDictionary = getFieldDictionary(cw.originalName);
 				final String integerPoolFieldName = fieldDictionary.nextUniqueString();
 				final String longPoolFieldName = fieldDictionary.nextUniqueString();
 				final String floatPoolFieldName = fieldDictionary.nextUniqueString();
 				final String doublePoolFieldName = fieldDictionary.nextUniqueString();
 
-				cw.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions()).map(MethodWrapper::getInstructions).forEach(insnList ->
+				cw.methods.stream().filter(mw -> included(mw) && mw.hasInstructions()).map(MethodWrapper::getInstructions).forEach(insnList ->
 				{
 					if (poolIntegers)
 						Stream.of(insnList.toArray()).filter(ASMUtils::isIntInsn).forEach(insn ->
@@ -479,7 +482,7 @@ public class NumberPooler extends NumberObfuscation
 				});
 
 				if (!integersToPool.isEmpty() || !longsToPool.isEmpty() || !floatsToPool.isEmpty() || !doublesToPool.isEmpty())
-					createInitializer(integerReverseMappings, longReverseMappings, floatReverseMappings, doubleReverseMappings, cw, getMethodDictionary(cw.getOriginalName()), integerPoolFieldName, longPoolFieldName, floatPoolFieldName, doublePoolFieldName);
+					createInitializer(integerReverseMappings, longReverseMappings, floatReverseMappings, doubleReverseMappings, cw, getMethodDictionary(cw.originalName), integerPoolFieldName, longPoolFieldName, floatPoolFieldName, doublePoolFieldName);
 			});
 
 		info(String.format("+ Pooled %d numbers.", counter.get()));
@@ -492,7 +495,7 @@ public class NumberPooler extends NumberObfuscation
 		for (final MethodNode mn : poolInits)
 			classWrapper.addMethod(mn);
 
-		final Optional<MethodNode> staticBlock = ASMUtils.findMethod(classWrapper.getClassNode(), "<clinit>", "()V");
+		final Optional<MethodNode> staticBlock = ASMUtils.findMethod(classWrapper.classNode, "<clinit>", "()V");
 		if (staticBlock.isPresent())
 		{
 			final InsnList insns = staticBlock.get().instructions;
@@ -509,7 +512,7 @@ public class NumberPooler extends NumberObfuscation
 				insnList.add(new MethodInsnNode(INVOKESTATIC, classWrapper.getName(), mn.name, "()V", false));
 			insnList.add(new InsnNode(RETURN));
 			newStaticBlock.instructions = insnList;
-			classWrapper.getClassNode().methods.add(newStaticBlock);
+			classWrapper.classNode.methods.add(newStaticBlock);
 		}
 	}
 

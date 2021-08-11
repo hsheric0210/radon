@@ -36,7 +36,7 @@ public class InvisibleTypeAnnotationsRemover extends Shrinker
 
 		getClassWrappers().stream().filter(this::included).forEach(classWrapper ->
 		{
-			final ClassNode classNode = classWrapper.getClassNode();
+			final ClassNode classNode = classWrapper.classNode;
 
 			if (classNode.invisibleTypeAnnotations != null)
 			{
@@ -44,16 +44,16 @@ public class InvisibleTypeAnnotationsRemover extends Shrinker
 				classNode.invisibleTypeAnnotations = null;
 			}
 
-			classWrapper.getFields().stream().filter(fieldWrapper -> included(fieldWrapper) && fieldWrapper.getFieldNode().invisibleTypeAnnotations != null).forEach(fieldWrapper ->
+			classWrapper.fields.stream().filter(fieldWrapper -> included(fieldWrapper) && fieldWrapper.fieldNode.invisibleTypeAnnotations != null).forEach(fieldWrapper ->
 			{
-				counter.addAndGet(fieldWrapper.getFieldNode().invisibleTypeAnnotations.size());
-				fieldWrapper.getFieldNode().invisibleTypeAnnotations = null;
+				counter.addAndGet(fieldWrapper.fieldNode.invisibleTypeAnnotations.size());
+				fieldWrapper.fieldNode.invisibleTypeAnnotations = null;
 			});
 
-			classWrapper.getMethods().stream().filter(methodWrapper -> included(methodWrapper) && methodWrapper.getMethodNode().invisibleTypeAnnotations != null).forEach(methodWrapper ->
+			classWrapper.methods.stream().filter(methodWrapper -> included(methodWrapper) && methodWrapper.methodNode.invisibleTypeAnnotations != null).forEach(methodWrapper ->
 			{
-				counter.addAndGet(methodWrapper.getMethodNode().invisibleTypeAnnotations.size());
-				methodWrapper.getMethodNode().invisibleTypeAnnotations = null;
+				counter.addAndGet(methodWrapper.methodNode.invisibleTypeAnnotations.size());
+				methodWrapper.methodNode.invisibleTypeAnnotations = null;
 			});
 		});
 

@@ -18,8 +18,6 @@
 
 package me.itzsomebody.radon.transformers.miscellaneous;
 
-import static me.itzsomebody.radon.config.ConfigurationSetting.WATERMARK;
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -34,6 +32,8 @@ import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.transformers.Transformer;
 import me.itzsomebody.radon.utils.ASMUtils;
 import me.itzsomebody.radon.utils.RandomUtils;
+
+import static me.itzsomebody.radon.config.ConfigurationSetting.WATERMARK;
 
 /**
  * Embeds a watermark into random classes.
@@ -67,9 +67,9 @@ public class Watermarker extends Transformer
 					if (counter > 20)
 						throw new IllegalStateException("Radon couldn't find any methods to embed a watermark in after " + counter + " tries.");
 				}
-				while (classWrapper.getMethods().isEmpty());
+				while (classWrapper.methods.isEmpty());
 
-				final MethodWrapper mw = classWrapper.getMethods().get(RandomUtils.getRandomInt(classWrapper.getMethods().size()));
+				final MethodWrapper mw = classWrapper.methods.get(RandomUtils.getRandomInt(classWrapper.methods.size()));
 				if (mw.hasInstructions())
 				{
 					mw.getInstructions().insert(createInstructions(watermark, mw.getMaxLocals()));
@@ -134,25 +134,5 @@ public class Watermarker extends Transformer
 	public String getName()
 	{
 		return "Watermarker";
-	}
-
-	private String getMessage()
-	{
-		return message;
-	}
-
-	private void setMessage(final String message)
-	{
-		this.message = message;
-	}
-
-	private String getKey()
-	{
-		return key;
-	}
-
-	private void setKey(final String key)
-	{
-		this.key = key;
 	}
 }

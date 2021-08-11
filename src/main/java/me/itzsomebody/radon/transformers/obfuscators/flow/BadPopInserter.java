@@ -41,37 +41,40 @@ public class BadPopInserter extends FlowObfuscation
 	{
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(this::included).forEach(cw -> cw.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
+		getClassWrappers().stream().filter(this::included).forEach(cw ->
 		{
-			int leeway = mw.getLeewaySize();
-
-			final InsnList insns = mw.getInstructions();
-			for (final AbstractInsnNode insn : insns.toArray())
+			cw.methods.stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
 			{
-				if (leeway < 10000)
-					break;
+				int leeway = mw.getLeewaySize();
 
-				final int opcode = insn.getOpcode();
-				if (opcode == GOTO)
+				final InsnList insns = mw.getInstructions();
+				for (final AbstractInsnNode insn : insns.toArray())
 				{
-					final InsnList badPop = createBadPOP(POP);
-					insns.insertBefore(insn, badPop);
-					leeway -= ASMUtils.evaluateMaxSize(badPop);
+					if (leeway < 10000)
+						break;
 
-					counter.incrementAndGet();
+					final int opcode = insn.getOpcode();
+					if (opcode == GOTO)
+					{
+						final InsnList badPop = createBadPOP(POP);
+						insns.insertBefore(insn, badPop);
+						leeway -= ASMUtils.evaluateMaxSize(badPop);
+
+						counter.incrementAndGet();
+					}
+
+					if (opcode == POP)
+					{
+						final InsnList badPop = createBadPOP(POP2);
+						insns.insert(insn, badPop);
+						insns.remove(insn);
+						leeway -= ASMUtils.evaluateMaxSize(badPop);
+
+						counter.incrementAndGet();
+					}
 				}
-
-				if (opcode == POP)
-				{
-					final InsnList badPop = createBadPOP(POP2);
-					insns.insert(insn, badPop);
-					insns.remove(insn);
-					leeway -= ASMUtils.evaluateMaxSize(badPop);
-
-					counter.incrementAndGet();
-				}
-			}
-		}));
+			});
+		});
 
 		info("+ Inserted " + counter.get() + " bad POP instructions");
 	}

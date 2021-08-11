@@ -34,19 +34,19 @@ public class SyntheticAccessRemover extends Shrinker
 
 		getClassWrappers().stream().filter(this::included).forEach(cw ->
 		{
-			if (cw.getAccess().isSynthetic())
+			if (cw.access.isSynthetic())
 			{
 				cw.setAccessFlags(cw.getAccessFlags() & ~ACC_SYNTHETIC);
 				counter.incrementAndGet();
 			}
 
-			cw.getMethods().stream().filter(this::included).filter(mw -> mw.getAccess().isSynthetic() || mw.getAccess().isBridge()).forEach(mw ->
+			cw.methods.stream().filter(this::included).filter(mw -> mw.access.isSynthetic() || mw.access.isBridge()).forEach(mw ->
 			{
 				mw.setAccessFlags(mw.getAccessFlags() & ~(ACC_SYNTHETIC | ACC_BRIDGE));
 				counter.incrementAndGet();
 			});
 
-			cw.getFields().stream().filter(this::included).filter(fw -> fw.getAccess().isSynthetic()).forEach(fw ->
+			cw.fields.stream().filter(this::included).filter(fw -> fw.access.isSynthetic()).forEach(fw ->
 			{
 				fw.setAccessFlags(fw.getAccessFlags() & ~ACC_SYNTHETIC);
 				counter.incrementAndGet();

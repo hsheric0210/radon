@@ -34,19 +34,19 @@ public class DeprecatedAccessRemover extends Shrinker
 
 		getClassWrappers().stream().filter(this::included).forEach(cw ->
 		{
-			if (cw.getAccess().isDeprecated())
+			if (cw.access.isDeprecated())
 			{
 				cw.setAccessFlags(cw.getAccessFlags() & ~ACC_DEPRECATED);
 				counter.incrementAndGet();
 			}
 
-			cw.getMethods().stream().filter(mw -> included(mw) && mw.getAccess().isDeprecated()).forEach(mw ->
+			cw.methods.stream().filter(mw -> included(mw) && mw.access.isDeprecated()).forEach(mw ->
 			{
 				mw.setAccessFlags(mw.getAccessFlags() & ~ACC_DEPRECATED);
 				counter.incrementAndGet();
 			});
 
-			cw.getFields().stream().filter(fw -> included(fw) && fw.getAccess().isDeprecated()).forEach(fw ->
+			cw.fields.stream().filter(fw -> included(fw) && fw.access.isDeprecated()).forEach(fw ->
 			{
 				fw.setAccessFlags(fw.getAccessFlags() & ~ACC_DEPRECATED);
 				counter.incrementAndGet();

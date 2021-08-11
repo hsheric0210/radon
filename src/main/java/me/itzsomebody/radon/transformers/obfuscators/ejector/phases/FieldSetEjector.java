@@ -144,12 +144,12 @@ public final class FieldSetEjector extends AbstractEjectPhase
 	public void process(final MethodWrapper methodWrapper, final Frame<AbstractValue>[] frames)
 	{
 		final ClassWrapper classWrapper = ejectorContext.getClassWrapper();
-		final MethodNode methodNode = methodWrapper.getMethodNode();
+		final MethodNode methodNode = methodWrapper.methodNode;
 
 		final Map<FieldSetInfo, List<FieldInsnNode>> fieldSets = analyzeFieldSets(methodNode, frames);
 		if (fieldSets.isEmpty())
 			return;
-		methodWrapper.getMethodNode().maxStack++;
+		methodWrapper.methodNode.maxStack++;
 
 		final Map<AbstractInsnNode, InsnList> patches = new HashMap<>();
 		fieldSets.forEach((setInfo, setInsns) ->

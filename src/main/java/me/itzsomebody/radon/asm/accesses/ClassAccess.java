@@ -182,6 +182,6 @@ public class ClassAccess implements Access
 	@Override
 	public boolean badAccessCheck(final String type)
 	{
-		throw new RadonException(String.format("%s is a class and cannot be checked for the access flag %s", wrapper.getOriginalName(), type));
+		throw new RadonException(String.format("%s is a class and cannot be checked for the access flag %s", wrapper.originalName, type));
 	}
 }

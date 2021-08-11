@@ -57,30 +57,10 @@ public class StringEncryption extends Transformer
 	/**
 	 * String Pooler
 	 */
-	private boolean stringPoolerEnabled;
-	private boolean stringPoolerRandomOrder;
-	private boolean stringPoolerGlobal;
-	private boolean stringPoolerInjectGlobalPool;
-
-	public boolean isStringPoolerGlobal()
-	{
-		return stringPoolerGlobal;
-	}
-
-	public void setStringPoolerGlobal(final boolean stringPoolerGlobal)
-	{
-		this.stringPoolerGlobal = stringPoolerGlobal;
-	}
-
-	public boolean isStringPoolerRandomOrder()
-	{
-		return stringPoolerRandomOrder;
-	}
-
-	public void setStringPoolerRandomOrder(final boolean stringPoolerRandomOrder)
-	{
-		this.stringPoolerRandomOrder = stringPoolerRandomOrder;
-	}
+	boolean stringPoolerEnabled;
+	boolean stringPoolerRandomOrder;
+	boolean stringPoolerGlobal;
+	boolean stringPoolerInjectGlobalPool;
 
 	@Override
 	public void transform()
@@ -97,66 +77,69 @@ public class StringEncryption extends Transformer
 
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(this::included).forEach(classWrapper -> classWrapper.getMethods().stream().filter(this::included).forEach(methodWrapper ->
+		getClassWrappers().stream().filter(this::included).forEach(classWrapper ->
 		{
-			int leeway = methodWrapper.getLeewaySize();
-
-			for (final AbstractInsnNode insn : methodWrapper.getMethodNode().instructions.toArray())
+			classWrapper.methods.stream().filter(this::included).forEach(methodWrapper ->
 			{
-				if (leeway < 10000)
-				{
-					final int finalLeeway = leeway;
-					verboseWarn(() -> "! Skipped method " + methodWrapper.getOriginalName() + " because of insufficient leeway (leeway: " + finalLeeway + ")");
-					break;
-				}
+				int leeway = methodWrapper.getLeewaySize();
 
-				if (insn instanceof LdcInsnNode)
+				for (final AbstractInsnNode insn : methodWrapper.methodNode.instructions.toArray())
 				{
-					final LdcInsnNode ldc = (LdcInsnNode) insn;
-					if (ldc.cst instanceof String)
+					if (leeway < 10000)
 					{
-						final String string = (String) ldc.cst;
-						if (excludedString(string))
-							continue;
+						final int finalLeeway = leeway;
+						verboseWarn(() -> "! Skipped method " + methodWrapper.originalName + " because of insufficient leeway (leeway: " + finalLeeway + ")");
+						break;
+					}
 
-						final int callerClassHC = classWrapper.getName().replace('/', '.').hashCode();
-						final int callerMethodHC = methodWrapper.getMethodNode().name.replace('/', '.').hashCode();
-						final int decryptorClassHC = memberNames.className.replace('/', '.').hashCode();
-						final int decryptorMethodHC = memberNames.decryptMethodName.replace('/', '.').hashCode();
-
-						final int[] randomKeys =
+					if (insn instanceof LdcInsnNode)
+					{
+						final LdcInsnNode ldc = (LdcInsnNode) insn;
+						if (ldc.cst instanceof String)
 						{
-								RandomUtils.getRandomInt(), RandomUtils.getRandomInt(), RandomUtils.getRandomInt()
-						};
+							final String string = (String) ldc.cst;
+							if (excludedString(string))
+								continue;
 
-						final int[] keys =
-						{
-								(contextCheckingEnabled ? decryptorClassHC + callerClassHC + callerMethodHC : 0) ^ randomKeys[0] ^ randomKeys[1], // RC2 ^ RC3
-								(contextCheckingEnabled ? callerMethodHC + decryptorMethodHC + callerClassHC : 0) ^ randomKeys[1] ^ randomKeys[2], // RC1 ^ RC2
-								(contextCheckingEnabled ? decryptorClassHC + callerClassHC + callerMethodHC : 0) ^ randomKeys[0] ^ randomKeys[2], // RC1 ^ RC3
-								(contextCheckingEnabled ? decryptorMethodHC + callerClassHC + decryptorClassHC : 0) ^ randomKeys[0] ^ randomKeys[1] ^ randomKeys[2] // RC1 ^ RC2 ^ RC3
-						};
+							final int callerClassHC = classWrapper.getName().replace('/', '.').hashCode();
+							final int callerMethodHC = methodWrapper.methodNode.name.replace('/', '.').hashCode();
+							final int decryptorClassHC = memberNames.className.replace('/', '.').hashCode();
+							final int decryptorMethodHC = memberNames.decryptMethodName.replace('/', '.').hashCode();
 
-						for (int i = 0; i < 3; i++)
-							ArrayUtils.swap(randomKeys, i, memberNames.randomKeyOrder.get(i));
-						for (int i = 0; i < 4; i++)
-							ArrayUtils.swap(keys, i, memberNames.keyOrder.get(i));
+							final int[] randomKeys =
+							{
+									RandomUtils.getRandomInt(), RandomUtils.getRandomInt(), RandomUtils.getRandomInt()
+							};
 
-						ldc.cst = encrypt(string, keys[0], keys[1], keys[2], keys[3]);
+							final int[] keys =
+							{
+									(contextCheckingEnabled ? decryptorClassHC + callerClassHC + callerMethodHC : 0) ^ randomKeys[0] ^ randomKeys[1], // RC2 ^ RC3
+									(contextCheckingEnabled ? callerMethodHC + decryptorMethodHC + callerClassHC : 0) ^ randomKeys[1] ^ randomKeys[2], // RC1 ^ RC2
+									(contextCheckingEnabled ? decryptorClassHC + callerClassHC + callerMethodHC : 0) ^ randomKeys[0] ^ randomKeys[2], // RC1 ^ RC3
+									(contextCheckingEnabled ? decryptorMethodHC + callerClassHC + decryptorClassHC : 0) ^ randomKeys[0] ^ randomKeys[1] ^ randomKeys[2] // RC1 ^ RC2 ^ RC3
+							};
 
-						final InsnList decryptorCall = new InsnList();
-						decryptorCall.add(ASMUtils.getNumberInsn(randomKeys[0]));
-						decryptorCall.add(ASMUtils.getNumberInsn(randomKeys[1]));
-						decryptorCall.add(ASMUtils.getNumberInsn(randomKeys[2]));
-						decryptorCall.add(new MethodInsnNode(INVOKESTATIC, memberNames.className, memberNames.decryptMethodName, "(Ljava/lang/Object;III)Ljava/lang/String;", false));
-						methodWrapper.getInstructions().insert(ldc, decryptorCall);
+							for (int i = 0; i < 3; i++)
+								ArrayUtils.swap(randomKeys, i, memberNames.randomKeyOrder.get(i));
+							for (int i = 0; i < 4; i++)
+								ArrayUtils.swap(keys, i, memberNames.keyOrder.get(i));
 
-						leeway -= ASMUtils.evaluateMaxSize(decryptorCall);
-						counter.incrementAndGet();
+							ldc.cst = encrypt(string, keys[0], keys[1], keys[2], keys[3]);
+
+							final InsnList decryptorCall = new InsnList();
+							decryptorCall.add(ASMUtils.getNumberInsn(randomKeys[0]));
+							decryptorCall.add(ASMUtils.getNumberInsn(randomKeys[1]));
+							decryptorCall.add(ASMUtils.getNumberInsn(randomKeys[2]));
+							decryptorCall.add(new MethodInsnNode(INVOKESTATIC, memberNames.className, memberNames.decryptMethodName, "(Ljava/lang/Object;III)Ljava/lang/String;", false));
+							methodWrapper.getInstructions().insert(ldc, decryptorCall);
+
+							leeway -= ASMUtils.evaluateMaxSize(decryptorCall);
+							counter.incrementAndGet();
+						}
 					}
 				}
-			}
-		}));
+			});
+		});
 
 		final ClassNode decryptor = createDecryptor(memberNames);
 		getClasses().put(decryptor.name, new ClassWrapper(decryptor, false));
@@ -190,46 +173,6 @@ public class StringEncryption extends Transformer
 	protected boolean excludedString(final String str)
 	{
 		return exemptedStrings.stream().anyMatch(str::contains);
-	}
-
-	private List<String> getExemptedStrings()
-	{
-		return exemptedStrings;
-	}
-
-	private void setExemptedStrings(final List<String> exemptedStrings)
-	{
-		this.exemptedStrings = exemptedStrings;
-	}
-
-	private boolean isContextCheckingEnabled()
-	{
-		return contextCheckingEnabled;
-	}
-
-	private void setContextCheckingEnabled(final boolean contextCheckingEnabled)
-	{
-		this.contextCheckingEnabled = contextCheckingEnabled;
-	}
-
-	private boolean isStringPoolerEnabled()
-	{
-		return stringPoolerEnabled;
-	}
-
-	private void setStringPoolerEnabled(final boolean stringPoolerEnabled)
-	{
-		this.stringPoolerEnabled = stringPoolerEnabled;
-	}
-
-	public boolean isStringPoolerInjectGlobalPool()
-	{
-		return stringPoolerInjectGlobalPool;
-	}
-
-	public void setStringPoolerInjectGlobalPool(final boolean stringPoolerInjectGlobalPool)
-	{
-		this.stringPoolerInjectGlobalPool = stringPoolerInjectGlobalPool;
 	}
 
 	private static String encrypt(final String s, final int key1, final int key2, final int key3, final int key4)

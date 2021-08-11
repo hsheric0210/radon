@@ -18,10 +18,7 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.references;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.StringJoiner;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.stream.Stream;
@@ -56,9 +53,9 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 		getClassWrappers().stream().filter(cw -> included(cw) && !"java/lang/Enum".equals(cw.getSuperName()) && cw.allowsIndy()).forEach(classWrapper ->
 		{
 			if ((classWrapper.getAccessFlags() & ACC_INTERFACE) == 0)
-				classWrapper.getFields().stream().forEach(fw -> fw.setAccessFlags(fw.getAccessFlags() & ~ACC_FINAL)); // J16 checks 'final' flags
+				classWrapper.fields.stream().forEach(fw -> fw.setAccessFlags(fw.getAccessFlags() & ~ACC_FINAL)); // J16 checks 'final' flags
 
-			classWrapper.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
+			classWrapper.methods.stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
 			{
 				final InsnList insns = mw.getInstructions();
 

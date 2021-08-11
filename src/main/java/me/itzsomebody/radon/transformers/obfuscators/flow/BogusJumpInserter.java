@@ -57,20 +57,20 @@ public class BogusJumpInserter extends FlowObfuscation
 			final String predicateDescriptor = predicateType.getDescriptor();
 			final Object predicateInitialValue = RandomUtils.getRandomFloat() > 0.2F ? RandomUtils.getRandomValue(predicateType) : null;
 
-			final FieldNode predicate = new FieldNode((cw.getAccessFlags() & ACC_INTERFACE) != 0 ? INTERFACE_PRED_ACCESS : CLASS_PRED_ACCESS, getFieldDictionary(cw.getOriginalName()).nextUniqueString(), predicateDescriptor, null, predicateInitialValue);
+			final FieldNode predicate = new FieldNode((cw.getAccessFlags() & ACC_INTERFACE) != 0 ? INTERFACE_PRED_ACCESS : CLASS_PRED_ACCESS, getFieldDictionary(cw.originalName).nextUniqueString(), predicateDescriptor, null, predicateInitialValue);
 
-			cw.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
+			cw.methods.stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
 			{
 				final InsnList insns = mw.getInstructions();
 
 				int leeway = mw.getLeewaySize();
 				final int varIndex = mw.getMaxLocals();
-				mw.getMethodNode().maxLocals += predicateType.getSize(); // Prevents breaking of other transformers which rely on this field.
+				mw.methodNode.maxLocals += predicateType.getSize(); // Prevents breaking of other transformers which rely on this field.
 
 				final AbstractInsnNode[] untouchedList = insns.toArray();
-				final LabelNode jumpTo = createBogusJumpTarget(mw.getMethodNode());
+				final LabelNode jumpTo = createBogusJumpTarget(mw.methodNode);
 
-				final StackHeightZeroFinder shzf = new StackHeightZeroFinder(mw.getMethodNode(), insns.getLast());
+				final StackHeightZeroFinder shzf = new StackHeightZeroFinder(mw.methodNode, insns.getLast());
 				try
 				{
 					shzf.execute(false);
@@ -93,7 +93,7 @@ public class BogusJumpInserter extends FlowObfuscation
 					// Bad way of detecting if this class was instantiated
 					if (isCtor && !calledSuper)
 					{
-						calledSuper = ASMUtils.isSuperCall(mw.getMethodNode(), insn);
+						calledSuper = ASMUtils.isSuperCall(mw.methodNode, insn);
 						superCall = insn;
 					}
 

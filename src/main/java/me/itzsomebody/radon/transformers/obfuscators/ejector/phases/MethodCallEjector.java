@@ -135,12 +135,12 @@ public final class MethodCallEjector extends AbstractEjectPhase
 	public void process(final MethodWrapper methodWrapper, final Frame<AbstractValue>[] frames)
 	{
 		final ClassWrapper classWrapper = ejectorContext.getClassWrapper();
-		final MethodNode methodNode = methodWrapper.getMethodNode();
+		final MethodNode methodNode = methodWrapper.methodNode;
 
 		final Map<MethodCallInfo, List<MethodInsnNode>> methodCalls = analyzeMethodCalls(methodNode, frames);
 		if (methodCalls.isEmpty())
 			return;
-		methodWrapper.getMethodNode().maxStack++;
+		methodWrapper.methodNode.maxStack++;
 
 		final Map<AbstractInsnNode, InsnList> patches = new HashMap<>();
 		methodCalls.forEach((callInfo, callInsns) ->

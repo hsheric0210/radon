@@ -182,6 +182,6 @@ public class FieldAccess implements Access
 	@Override
 	public boolean badAccessCheck(final String type)
 	{
-		throw new RadonException(String.format("%s.%s with type %s is a field and cannot be checked for the access flag %s", wrapper.getOwner().getOriginalName(), wrapper.getOriginalName(), wrapper.getOriginalDescription(), type));
+		throw new RadonException(String.format("%s.%s with type %s is a field and cannot be checked for the access flag %s", wrapper.owner.originalName, wrapper.originalName, wrapper.originalDescription, type));
 	}
 }

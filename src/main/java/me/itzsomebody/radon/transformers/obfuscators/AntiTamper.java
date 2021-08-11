@@ -56,7 +56,7 @@ public class AntiTamper extends Transformer
 		{
 			final Collection<MethodWrapper> toProcess = new HashSet<>();
 
-			cw.getMethods().stream().filter(this::included).forEach(mw -> Stream.of(mw.getInstructions().toArray()).filter(insn -> insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof String).forEach(insn ->
+			cw.methods.stream().filter(this::included).forEach(mw -> Stream.of(mw.getInstructions().toArray()).filter(insn -> insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof String).forEach(insn ->
 			{
 				toProcess.add(mw);
 
@@ -76,7 +76,7 @@ public class AntiTamper extends Transformer
 				{
 					final LdcInsnNode ldc = (LdcInsnNode) insn;
 					final String s = (String) ldc.cst;
-					ldc.cst = encrypt(s, memberNames, cw.getName().replace('/', '.'), mw.getMethodNode().name, cpSize);
+					ldc.cst = encrypt(s, memberNames, cw.getName().replace('/', '.'), mw.methodNode.name, cpSize);
 				}));
 
 				final int newCpSize = cw.computeConstantPoolSize(radon);

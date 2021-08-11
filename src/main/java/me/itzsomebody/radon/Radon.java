@@ -49,7 +49,7 @@ import me.itzsomebody.radon.utils.Strings;
  */
 public class Radon
 {
-	private final ObfuscationConfiguration config;
+	public final ObfuscationConfiguration config;
 	private final Map<String, ClassTree> hierarchy = new HashMap<>();
 	public final Map<String, ClassWrapper> classes = new HashMap<>();
 	public final Map<String, ClassWrapper> classPath = new HashMap<>();
@@ -80,9 +80,9 @@ public class Radon
 		Main.info(Strings.END_LOAD_INPUT);
 		Main.infoNewline();
 
-		final List<Transformer> transformers = config.getTransformers();
+		final List<Transformer> transformers = config.transformers;
 
-		if (config.getnTrashClasses() > 0)
+		if (config.nTrashClasses > 0)
 			transformers.add(new TrashClasses());
 		if (transformers.isEmpty())
 			throw new RadonException("No transformers are enabled.");
@@ -129,7 +129,7 @@ public class Radon
 
 	private void writeOutput()
 	{
-		final File output = config.getOutput();
+		final File output = config.output;
 		final long nanoTime = System.nanoTime();
 		Main.info(String.format("+ Writing output to \"%s\".", output.getAbsolutePath()));
 
@@ -139,10 +139,10 @@ public class Radon
 		try
 		{
 			final ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(output));
-			zos.setLevel(config.getCompressionLevel());
-			Main.info(String.format("*** Output jar compression level is %d.", config.getCompressionLevel()));
+			zos.setLevel(config.compressionLevel);
+			Main.info(String.format("*** Output jar compression level is %d.", config.compressionLevel));
 
-			if (config.isCorruptCrc())
+			if (config.corruptCrc)
 				try
 				{
 					final Field crcField = ZipOutputStream.class.getDeclaredField("crc");
@@ -201,7 +201,7 @@ public class Radon
 
 	private void loadClassPath()
 	{
-		config.getLibraries().forEach(file ->
+		config.libraries.forEach(file ->
 		{
 			if (file.exists())
 			{
@@ -246,7 +246,7 @@ public class Radon
 
 	private void loadInput()
 	{
-		final File input = config.getInput();
+		final File input = config.input;
 
 		if (input.exists())
 		{
@@ -268,13 +268,15 @@ public class Radon
 								final ClassWrapper cw = new ClassWrapper(new ClassReader(in), false);
 
 								if (cw.getVersion() <= Opcodes.V1_5)
-									IntStream.range(0, cw.getMethods().size()).forEach(i ->
+								{
+									IntStream.range(0, cw.methods.size()).forEach(i ->
 									{
-										final MethodNode methodNode = cw.getMethods().get(i).getMethodNode();
+										final MethodNode methodNode = cw.methods.get(i).methodNode;
 										final JSRInlinerAdapter adapter = new JSRInlinerAdapter(methodNode, methodNode.access, methodNode.name, methodNode.desc, methodNode.signature, methodNode.exceptions.toArray(new String[0]));
 										methodNode.accept(adapter);
-										cw.getMethods().get(i).setMethodNode(adapter);
+										cw.methods.get(i).methodNode = adapter;
 									});
+								}
 
 								classPath.put(cw.getName(), cw);
 								classes.put(cw.getName(), cw);
@@ -282,7 +284,7 @@ public class Radon
 								final String entryName = entry.getName();
 								final String wrapperEntryName = cw.getEntryName();
 								if (entryName.endsWith(wrapperEntryName) && !entryName.equals(wrapperEntryName))
-									cw.setEntryPrefix(entry.getName().substring(0, entryName.length() - wrapperEntryName.length()));
+									cw.entryPrefix = entry.getName().substring(0, entryName.length() - wrapperEntryName.length());
 							}
 							catch (final Throwable t)
 							{
@@ -356,14 +358,14 @@ public class Radon
 
 			if (wrapper.getSuperName() != null)
 			{
-				tree.getParentClasses().add(wrapper.getSuperName());
+				tree.parentClasses.add(wrapper.getSuperName());
 
 				buildHierarchy(getClassWrapper(wrapper.getSuperName()), wrapper);
 			}
 			if (wrapper.getInterfaces() != null)
 				wrapper.getInterfaces().forEach(s ->
 				{
-					tree.getParentClasses().add(s);
+					tree.parentClasses.add(s);
 
 					buildHierarchy(getClassWrapper(s), wrapper);
 				});
@@ -372,7 +374,7 @@ public class Radon
 		}
 
 		if (sub != null)
-			hierarchy.get(wrapper.getName()).getSubClasses().add(sub.getName());
+			hierarchy.get(wrapper.getName()).subClasses.add(sub.getName());
 	}
 
 	public void buildInheritance()
@@ -398,7 +400,7 @@ public class Radon
 			throw new MissingClassException("Could not find " + type1 + " in the built class hierarchy");
 
 		final Collection<String> allChildren = new HashSet<>();
-		final Deque<String> toProcess = new ArrayDeque<>(firstTree.getSubClasses());
+		final Deque<String> toProcess = new ArrayDeque<>(firstTree.subClasses);
 		while (!toProcess.isEmpty())
 		{
 			final String s = toProcess.poll();
@@ -407,15 +409,10 @@ public class Radon
 			{
 				getClassWrapper(s);
 				final ClassTree tempTree = getTree(s);
-				toProcess.addAll(tempTree.getSubClasses());
+				toProcess.addAll(tempTree.subClasses);
 			}
 		}
 		return allChildren.contains(type2);
-	}
-
-	public ObfuscationConfiguration getConfig()
-	{
-		return config;
 	}
 
 	private static class CRC32Corrupter extends CRC32

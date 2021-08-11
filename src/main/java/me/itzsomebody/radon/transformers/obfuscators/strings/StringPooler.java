@@ -45,11 +45,14 @@ public class StringPooler extends StringEncryption
 	public void transform()
 	{
 		final AtomicInteger counter = new AtomicInteger();
-		final boolean randomOrder = master.isStringPoolerRandomOrder();
+		final boolean randomOrder = master.stringPoolerRandomOrder;
 
-		if (master.isStringPoolerGlobal())
+		if (master.stringPoolerGlobal)
 		{
-			final List<String> totalStrings = getClassWrappers().parallelStream().filter(this::included).flatMap(classWrapper -> classWrapper.getMethods().parallelStream().filter(methodWrapper -> included(methodWrapper) && methodWrapper.hasInstructions()).map(MethodWrapper::getMethodNode).flatMap(methodNode -> Arrays.stream(methodNode.instructions.toArray()).filter(insn -> insn instanceof LdcInsnNode).map(insn -> ((LdcInsnNode) insn).cst).filter(cst -> cst instanceof String).map(cst -> (String) cst).filter(str -> !master.excludedString(str)))).distinct().collect(Collectors.toList());
+			final List<String> totalStrings = getClassWrappers().parallelStream().filter(this::included).flatMap(classWrapper ->
+			{
+				return classWrapper.methods.parallelStream().filter(methodWrapper -> included(methodWrapper) && methodWrapper.hasInstructions()).map(methodWrapper1 -> methodWrapper1.methodNode).flatMap(methodNode -> Arrays.stream(methodNode.instructions.toArray()).filter(insn -> insn instanceof LdcInsnNode).map(insn -> ((LdcInsnNode) insn).cst).filter(cst -> cst instanceof String).map(cst -> (String) cst).filter(str -> !master.excludedString(str)));
+			}).distinct().collect(Collectors.toList());
 			final int totalStringsCount = totalStrings.size();
 
 			final Map<String, Integer> mappings = new HashMap<>(totalStringsCount);
@@ -74,7 +77,7 @@ public class StringPooler extends StringEncryption
 					mappings.put(totalStrings.get(i), i);
 			}
 
-			final boolean inject = master.isStringPoolerInjectGlobalPool();
+			final boolean inject = master.stringPoolerInjectGlobalPool;
 			final ClassWrapper classWrapper;
 			final String classPath;
 			if (inject)
@@ -92,23 +95,26 @@ public class StringPooler extends StringEncryption
 
 			// Update usages
 			final String fieldName = getFieldDictionary(classPath).nextUniqueString();
-			getClassWrappers().stream().filter(this::included).forEach(cw -> cw.getMethods().stream().filter(methodWrapper -> included(methodWrapper) && methodWrapper.hasInstructions()).map(MethodWrapper::getMethodNode).forEach(methodNode -> Stream.of(methodNode.instructions.toArray()).filter(insn -> insn instanceof LdcInsnNode).map(insn -> (LdcInsnNode) insn).filter(ldc -> ldc.cst instanceof String && !master.excludedString((String) ldc.cst)).forEach(ldc ->
+			getClassWrappers().stream().filter(this::included).forEach(cw ->
 			{
-				if (mappings.containsKey((String) ldc.cst))
+				cw.methods.stream().filter(methodWrapper -> included(methodWrapper) && methodWrapper.hasInstructions()).map(methodWrapper1 -> methodWrapper1.methodNode).forEach(methodNode -> Stream.of(methodNode.instructions.toArray()).filter(insn -> insn instanceof LdcInsnNode).map(insn -> (LdcInsnNode) insn).filter(ldc -> ldc.cst instanceof String && !master.excludedString((String) ldc.cst)).forEach(ldc ->
 				{
-					methodNode.instructions.insertBefore(ldc, new FieldInsnNode(GETSTATIC, classPath, fieldName, "[Ljava/lang/String;"));
-					methodNode.instructions.insertBefore(ldc, ASMUtils.getNumberInsn(mappings.get((String) ldc.cst)));
-					methodNode.instructions.set(ldc, new InsnNode(AALOAD));
-					counter.incrementAndGet();
-				}
-				else
-					verboseWarn(() -> String.format("! String %s not registered in mappings! This can't be happened!!!", ldc.cst));
-			})));
+					if (mappings.containsKey((String) ldc.cst))
+					{
+						methodNode.instructions.insertBefore(ldc, new FieldInsnNode(GETSTATIC, classPath, fieldName, "[Ljava/lang/String;"));
+						methodNode.instructions.insertBefore(ldc, ASMUtils.getNumberInsn(mappings.get((String) ldc.cst)));
+						methodNode.instructions.set(ldc, new InsnNode(AALOAD));
+						counter.incrementAndGet();
+					}
+					else
+						verboseWarn(() -> String.format("! String %s not registered in mappings! This can't be happened!!!", ldc.cst));
+				}));
+			});
 
 			if (!reverseMappings.isEmpty())
 			{
 				if (!inject)
-					classWrapper.getClassNode().visit(V1_5, ACC_PUBLIC | ACC_SUPER | ACC_SYNTHETIC, classPath, null, "java/lang/Object", null);
+					classWrapper.classNode.visit(V1_5, ACC_PUBLIC | ACC_SUPER | ACC_SYNTHETIC, classPath, null, "java/lang/Object", null);
 				createInitializer(reverseMappings, classWrapper, getMethodDictionary(classPath), fieldName);
 				if (!inject)
 					getClasses().put(classWrapper.getName(), classWrapper);
@@ -125,7 +131,7 @@ public class StringPooler extends StringEncryption
 			).forEach(cw ->
 			{
 
-				final List<String> totalStrings = cw.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions()).map(MethodWrapper::getInstructions).flatMap(insns -> Stream.of(insns.toArray()).filter(insn -> insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof String).map(insn -> (String) ((LdcInsnNode) insn).cst).filter(string -> !master.excludedString(string)).distinct()).collect(Collectors.toList());
+				final List<String> totalStrings = cw.methods.stream().filter(mw -> included(mw) && mw.hasInstructions()).map(MethodWrapper::getInstructions).flatMap(insns -> Stream.of(insns.toArray()).filter(insn -> insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof String).map(insn -> (String) ((LdcInsnNode) insn).cst).filter(string -> !master.excludedString(string)).distinct()).collect(Collectors.toList());
 				final int totalStringsCount = totalStrings.size();
 
 				final Map<String, Integer> mappings = new HashMap<>(totalStringsCount);
@@ -150,8 +156,8 @@ public class StringPooler extends StringEncryption
 						mappings.put(totalStrings.get(i), i);
 				}
 
-				final String fieldName = getFieldDictionary(cw.getOriginalName()).nextUniqueString();
-				cw.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions()).map(MethodWrapper::getInstructions).forEach(insnList -> Stream.of(insnList.toArray()).filter(insn -> insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof String).forEach(insn ->
+				final String fieldName = getFieldDictionary(cw.originalName).nextUniqueString();
+				cw.methods.stream().filter(mw -> included(mw) && mw.hasInstructions()).map(MethodWrapper::getInstructions).forEach(insnList -> Stream.of(insnList.toArray()).filter(insn -> insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof String).forEach(insn ->
 				{
 					final String stringToPool = (String) ((LdcInsnNode) insn).cst;
 
@@ -165,7 +171,7 @@ public class StringPooler extends StringEncryption
 				}));
 
 				if (!totalStrings.isEmpty())
-					createInitializer(reverseMappings, cw, getMethodDictionary(cw.getOriginalName()), fieldName);
+					createInitializer(reverseMappings, cw, getMethodDictionary(cw.originalName), fieldName);
 			});
 
 		info(String.format("+ Pooled %d strings.", counter.get()));
@@ -182,7 +188,7 @@ public class StringPooler extends StringEncryption
 			verboseInfo(() -> String.format("String pool initializer method #%d name: %s", finalI, mn.name));
 		}
 
-		final Optional<MethodNode> staticBlock = ASMUtils.findMethod(classWrapper.getClassNode(), "<clinit>", "()V");
+		final Optional<MethodNode> staticBlock = ASMUtils.findMethod(classWrapper.classNode, "<clinit>", "()V");
 		if (staticBlock.isPresent())
 		{
 			final InsnList insns = staticBlock.get().instructions;

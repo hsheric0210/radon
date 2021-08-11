@@ -52,15 +52,15 @@ public class GotoReplacer extends FlowObfuscation
 			final String predicateDescriptor = predicateType.getDescriptor();
 			final Object predicateInitialValue = RandomUtils.getRandomBoolean() ? RandomUtils.getRandomValue(predicateType) : null;
 
-			final FieldNode predicate = new FieldNode((cw.getAccessFlags() & ACC_INTERFACE) != 0 ? INTERFACE_PRED_ACCESS : CLASS_PRED_ACCESS, getFieldDictionary(cw.getOriginalName()).nextUniqueString(), predicateDescriptor, null, predicateInitialValue);
+			final FieldNode predicate = new FieldNode((cw.getAccessFlags() & ACC_INTERFACE) != 0 ? INTERFACE_PRED_ACCESS : CLASS_PRED_ACCESS, getFieldDictionary(cw.originalName).nextUniqueString(), predicateDescriptor, null, predicateInitialValue);
 
-			cw.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
+			cw.methods.stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
 			{
 				final InsnList insns = mw.getInstructions();
 
 				int leeway = mw.getLeewaySize();
 				final int varIndex = mw.getMaxLocals();
-				mw.getMethodNode().maxLocals += predicateType.getSize(); // Prevents breaking of other transformers which rely on this field.
+				mw.methodNode.maxLocals += predicateType.getSize(); // Prevents breaking of other transformers which rely on this field.
 
 				final boolean isCtor = "<init>".equals(mw.getName());
 				AbstractInsnNode superCall = null;
@@ -73,7 +73,7 @@ public class GotoReplacer extends FlowObfuscation
 					// Bad way of detecting if this class was instantiated
 					if (isCtor && !calledSuper)
 					{
-						calledSuper = ASMUtils.isSuperCall(mw.getMethodNode(), insn);
+						calledSuper = ASMUtils.isSuperCall(mw.methodNode, insn);
 						superCall = insn;
 					}
 
@@ -81,7 +81,7 @@ public class GotoReplacer extends FlowObfuscation
 					{
 						final InsnList bogusJump = new InsnList();
 						bogusJump.add(BogusJumps.createBogusJump(varIndex, predicateType, predicateInitialValue, ((JumpInsnNode) insn).label, true));
-						bogusJump.add(BogusJumps.createBogusExit(mw.getMethodNode()));
+						bogusJump.add(BogusJumps.createBogusExit(mw.methodNode));
 						insns.insert(insn, bogusJump);
 						insns.remove(insn);
 

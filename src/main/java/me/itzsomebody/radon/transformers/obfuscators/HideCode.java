@@ -46,22 +46,23 @@ public class HideCode extends Transformer
 		getClassWrappers().stream().filter(this::included).forEach(cw ->
 		{
 			if (hideClassesEnabled)
-				if (!cw.getAccess().isSynthetic() && !ASMUtils.hasAnnotations(cw.getClassNode()))
+				if (!cw.access.isSynthetic() && !ASMUtils.hasAnnotations(cw.classNode))
 				{
 					cw.setAccessFlags(cw.getAccessFlags() | ACC_SYNTHETIC);
 					counter.incrementAndGet();
 				}
 			if (hideMethodsEnabled)
-				cw.getMethods().stream().filter(mw -> included(mw) && !ASMUtils.hasAnnotations(mw.getMethodNode())).forEach(mw ->
+			{
+				cw.methods.stream().filter(mw -> included(mw) && !ASMUtils.hasAnnotations(mw.methodNode)).forEach(mw ->
 				{
 					boolean atLeastOnce = false;
 
-					if (!mw.getAccess().isSynthetic())
+					if (!mw.access.isSynthetic())
 					{
 						mw.setAccessFlags(mw.getAccessFlags() | ACC_SYNTHETIC);
 						atLeastOnce = true;
 					}
-					if (!(!mw.getName().isEmpty() && mw.getName().charAt(0) == '<') && !mw.getAccess().isBridge())
+					if (!(!mw.getName().isEmpty() && mw.getName().charAt(0) == '<') && !mw.access.isBridge())
 					{
 						mw.setAccessFlags(mw.getAccessFlags() | ACC_BRIDGE);
 						atLeastOnce = true;
@@ -70,8 +71,9 @@ public class HideCode extends Transformer
 					if (atLeastOnce)
 						counter.incrementAndGet();
 				});
+			}
 			if (hideFieldsEnabled)
-				cw.getFields().stream().filter(fw -> included(fw) && !ASMUtils.hasAnnotations(fw.getFieldNode())).filter(fw -> !fw.getAccess().isSynthetic()).forEach(fw ->
+				cw.fields.stream().filter(fw -> included(fw) && !ASMUtils.hasAnnotations(fw.fieldNode)).filter(fw -> !fw.access.isSynthetic()).forEach(fw ->
 				{
 					fw.setAccessFlags(fw.getAccessFlags() | ACC_SYNTHETIC);
 					counter.incrementAndGet();
@@ -99,35 +101,5 @@ public class HideCode extends Transformer
 		hideClassesEnabled = config.getOrDefault(HIDE_CODE + ".hide_classes", false);
 		hideFieldsEnabled = config.getOrDefault(HIDE_CODE + ".hide_fields", false);
 		hideMethodsEnabled = config.getOrDefault(HIDE_CODE + ".hide_methods", false);
-	}
-
-	private boolean isHideClassesEnabled()
-	{
-		return hideClassesEnabled;
-	}
-
-	private void setHideClassesEnabled(final boolean hideClassesEnabled)
-	{
-		this.hideClassesEnabled = hideClassesEnabled;
-	}
-
-	private boolean isHideMethodsEnabled()
-	{
-		return hideMethodsEnabled;
-	}
-
-	private void setHideMethodsEnabled(final boolean hideMethodsEnabled)
-	{
-		this.hideMethodsEnabled = hideMethodsEnabled;
-	}
-
-	private boolean isHideFieldsEnabled()
-	{
-		return hideFieldsEnabled;
-	}
-
-	private void setHideFieldsEnabled(final boolean hideFieldsEnabled)
-	{
-		this.hideFieldsEnabled = hideFieldsEnabled;
 	}
 }

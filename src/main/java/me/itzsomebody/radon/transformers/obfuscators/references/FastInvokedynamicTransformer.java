@@ -53,51 +53,54 @@ public class FastInvokedynamicTransformer extends ReferenceObfuscation
 
 		final Handle bootstrapHandle = new Handle(H_INVOKESTATIC, memberNames.className, memberNames.bootstrapMethodName, "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;", false);
 
-		getClassWrappers().stream().filter(cw -> included(cw) && !"java/lang/Enum".equals(cw.getSuperName()) && cw.allowsIndy()).forEach(cw -> cw.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
+		getClassWrappers().stream().filter(cw -> included(cw) && !"java/lang/Enum".equals(cw.getSuperName()) && cw.allowsIndy()).forEach(cw ->
 		{
-			final InsnList insnList = mw.getInstructions();
-
-			Stream.of(insnList.toArray()).filter(insn -> insn instanceof MethodInsnNode).map(insn -> (MethodInsnNode) insn).forEach(method ->
+			cw.methods.stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
 			{
-				final boolean superCall = method.getOpcode() == INVOKESPECIAL && method.getPrevious() instanceof VarInsnNode && ((VarInsnNode) method.getPrevious()).var == 0;
-				// INVOKESPECIAL is not fully supported and so buggy :(
-				// This is a workaround for "super." calls got replaced to "this." calls. This is obvious bug.
+				final InsnList insnList = mw.getInstructions();
 
-				if (!method.name.isEmpty() && method.name.charAt(0) == '<' || superCall)
-					return;
-
-				String newDesc = method.desc;
-
-				if (method.getOpcode() != INVOKESTATIC)
-					newDesc = Constants.OPENING_BRACE_PATTERN.matcher(newDesc).replaceAll(Matcher.quoteReplacement("(Ljava/lang/Object;"));
-
-				newDesc = ASMUtils.getGenericMethodDesc(newDesc);
-				// fixme: j11 doesn't like null bytes
-
-				/* <method owner>\u0000\u0000<method name>\u0000\u0000<method descriptor>\u0000\u0000<opcode identifier> */
-
-				boolean flag = method.getOpcode() == INVOKESTATIC;
-				if (memberNames.invertIdentifierVerifySystem)
-					flag = !flag;
-
-				final String[] identifiers =
+				Stream.of(insnList.toArray()).filter(insn -> insn instanceof MethodInsnNode).map(insn -> (MethodInsnNode) insn).forEach(method ->
 				{
-						method.owner.replace('/', '.'),
-						method.name,
-						method.desc,
-						String.valueOf((char) (flag ? RandomUtils.getRandomInt(Character.MAX_VALUE) | memberNames.invokeStaticFlag : RandomUtils.getRandomInt(Character.MAX_VALUE) & ~memberNames.invokeStaticFlag))
-				};
+					final boolean superCall = method.getOpcode() == INVOKESPECIAL && method.getPrevious() instanceof VarInsnNode && ((VarInsnNode) method.getPrevious()).var == 0;
+					// INVOKESPECIAL is not fully supported and so buggy :(
+					// This is a workaround for "super." calls got replaced to "this." calls. This is obvious bug.
 
-				for (int i = 0; i < 4; i++)
-					ArrayUtils.swap(identifiers, i, memberNames.identifierOrder.get(i));
+					if (!method.name.isEmpty() && method.name.charAt(0) == '<' || superCall)
+						return;
 
-				final InvokeDynamicInsnNode invDyn = new InvokeDynamicInsnNode(encrypt(String.join(memberNames.separator, identifiers), memberNames), newDesc, bootstrapHandle);
+					String newDesc = method.desc;
 
-				insnList.set(method, invDyn);
+					if (method.getOpcode() != INVOKESTATIC)
+						newDesc = Constants.OPENING_BRACE_PATTERN.matcher(newDesc).replaceAll(Matcher.quoteReplacement("(Ljava/lang/Object;"));
 
-				counter.incrementAndGet();
+					newDesc = ASMUtils.getGenericMethodDesc(newDesc);
+					// fixme: j11 doesn't like null bytes
+
+					/* <method owner>\u0000\u0000<method name>\u0000\u0000<method descriptor>\u0000\u0000<opcode identifier> */
+
+					boolean flag = method.getOpcode() == INVOKESTATIC;
+					if (memberNames.invertIdentifierVerifySystem)
+						flag = !flag;
+
+					final String[] identifiers =
+					{
+							method.owner.replace('/', '.'),
+							method.name,
+							method.desc,
+							String.valueOf((char) (flag ? RandomUtils.getRandomInt(Character.MAX_VALUE) | memberNames.invokeStaticFlag : RandomUtils.getRandomInt(Character.MAX_VALUE) & ~memberNames.invokeStaticFlag))
+					};
+
+					for (int i = 0; i < 4; i++)
+						ArrayUtils.swap(identifiers, i, memberNames.identifierOrder.get(i));
+
+					final InvokeDynamicInsnNode invDyn = new InvokeDynamicInsnNode(encrypt(String.join(memberNames.separator, identifiers), memberNames), newDesc, bootstrapHandle);
+
+					insnList.set(method, invDyn);
+
+					counter.incrementAndGet();
+				});
 			});
-		}));
+		});
 
 		final ClassNode decryptor = createBootstrap(memberNames);
 		getClasses().put(decryptor.name, new ClassWrapper(decryptor, false));

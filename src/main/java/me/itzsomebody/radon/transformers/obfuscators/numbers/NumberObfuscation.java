@@ -18,8 +18,6 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.numbers;
 
-import static me.itzsomebody.radon.config.ConfigurationSetting.NUMBER_OBFUSCATION;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -29,6 +27,8 @@ import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.transformers.Transformer;
 import me.itzsomebody.radon.utils.RandomUtils;
 
+import static me.itzsomebody.radon.config.ConfigurationSetting.NUMBER_OBFUSCATION;
+
 /**
  * Abstract class for number obfuscation transformers.
  *
@@ -37,19 +37,19 @@ import me.itzsomebody.radon.utils.RandomUtils;
 public class NumberObfuscation extends Transformer
 {
 	private final List<NumberObfuscation> numberObfuscators = new ArrayList<>();
-	private boolean integerTamperingEnabled;
-	private boolean longTamperingEnabled;
-	private boolean floatTamperingEnabled;
-	private boolean doubleTamperingEnabled;
-	private int minIteration;
-	private int maxIteration;
-	private boolean poolInteger;
-	private boolean poolLong;
-	private boolean poolFloat;
-	private boolean poolDouble;
-	private boolean numberPoolerRandomOrder;
-	private boolean numberPoolerGlobal;
-	private boolean numberPoolerInjectGlobalPool;
+	boolean integerTamperingEnabled;
+	boolean longTamperingEnabled;
+	boolean floatTamperingEnabled;
+	boolean doubleTamperingEnabled;
+	int minIteration;
+	int maxIteration;
+	boolean poolInteger;
+	boolean poolLong;
+	boolean poolFloat;
+	boolean poolDouble;
+	boolean numberPoolerRandomOrder;
+	boolean numberPoolerGlobal;
+	boolean numberPoolerInjectGlobalPool;
 
 	protected NumberObfuscation master;
 
@@ -142,105 +142,5 @@ public class NumberObfuscation extends Transformer
 			return RandomUtils.getRandomDouble(Double.MAX_VALUE);
 
 		return RandomUtils.getRandomDouble(bounds);
-	}
-
-	protected boolean isIntegerTamperingEnabled()
-	{
-		return integerTamperingEnabled;
-	}
-
-	protected void setIntegerTamperingEnabled(final boolean integerTamperingEnabled)
-	{
-		this.integerTamperingEnabled = integerTamperingEnabled;
-	}
-
-	protected boolean isLongTamperingEnabled()
-	{
-		return longTamperingEnabled;
-	}
-
-	protected void setLongTamperingEnabled(final boolean longTamperingEnabled)
-	{
-		this.longTamperingEnabled = longTamperingEnabled;
-	}
-
-	protected boolean isFloatTamperingEnabled()
-	{
-		return floatTamperingEnabled;
-	}
-
-	protected void setFloatTamperingEnabled(final boolean floatTamperingEnabled)
-	{
-		this.floatTamperingEnabled = floatTamperingEnabled;
-	}
-
-	protected boolean isDoubleTamperingEnabled()
-	{
-		return doubleTamperingEnabled;
-	}
-
-	protected void setDoubleTamperingEnabled(final boolean doubleTamperingEnabled)
-	{
-		this.doubleTamperingEnabled = doubleTamperingEnabled;
-	}
-
-	final int getIterationCount()
-	{
-		return RandomUtils.getRandomInt(master.minIteration, master.maxIteration);
-	}
-
-	protected int getMinIteration()
-	{
-		return minIteration;
-	}
-
-	protected int getMaxIteration()
-	{
-		return maxIteration;
-	}
-
-	protected boolean isNumberPoolerRandomOrder()
-	{
-		return numberPoolerRandomOrder;
-	}
-
-	protected boolean canPoolInteger()
-	{
-		return poolInteger;
-	}
-
-	protected boolean canPoolLong()
-	{
-		return poolLong;
-	}
-
-	protected boolean canPoolFloat()
-	{
-		return poolFloat;
-	}
-
-	protected boolean canPoolDouble()
-	{
-		return poolDouble;
-	}
-
-	protected boolean canNumberPoolerGlobal()
-	{
-		return numberPoolerGlobal;
-	}
-
-	protected void setNumberPoolerGlobal(final boolean numberPoolerGlobal)
-	{
-		this.numberPoolerGlobal = numberPoolerGlobal;
-	}
-
-	protected boolean canNumberPoolerInjectGlobalPool()
-	{
-		return numberPoolerInjectGlobalPool;
-	}
-
-	protected void setNumberPoolerInjectGlobalPool(final boolean numberPoolerInjectGlobalPool)
-	{
-		this.numberPoolerInjectGlobalPool = numberPoolerInjectGlobalPool;
 	}
 }

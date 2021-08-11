@@ -43,66 +43,70 @@ public class NullCheckMutilator extends FlowObfuscation
 	{
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(this::included).forEach(cw -> cw.getMethods().stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
+		getClassWrappers().stream().filter(this::included).forEach(cw ->
 		{
-			final MethodNode methodNode = mw.getMethodNode();
-
-			final StackHeightZeroFinder shzf = new StackHeightZeroFinder(methodNode, mw.getInstructions().getLast());
-			try
+			cw.methods.stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
 			{
-				shzf.execute(false);
-			}
-			catch (final StackEmulationException e)
-			{
-				e.printStackTrace();
-				throw new RadonException(String.format("Error happened while trying to emulate the stack of %s.%s%s", cw.getName(), mw.getName(), mw.getDescription()));
-			}
-			final Set<AbstractInsnNode> emptyAt = shzf.getEmptyAt();
-			int leeway = mw.getLeewaySize();
+				final MethodNode methodNode = mw.methodNode;
 
-			for (final AbstractInsnNode insn : methodNode.instructions.toArray())
-			{
-				if (leeway < 10000)
-					break;
-
-				if (insn.getOpcode() == IFNULL || insn.getOpcode() == IFNONNULL)
+				final StackHeightZeroFinder shzf = new StackHeightZeroFinder(methodNode, mw.getInstructions().getLast());
+				try
 				{
-					final JumpInsnNode jump = (JumpInsnNode) insn;
-					final LabelNode jumpTarget = jump.label;
-
-					if (!emptyAt.contains(jumpTarget))
-						// When an exception is caught, the stack is first cleared before pushing the exception instance
-						// when the instruction pointer is moved into the catch block. So we have to make sure the stack
-						// is empty at the jump site if we're gonna swap out the ifnull/ifnonnull with a try-catch
-						continue;
-
-					final LabelNode trapStart = new LabelNode();
-					final LabelNode trapEnd = new LabelNode();
-					final LabelNode catchStart = new LabelNode();
-					final LabelNode catchEnd = new LabelNode();
-
-					final InsnList insns = new InsnList();
-					insns.add(trapStart);
-					insns.add(ASMUtils.createNPERaiser()); // Inject NPE Raiser
-					insns.add(new InsnNode(POP)); // Ignore the return value of method
-					insns.add(trapEnd);
-
-					insns.add(new JumpInsnNode(GOTO, insn.getOpcode() == IFNULL ? catchEnd : jumpTarget));
-					insns.add(catchStart);
-					insns.add(new InsnNode(POP)); // Ignore the catch block parameter
-					if (insn.getOpcode() == IFNULL)
-						insns.add(new JumpInsnNode(GOTO, jumpTarget));
-					insns.add(catchEnd);
-
-					methodNode.instructions.insert(insn, insns);
-					methodNode.instructions.remove(insn);
-					methodNode.tryCatchBlocks.add(0, new TryCatchBlockNode(trapStart, trapEnd, catchStart, Throwables.NullPointerException));
-
-					counter.incrementAndGet();
-					leeway -= ASMUtils.evaluateMaxSize(insns);
+					shzf.execute(false);
 				}
-			}
-		}));
+				catch (final StackEmulationException e)
+				{
+					e.printStackTrace();
+					throw new RadonException(String.format("Error happened while trying to emulate the stack of %s.%s%s", cw.getName(), mw.getName(), mw.getDescription()));
+				}
+				final Set<AbstractInsnNode> emptyAt = shzf.getEmptyAt();
+				int leeway = mw.getLeewaySize();
+
+				final InsnList insns = methodNode.instructions;
+				for (final AbstractInsnNode insn : insns.toArray())
+				{
+					if (leeway < 10000)
+						break;
+
+					if (insn.getOpcode() == IFNULL || insn.getOpcode() == IFNONNULL)
+					{
+						final JumpInsnNode jump = (JumpInsnNode) insn;
+						final LabelNode jumpTarget = jump.label;
+
+						if (!emptyAt.contains(jumpTarget))
+							// When an exception is caught, the stack is first cleared before pushing the exception instance
+							// when the instruction pointer is moved into the catch block. So we have to make sure the stack
+							// is empty at the jump site if we're gonna swap out the ifnull/ifnonnull with a try-catch
+							continue;
+
+						final LabelNode trapStart = new LabelNode();
+						final LabelNode trapEnd = new LabelNode();
+						final LabelNode catchStart = new LabelNode();
+						final LabelNode catchEnd = new LabelNode();
+
+						final InsnList tcInsns = new InsnList();
+						tcInsns.add(trapStart);
+						tcInsns.add(ASMUtils.createNPERaiser()); // Inject NPE Raiser
+						tcInsns.add(new InsnNode(POP)); // Ignore the return value of method
+						tcInsns.add(trapEnd);
+
+						tcInsns.add(new JumpInsnNode(GOTO, insn.getOpcode() == IFNULL ? catchEnd : jumpTarget));
+						tcInsns.add(catchStart);
+						tcInsns.add(new InsnNode(POP)); // Ignore the catch block parameter
+						if (insn.getOpcode() == IFNULL)
+							tcInsns.add(new JumpInsnNode(GOTO, jumpTarget));
+						tcInsns.add(catchEnd);
+
+						insns.insert(insn, tcInsns);
+						insns.remove(insn);
+						methodNode.tryCatchBlocks.add(0, new TryCatchBlockNode(trapStart, trapEnd, catchStart, Throwables.NullPointerException));
+
+						counter.incrementAndGet();
+						leeway -= ASMUtils.evaluateMaxSize(tcInsns);
+					}
+				}
+			});
+		});
 
 		info("+ Mutilated " + counter.get() + " null checks");
 	}

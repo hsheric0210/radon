@@ -42,7 +42,10 @@ public class BlockSplitter extends FlowObfuscation
 	{
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(this::included).forEach(cw -> cw.getMethods().stream().filter(this::included).forEach(mw -> doSplit(mw.getMethodNode(), counter, 0)));
+		getClassWrappers().stream().filter(this::included).forEach(cw ->
+		{
+			cw.methods.stream().filter(this::included).forEach(mw -> doSplit(mw.methodNode, counter, 0));
+		});
 
 		info("+ Split " + counter.get() + " blocks");
 	}

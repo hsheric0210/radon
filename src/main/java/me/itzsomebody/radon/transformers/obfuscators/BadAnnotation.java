@@ -41,18 +41,21 @@ public class BadAnnotation extends Transformer
 	{
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(this::included).forEach(cw -> cw.getMethods().stream().filter(this::included).forEach(mw ->
+		getClassWrappers().stream().filter(this::included).forEach(cw ->
 		{
-			final MethodNode methodNode = mw.getMethodNode();
+			cw.methods.stream().filter(this::included).forEach(mw ->
+			{
+				final MethodNode methodNode = mw.methodNode;
 
-			if (methodNode.visibleAnnotations == null)
-				methodNode.visibleAnnotations = new ArrayList<>();
-			if (methodNode.invisibleAnnotations == null)
-				methodNode.invisibleAnnotations = new ArrayList<>();
+				if (methodNode.visibleAnnotations == null)
+					methodNode.visibleAnnotations = new ArrayList<>();
+				if (methodNode.invisibleAnnotations == null)
+					methodNode.invisibleAnnotations = new ArrayList<>();
 
-			methodNode.visibleAnnotations.add(new AnnotationNode("@"));
-			methodNode.invisibleAnnotations.add(new AnnotationNode("@"));
-		}));
+				methodNode.visibleAnnotations.add(new AnnotationNode("@"));
+				methodNode.invisibleAnnotations.add(new AnnotationNode("@"));
+			});
+		});
 
 		info("+ Added " + counter.get() + " bad annotations");
 	}
