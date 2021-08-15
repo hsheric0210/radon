@@ -45,12 +45,12 @@ public interface Dictionary
 	 * @return       next unique string.
 	 * @param  index
 	 */
-	String nextUniqueString(int index);
+	String nextUniqueString(int index, int length);
 
 	/**
 	 * @return       next unique string.
 	 */
-	String nextUniqueString();
+	String nextUniqueString(int length);
 
 	/**
 	 * @return last generated unique string. If non, null.

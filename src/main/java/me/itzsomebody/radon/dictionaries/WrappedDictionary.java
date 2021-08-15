@@ -38,12 +38,15 @@ public class WrappedDictionary
 
 	public final String nextUniqueString(final int index)
 	{
-		return dictionary.nextUniqueString(index);
+		return dictionary.nextUniqueString(index, RandomUtils.getRandomInt(minLength, maxLength));
 	}
 
 	public final String nextUniqueString()
 	{
-		return dictionary.nextUniqueString();
+		final String s = dictionary.nextUniqueString(RandomUtils.getRandomInt(minLength, maxLength));
+		if (s == null || s.isEmpty())
+			throw new IllegalStateException("Dictionary " + dictionary + ".nextUniqueString() thrown an empty string!!!");
+		return s;
 	}
 
 	public final void reset()

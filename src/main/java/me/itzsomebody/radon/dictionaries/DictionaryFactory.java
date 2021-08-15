@@ -31,7 +31,7 @@ public final class DictionaryFactory
 	{
 		final Dictionary[] dictionaries =
 		{
-				new AlphaNumDictionary(), new RandomUnicodeDictionary(), new SpacesDictionary(), new UnrecognizedDictionary(), new CreeperDictionary(), new AlphabetDictionary(), new NumericDictionary()
+				new AlphaNumDictionary(), new RandomUnicodeDictionary(), new SpacesDictionary(), new UnrecognizedDictionary(), new CreeperDictionary(), new AlphabetDictionary(), new NumericDictionary(), new HypensDictionary(), new SpecialDictionary(), new ReservedDeviceNamesDictionary()
 		};
 
 		for (final Dictionary dictionary : dictionaries)

@@ -18,13 +18,11 @@
 
 package me.itzsomebody.radon.transformers.obfuscators;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
@@ -36,6 +34,7 @@ import me.itzsomebody.radon.asm.*;
 import me.itzsomebody.radon.config.Configuration;
 import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.transformers.Transformer;
+import me.itzsomebody.radon.utils.Constants;
 import me.itzsomebody.radon.utils.FileUtils;
 
 import static me.itzsomebody.radon.config.ConfigurationSetting.RENAMER;
@@ -62,9 +61,6 @@ public class Renamer extends Transformer
 	@Override
 	public void transform()
 	{
-		for (int i = 0; i < 1000; i++)
-			verboseInfo(() -> getMethodDictionary("test").nextUniqueString());
-
 		radon.buildInheritance();
 		mappings = new HashMap<>();
 		reverseMappings = new HashMap<>();
@@ -100,14 +96,46 @@ public class Renamer extends Transformer
 				String newName;
 
 				if (repackageName == null)
-					newName = packageMappings.computeIfAbsent(classWrapper.getPackageName(), n -> getPackageDictionary(classWrapper.getOriginalPackageName()).nextUniqueString());
+				{
+					final String originalPackageName = classWrapper.getPackageName();
+					final String realOriginalPackageName = originalPackageName.substring(0, originalPackageName.length() - 1); // Drop the trailing '/' character
+
+					// Generate package mappings
+					final StringJoiner mappingKeyBuilder = new StringJoiner("/");
+					for (final String packagePiece : Constants.SLASH_PATTERN.split(realOriginalPackageName))
+					{
+						final String parentPackage = mappingKeyBuilder.toString(); // Empty if the parent is ROOT
+
+						mappingKeyBuilder.add(packagePiece);
+						final String key = mappingKeyBuilder.toString();
+						if (!packageMappings.containsKey(key))
+						{
+							packageMappings.put(key, getPackageDictionary(parentPackage).nextUniqueString());
+							verboseInfo(() -> "Package '" + key + "' mapped to '" + packageMappings.get(key) + "'");
+						}
+					}
+
+					// Retrieve and apply package mappings
+					int index = 0;
+					final StringJoiner newNameJoiner = new StringJoiner("/");
+					for (final String packagePiece : Constants.SLASH_PATTERN.split(realOriginalPackageName))
+					{
+						index += packagePiece.length() + 1; // '+ 1' is required because of the trailing '/' char
+						final String key = originalPackageName.substring(0, index);
+						newNameJoiner.add(packageMappings.getOrDefault(key.substring(0, key.length() - 1), packagePiece));
+					}
+
+					newName = newNameJoiner.toString();
+
+//					newName = packageMappings.computeIfAbsent(classWrapper.getPackageName(), n -> getPackageDictionary(classWrapper.getOriginalPackageName()).nextUniqueString());
+				}
 				else
 					newName = repackageName;
 
-				if (!newName.isEmpty())
-					newName += '/' + getClassDictionary(newName).nextUniqueString();
-				else
+				if (newName.isEmpty())
 					newName = getClassDictionary(newName).nextUniqueString();
+				else
+					newName += '/' + getClassDictionary(newName).nextUniqueString();
 
 				mappings.put(classWrapper.originalName, newName);
 				if (dumpMappings)
@@ -129,10 +157,7 @@ public class Renamer extends Transformer
 			classNode.accept(new ClassRemapper(copy, simpleRemapper));
 
 			// In order to preserve the original names to prevent exclusions from breaking, we update the MethodNode/FieldNode/ClassNode each wrapper wraps instead.
-			IntStream.range(0, copy.methods.size()).forEach(i ->
-			{
-				classWrapper.methods.get(i).methodNode = copy.methods.get(i);
-			});
+			IntStream.range(0, copy.methods.size()).forEach(i -> classWrapper.methods.get(i).methodNode = copy.methods.get(i));
 			IntStream.range(0, copy.fields.size()).forEach(i -> classWrapper.fields.get(i).fieldNode = copy.fields.get(i));
 
 			classWrapper.classNode = copy;
@@ -166,7 +191,7 @@ public class Renamer extends Transformer
 						if ("META-INF/MANIFEST.MF".equals(name) // Manifest
 								|| "plugin.yml".equals(name) // Spigot plugin
 								|| "bungee.yml".equals(name)) // Bungeecord plugin
-							stringVer = stringVer.replaceAll("(?<=[: ])" + original, mappings.get(mapping).replace("/", "."));
+							stringVer = stringVer.replaceAll("(?<=[: ])" + original, Matcher.quoteReplacement(mappings.get(mapping).replace("/", ".")));
 						else
 							stringVer = stringVer.replace(original, mappings.get(mapping).replace("/", "."));
 				}
@@ -231,7 +256,7 @@ public class Renamer extends Transformer
 
 		// Methods which are static don't need to be checked for inheritance
 		if (!wrapper.access.isStatic())
-			// We can't rename members which inherit methods from external libraries
+		// We can't rename members which inherit methods from external libraries
 		{
 			return cw != wrapper.owner && cw.libraryNode && cw.methods.stream().anyMatch(mw -> mw.originalName.equals(originalName) && mw.originalDescription.equals(originalDesc)) || tree.parentClasses.stream().anyMatch(parent -> cannotRenameMethod(radon.getTree(parent), wrapper, visited)) || tree.subClasses.stream().anyMatch(sub -> cannotRenameMethod(radon.getTree(sub), wrapper, visited));
 		}
@@ -301,8 +326,8 @@ public class Renamer extends Transformer
 
 		try
 		{
-			file.createNewFile(); // TODO: handle this properly
-			final BufferedWriter bw = new BufferedWriter(new FileWriter(file));
+			file.createNewFile();
+			final BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8));
 
 			mappingsToDump.forEach(str ->
 			{

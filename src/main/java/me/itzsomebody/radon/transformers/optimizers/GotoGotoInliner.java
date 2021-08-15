@@ -39,23 +39,21 @@ public class GotoGotoInliner extends Optimizer
 		final long current = System.currentTimeMillis();
 
 		getClassWrappers().stream().filter(this::included).forEach(classWrapper ->
-		{
-			classWrapper.methods.stream().filter(methodWrapper -> included(methodWrapper) && methodWrapper.hasInstructions()).forEach(methodWrapper ->
-			{
-				final MethodNode methodNode = methodWrapper.methodNode;
-
-				Stream.of(methodNode.instructions.toArray()).filter(insn -> insn.getOpcode() == GOTO).map(insn -> (JumpInsnNode) insn).forEach(gotoJump ->
+				classWrapper.methods.stream().filter(methodWrapper -> included(methodWrapper) && methodWrapper.hasInstructions()).forEach(methodWrapper ->
 				{
-					final AbstractInsnNode insnAfterTarget = gotoJump.label.getNext();
-					if (insnAfterTarget != null && insnAfterTarget.getOpcode() == GOTO)
+					final MethodNode methodNode = methodWrapper.methodNode;
+
+					Stream.of(methodNode.instructions.toArray()).filter(insn -> insn.getOpcode() == GOTO).map(insn -> (JumpInsnNode) insn).forEach(gotoJump ->
 					{
-						final JumpInsnNode secGoto = (JumpInsnNode) insnAfterTarget;
-						gotoJump.label = secGoto.label;
-						count.incrementAndGet();
-					}
-				});
-			});
-		});
+						final AbstractInsnNode insnAfterTarget = gotoJump.label.getNext();
+						if (insnAfterTarget != null && insnAfterTarget.getOpcode() == GOTO)
+						{
+							final JumpInsnNode secGoto = (JumpInsnNode) insnAfterTarget;
+							gotoJump.label = secGoto.label;
+							count.incrementAndGet();
+						}
+					});
+				}));
 
 		info(String.format("- Inlined %d GOTO->GOTO sequences. [%s]", count.get(), tookThisLong(current)));
 	}

@@ -47,117 +47,114 @@ public class ContextCheckObfuscator extends NumberObfuscation
 
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(this::included).forEach(classWrapper ->
+		getClassWrappers().stream().filter(this::included).forEach(classWrapper -> classWrapper.methods.stream().filter(methodWrapper -> included(methodWrapper) && methodWrapper.hasInstructions()).forEach(methodWrapper ->
 		{
-			classWrapper.methods.stream().filter(methodWrapper -> included(methodWrapper) && methodWrapper.hasInstructions()).forEach(methodWrapper ->
+			int leeway = methodWrapper.getLeewaySize();
+			final InsnList methodInstructions = methodWrapper.getInstructions();
+
+			for (final AbstractInsnNode insn : methodInstructions.toArray())
 			{
-				int leeway = methodWrapper.getLeewaySize();
-				final InsnList methodInstructions = methodWrapper.getInstructions();
+				if (leeway < 10000)
+					break;
 
-				for (final AbstractInsnNode insn : methodInstructions.toArray())
+				if (ASMUtils.isIntInsn(insn) && master.integerTamperingEnabled)
 				{
-					if (leeway < 10000)
-						break;
+					final int originalNum = ASMUtils.getIntegerFromInsn(insn);
+					final int encodedInt = encodeInt(originalNum, methodWrapper.getName().hashCode());
 
-					if (ASMUtils.isIntInsn(insn) && master.integerTamperingEnabled)
-					{
-						final int originalNum = ASMUtils.getIntegerFromInsn(insn);
-						final int encodedInt = encodeInt(originalNum, methodWrapper.getName().hashCode());
+					final InsnList insns = new InsnList();
+					insns.add(ASMUtils.getNumberInsn(encodedInt));
+					insns.add(new MethodInsnNode(INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false));
+					insns.add(new InsnNode(ICONST_0));
+					insns.add(new MethodInsnNode(INVOKESTATIC, memberNames.className, memberNames.decodeConstantMethodName, "(Ljava/lang/Object;I)Ljava/lang/Object;", false));
+					insns.add(new TypeInsnNode(CHECKCAST, "java/lang/Integer"));
+					insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Integer", "intValue", "()I", false));
 
-						final InsnList insns = new InsnList();
-						insns.add(ASMUtils.getNumberInsn(encodedInt));
-						insns.add(new MethodInsnNode(INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false));
-						insns.add(new InsnNode(ICONST_0));
-						insns.add(new MethodInsnNode(INVOKESTATIC, memberNames.className, memberNames.decodeConstantMethodName, "(Ljava/lang/Object;I)Ljava/lang/Object;", false));
-						insns.add(new TypeInsnNode(CHECKCAST, "java/lang/Integer"));
-						insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Integer", "intValue", "()I", false));
-
-						methodInstructions.insertBefore(insn, insns);
-						methodInstructions.remove(insn);
-						leeway -= ASMUtils.evaluateMaxSize(insns);
-						counter.incrementAndGet();
-					}
-					else if (ASMUtils.isLongInsn(insn) && master.longTamperingEnabled)
-					{
-						final long originalNum = ASMUtils.getLongFromInsn(insn);
-						final long encodedLong = encodeLong(originalNum, methodWrapper.getName().hashCode());
-
-						final InsnList insns = new InsnList();
-						insns.add(ASMUtils.getNumberInsn(encodedLong));
-						insns.add(new MethodInsnNode(INVOKESTATIC, "java/lang/Long", "valueOf", "(J)Ljava/lang/Long;", false));
-						insns.add(new InsnNode(ICONST_0));
-						insns.add(new MethodInsnNode(INVOKESTATIC, memberNames.className, memberNames.decodeConstantMethodName, "(Ljava/lang/Object;I)Ljava/lang/Object;", false));
-						insns.add(new TypeInsnNode(CHECKCAST, "java/lang/Long"));
-						insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Long", "longValue", "()J", false));
-
-						methodInstructions.insertBefore(insn, insns);
-						methodInstructions.remove(insn);
-						leeway -= ASMUtils.evaluateMaxSize(insns);
-						counter.incrementAndGet();
-					}
-					else if (ASMUtils.isFloatInsn(insn) && master.floatTamperingEnabled)
-					{
-						final float originalNum = ASMUtils.getFloatFromInsn(insn);
-						final int encodedFloat = encodeFloat(originalNum, methodWrapper.getName().hashCode());
-
-						final InsnList insns = new InsnList();
-						insns.add(ASMUtils.getNumberInsn(encodedFloat));
-						insns.add(new MethodInsnNode(INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false));
-						insns.add(ASMUtils.getNumberInsn(RandomUtils.getRandomInt()));
-						insns.add(new MethodInsnNode(INVOKESTATIC, memberNames.className, memberNames.decodeConstantMethodName, "(Ljava/lang/Object;I)Ljava/lang/Object;", false));
-						insns.add(new TypeInsnNode(CHECKCAST, "java/lang/Float"));
-						insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Float", "floatValue", "()F", false));
-
-						methodInstructions.insertBefore(insn, insns);
-						methodInstructions.remove(insn);
-
-						leeway -= ASMUtils.evaluateMaxSize(insns);
-						counter.incrementAndGet();
-					}
-					else if (ASMUtils.isDoubleInsn(insn) && master.doubleTamperingEnabled)
-					{
-						final double originalNum = ASMUtils.getDoubleFromInsn(insn);
-						final long encodedLong = encodeDouble(originalNum, methodWrapper.getName().hashCode());
-
-						final InsnList insns = new InsnList();
-						insns.add(ASMUtils.getNumberInsn(encodedLong));
-						insns.add(new MethodInsnNode(INVOKESTATIC, "java/lang/Long", "valueOf", "(J)Ljava/lang/Long;", false));
-						insns.add(ASMUtils.getNumberInsn(RandomUtils.getRandomInt()));
-						insns.add(new MethodInsnNode(INVOKESTATIC, memberNames.className, memberNames.decodeConstantMethodName, "(Ljava/lang/Object;I)Ljava/lang/Object;", false));
-						insns.add(new TypeInsnNode(CHECKCAST, "java/lang/Double"));
-						insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Double", "doubleValue", "()D", false));
-
-						methodInstructions.insertBefore(insn, insns);
-						methodInstructions.remove(insn);
-						leeway -= ASMUtils.evaluateMaxSize(insns);
-						counter.incrementAndGet();
-					}
-					else if (insn.getOpcode() == IINC && master.integerTamperingEnabled)
-					{
-						final IincInsnNode iincInsn = (IincInsnNode) insn;
-						final int var = iincInsn.var;
-						final int originalNum = iincInsn.incr;
-						final int encodedInt = encodeInt(originalNum, methodWrapper.getName().hashCode());
-
-						final InsnList insns = new InsnList();
-						insns.add(new VarInsnNode(ILOAD, var));
-						insns.add(ASMUtils.getNumberInsn(encodedInt));
-						insns.add(new MethodInsnNode(INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false));
-						insns.add(new InsnNode(ICONST_0));
-						insns.add(new MethodInsnNode(INVOKESTATIC, memberNames.className, memberNames.decodeConstantMethodName, "(Ljava/lang/Object;I)Ljava/lang/Object;", false));
-						insns.add(new TypeInsnNode(CHECKCAST, "java/lang/Integer"));
-						insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Integer", "intValue", "()I", false));
-						insns.add(new InsnNode(IADD));
-						insns.add(new VarInsnNode(ISTORE, var));
-
-						methodInstructions.insertBefore(insn, insns);
-						methodInstructions.remove(insn);
-						leeway -= ASMUtils.evaluateMaxSize(insns);
-						counter.incrementAndGet();
-					}
+					methodInstructions.insertBefore(insn, insns);
+					methodInstructions.remove(insn);
+					leeway -= ASMUtils.evaluateMaxSize(insns);
+					counter.incrementAndGet();
 				}
-			});
-		});
+				else if (ASMUtils.isLongInsn(insn) && master.longTamperingEnabled)
+				{
+					final long originalNum = ASMUtils.getLongFromInsn(insn);
+					final long encodedLong = encodeLong(originalNum, methodWrapper.getName().hashCode());
+
+					final InsnList insns = new InsnList();
+					insns.add(ASMUtils.getNumberInsn(encodedLong));
+					insns.add(new MethodInsnNode(INVOKESTATIC, "java/lang/Long", "valueOf", "(J)Ljava/lang/Long;", false));
+					insns.add(new InsnNode(ICONST_0));
+					insns.add(new MethodInsnNode(INVOKESTATIC, memberNames.className, memberNames.decodeConstantMethodName, "(Ljava/lang/Object;I)Ljava/lang/Object;", false));
+					insns.add(new TypeInsnNode(CHECKCAST, "java/lang/Long"));
+					insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Long", "longValue", "()J", false));
+
+					methodInstructions.insertBefore(insn, insns);
+					methodInstructions.remove(insn);
+					leeway -= ASMUtils.evaluateMaxSize(insns);
+					counter.incrementAndGet();
+				}
+				else if (ASMUtils.isFloatInsn(insn) && master.floatTamperingEnabled)
+				{
+					final float originalNum = ASMUtils.getFloatFromInsn(insn);
+					final int encodedFloat = encodeFloat(originalNum, methodWrapper.getName().hashCode());
+
+					final InsnList insns = new InsnList();
+					insns.add(ASMUtils.getNumberInsn(encodedFloat));
+					insns.add(new MethodInsnNode(INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false));
+					insns.add(ASMUtils.getNumberInsn(RandomUtils.getRandomInt()));
+					insns.add(new MethodInsnNode(INVOKESTATIC, memberNames.className, memberNames.decodeConstantMethodName, "(Ljava/lang/Object;I)Ljava/lang/Object;", false));
+					insns.add(new TypeInsnNode(CHECKCAST, "java/lang/Float"));
+					insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Float", "floatValue", "()F", false));
+
+					methodInstructions.insertBefore(insn, insns);
+					methodInstructions.remove(insn);
+
+					leeway -= ASMUtils.evaluateMaxSize(insns);
+					counter.incrementAndGet();
+				}
+				else if (ASMUtils.isDoubleInsn(insn) && master.doubleTamperingEnabled)
+				{
+					final double originalNum = ASMUtils.getDoubleFromInsn(insn);
+					final long encodedLong = encodeDouble(originalNum, methodWrapper.getName().hashCode());
+
+					final InsnList insns = new InsnList();
+					insns.add(ASMUtils.getNumberInsn(encodedLong));
+					insns.add(new MethodInsnNode(INVOKESTATIC, "java/lang/Long", "valueOf", "(J)Ljava/lang/Long;", false));
+					insns.add(ASMUtils.getNumberInsn(RandomUtils.getRandomInt()));
+					insns.add(new MethodInsnNode(INVOKESTATIC, memberNames.className, memberNames.decodeConstantMethodName, "(Ljava/lang/Object;I)Ljava/lang/Object;", false));
+					insns.add(new TypeInsnNode(CHECKCAST, "java/lang/Double"));
+					insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Double", "doubleValue", "()D", false));
+
+					methodInstructions.insertBefore(insn, insns);
+					methodInstructions.remove(insn);
+					leeway -= ASMUtils.evaluateMaxSize(insns);
+					counter.incrementAndGet();
+				}
+				else if (insn.getOpcode() == IINC && master.integerTamperingEnabled)
+				{
+					final IincInsnNode iincInsn = (IincInsnNode) insn;
+					final int var = iincInsn.var;
+					final int originalNum = iincInsn.incr;
+					final int encodedInt = encodeInt(originalNum, methodWrapper.getName().hashCode());
+
+					final InsnList insns = new InsnList();
+					insns.add(new VarInsnNode(ILOAD, var));
+					insns.add(ASMUtils.getNumberInsn(encodedInt));
+					insns.add(new MethodInsnNode(INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false));
+					insns.add(new InsnNode(ICONST_0));
+					insns.add(new MethodInsnNode(INVOKESTATIC, memberNames.className, memberNames.decodeConstantMethodName, "(Ljava/lang/Object;I)Ljava/lang/Object;", false));
+					insns.add(new TypeInsnNode(CHECKCAST, "java/lang/Integer"));
+					insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Integer", "intValue", "()I", false));
+					insns.add(new InsnNode(IADD));
+					insns.add(new VarInsnNode(ISTORE, var));
+
+					methodInstructions.insertBefore(insn, insns);
+					methodInstructions.remove(insn);
+					leeway -= ASMUtils.evaluateMaxSize(insns);
+					counter.incrementAndGet();
+				}
+			}
+		}));
 
 		final ClassNode decoder = createConstantDecoder(memberNames);
 		getClasses().put(decoder.name, new ClassWrapper(decoder, false));

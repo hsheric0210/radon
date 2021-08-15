@@ -75,14 +75,13 @@ public class SimpleDictionary implements Dictionary
 				tryCount = 0;
 			}
 		}
-		while (cache.contains(s));
+		while (!cache.add(s));
 
-		cache.add(s);
 		cachedLength = length;
 		return s;
 	}
 
-	// TODO: FIX BUG
+	// FIXME
 	// [10/08/2021-10:24:07] INFO: [VERBOSE] [Renamer] p
 	// [10/08/2021-10:24:07] INFO: [VERBOSE] [Renamer] q
 	// [10/08/2021-10:24:07] INFO: [VERBOSE] [Renamer] r
@@ -104,7 +103,7 @@ public class SimpleDictionary implements Dictionary
 	// [10/08/2021-10:24:07] INFO: [VERBOSE] [Renamer] 8
 	// [10/08/2021-10:24:07] INFO: [VERBOSE] [Renamer] 9
 	// [10/08/2021-10:24:07] INFO: [VERBOSE] [Renamer] 0
-	// [10/08/2021-10:24:07] INFO: [VERBOSE] [Renamer] BA <- Expected 'AA' but got 'BA'
+	// [10/08/2021-10:24:07] INFO: [VERBOSE] [Renamer] BA <- FIXME: Expected 'AA' but got 'BA' // Cause: A = 0, B = 1, C = 2 ...
 	// [10/08/2021-10:24:07] INFO: [VERBOSE] [Renamer] BB
 	// [10/08/2021-10:24:07] INFO: [VERBOSE] [Renamer] BC
 	// [10/08/2021-10:24:07] INFO: [VERBOSE] [Renamer] BD
@@ -115,31 +114,23 @@ public class SimpleDictionary implements Dictionary
 	// [10/08/2021-10:24:07] INFO: [VERBOSE] [Renamer] BI
 	// [10/08/2021-10:24:07] INFO: [VERBOSE] [Renamer] BJ
 	// [10/08/2021-10:24:07] INFO: [VERBOSE] [Renamer] BK
+	// Original code: https://github.com/Guardsquare/proguard/blob/master/base/src/main/java/proguard/obfuscate/SimpleNameFactory.java
+
 	@Override
-	public String nextUniqueString(final int index)
+	public String nextUniqueString(final int index, final int length)
 	{
-		// Copy-pasted from Integer.toString(int i, int radix)
-		int i = index;
-		final char[] buf = new char[33];
-		int charPos = 32;
+		final int baseIndex = index / charsetLength;
+		final int offset = index % charsetLength;
 
-		if (i >= 0)
-			i = -i;
+		final char newChar = charset[offset];
 
-		while (i <= -charsetLength)
-		{
-			buf[charPos--] = charset[-(i % charsetLength)];
-			i /= charsetLength;
-		}
-		buf[charPos] = charset[-i];
-
-		return new String(buf, charPos, 33 - charPos);
+		return baseIndex == 0 ? String.valueOf(newChar) : nextUniqueString(baseIndex - 1, length) + newChar;
 	}
 
 	@Override
-	public String nextUniqueString()
+	public String nextUniqueString(final int length)
 	{
-		return lastGenerated = nextUniqueString(index++);
+		return lastGenerated = nextUniqueString(index++, length);
 	}
 
 	@Override

@@ -77,69 +77,66 @@ public class StringEncryption extends Transformer
 
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(this::included).forEach(classWrapper ->
+		getClassWrappers().stream().filter(this::included).forEach(classWrapper -> classWrapper.methods.stream().filter(this::included).forEach(methodWrapper ->
 		{
-			classWrapper.methods.stream().filter(this::included).forEach(methodWrapper ->
+			int leeway = methodWrapper.getLeewaySize();
+
+			for (final AbstractInsnNode insn : methodWrapper.methodNode.instructions.toArray())
 			{
-				int leeway = methodWrapper.getLeewaySize();
-
-				for (final AbstractInsnNode insn : methodWrapper.methodNode.instructions.toArray())
+				if (leeway < 10000)
 				{
-					if (leeway < 10000)
-					{
-						final int finalLeeway = leeway;
-						verboseWarn(() -> "! Skipped method " + methodWrapper.originalName + " because of insufficient leeway (leeway: " + finalLeeway + ")");
-						break;
-					}
+					final int finalLeeway = leeway;
+					verboseWarn(() -> "! Skipped method " + methodWrapper.originalName + " because of insufficient leeway (leeway: " + finalLeeway + ")");
+					break;
+				}
 
-					if (insn instanceof LdcInsnNode)
+				if (insn instanceof LdcInsnNode)
+				{
+					final LdcInsnNode ldc = (LdcInsnNode) insn;
+					if (ldc.cst instanceof String)
 					{
-						final LdcInsnNode ldc = (LdcInsnNode) insn;
-						if (ldc.cst instanceof String)
+						final String string = (String) ldc.cst;
+						if (excludedString(string))
+							continue;
+
+						final int callerClassHC = classWrapper.getName().replace('/', '.').hashCode();
+						final int callerMethodHC = methodWrapper.methodNode.name.replace('/', '.').hashCode();
+						final int decryptorClassHC = memberNames.className.replace('/', '.').hashCode();
+						final int decryptorMethodHC = memberNames.decryptMethodName.replace('/', '.').hashCode();
+
+						final int[] randomKeys =
 						{
-							final String string = (String) ldc.cst;
-							if (excludedString(string))
-								continue;
+								RandomUtils.getRandomInt(), RandomUtils.getRandomInt(), RandomUtils.getRandomInt()
+						};
 
-							final int callerClassHC = classWrapper.getName().replace('/', '.').hashCode();
-							final int callerMethodHC = methodWrapper.methodNode.name.replace('/', '.').hashCode();
-							final int decryptorClassHC = memberNames.className.replace('/', '.').hashCode();
-							final int decryptorMethodHC = memberNames.decryptMethodName.replace('/', '.').hashCode();
+						final int[] keys =
+						{
+								(contextCheckingEnabled ? decryptorClassHC + callerClassHC + callerMethodHC : 0) ^ randomKeys[0] ^ randomKeys[1], // RC2 ^ RC3
+								(contextCheckingEnabled ? callerMethodHC + decryptorMethodHC + callerClassHC : 0) ^ randomKeys[1] ^ randomKeys[2], // RC1 ^ RC2
+								(contextCheckingEnabled ? decryptorClassHC + callerClassHC + callerMethodHC : 0) ^ randomKeys[0] ^ randomKeys[2], // RC1 ^ RC3
+								(contextCheckingEnabled ? decryptorMethodHC + callerClassHC + decryptorClassHC : 0) ^ randomKeys[0] ^ randomKeys[1] ^ randomKeys[2] // RC1 ^ RC2 ^ RC3
+						};
 
-							final int[] randomKeys =
-							{
-									RandomUtils.getRandomInt(), RandomUtils.getRandomInt(), RandomUtils.getRandomInt()
-							};
+						for (int i = 0; i < 3; i++)
+							ArrayUtils.swap(randomKeys, i, memberNames.randomKeyOrder[i]);
+						for (int i = 0; i < 4; i++)
+							ArrayUtils.swap(keys, i, memberNames.keyOrder[i]);
 
-							final int[] keys =
-							{
-									(contextCheckingEnabled ? decryptorClassHC + callerClassHC + callerMethodHC : 0) ^ randomKeys[0] ^ randomKeys[1], // RC2 ^ RC3
-									(contextCheckingEnabled ? callerMethodHC + decryptorMethodHC + callerClassHC : 0) ^ randomKeys[1] ^ randomKeys[2], // RC1 ^ RC2
-									(contextCheckingEnabled ? decryptorClassHC + callerClassHC + callerMethodHC : 0) ^ randomKeys[0] ^ randomKeys[2], // RC1 ^ RC3
-									(contextCheckingEnabled ? decryptorMethodHC + callerClassHC + decryptorClassHC : 0) ^ randomKeys[0] ^ randomKeys[1] ^ randomKeys[2] // RC1 ^ RC2 ^ RC3
-							};
+						ldc.cst = encrypt(string, keys[0], keys[1], keys[2], keys[3]);
 
-							for (int i = 0; i < 3; i++)
-								ArrayUtils.swap(randomKeys, i, memberNames.randomKeyOrder.get(i));
-							for (int i = 0; i < 4; i++)
-								ArrayUtils.swap(keys, i, memberNames.keyOrder.get(i));
+						final InsnList decryptorCall = new InsnList();
+						decryptorCall.add(ASMUtils.getNumberInsn(randomKeys[0]));
+						decryptorCall.add(ASMUtils.getNumberInsn(randomKeys[1]));
+						decryptorCall.add(ASMUtils.getNumberInsn(randomKeys[2]));
+						decryptorCall.add(new MethodInsnNode(INVOKESTATIC, memberNames.className, memberNames.decryptMethodName, "(Ljava/lang/Object;III)Ljava/lang/String;", false));
+						methodWrapper.getInstructions().insert(ldc, decryptorCall);
 
-							ldc.cst = encrypt(string, keys[0], keys[1], keys[2], keys[3]);
-
-							final InsnList decryptorCall = new InsnList();
-							decryptorCall.add(ASMUtils.getNumberInsn(randomKeys[0]));
-							decryptorCall.add(ASMUtils.getNumberInsn(randomKeys[1]));
-							decryptorCall.add(ASMUtils.getNumberInsn(randomKeys[2]));
-							decryptorCall.add(new MethodInsnNode(INVOKESTATIC, memberNames.className, memberNames.decryptMethodName, "(Ljava/lang/Object;III)Ljava/lang/String;", false));
-							methodWrapper.getInstructions().insert(ldc, decryptorCall);
-
-							leeway -= ASMUtils.evaluateMaxSize(decryptorCall);
-							counter.incrementAndGet();
-						}
+						leeway -= ASMUtils.evaluateMaxSize(decryptorCall);
+						counter.incrementAndGet();
 					}
 				}
-			});
-		});
+			}
+		}));
 
 		final ClassNode decryptor = createDecryptor(memberNames);
 		getClasses().put(decryptor.name, new ClassWrapper(decryptor, false));
@@ -203,8 +200,8 @@ public class StringEncryption extends Transformer
 	@SuppressWarnings("Duplicates")
 	private ClassNode createDecryptor(final MemberNames memberNames)
 	{
-		final List<Integer> randomKeyOrder = memberNames.randomKeyOrder;
-		final List<Integer> keyOrder = memberNames.keyOrder;
+		final int[] randomKeyOrder = memberNames.randomKeyOrder;
+		final int[] keyOrder = memberNames.keyOrder;
 
 		final ClassNode cw = new ClassNode();
 		MethodVisitor mv;
@@ -696,7 +693,7 @@ public class StringEncryption extends Transformer
 					1, 2, 3
 			};
 			for (int i = 0; i < 3; i++)
-				ArrayUtils.swap(randomKeys, i, randomKeyOrder.get(i));
+				ArrayUtils.swap(randomKeys, i, randomKeyOrder[i]);
 
 			mv.visitVarInsn(ILOAD, randomKeys[0]); // Random Key #1
 			if (contextCheckingEnabled)
@@ -867,12 +864,12 @@ public class StringEncryption extends Transformer
 			final Label l72_key4 = new Label();
 			final List<Label> labels = Arrays.asList(l69_key1, l70_key2, l71_key3, l72_key4);
 			for (int i = 0; i < 4; i++)
-				Collections.swap(labels, i, keyOrder.get(i));
+				Collections.swap(labels, i, keyOrder[i]);
 			final Label l73 = new Label();
 			mv.visitTableSwitchInsn(0, 3, l73, labels.get(0), labels.get(1), labels.get(2), labels.get(3));
-			for (int i = 0, j = keyOrder.size(); i < j; i++)
+			for (int i = 0, j = keyOrder.length; i < j; i++)
 			{
-				switch (keyOrder.indexOf(i))
+				switch (ArrayUtils.indexOf(keyOrder, i))
 				{
 					case 0:
 					{
@@ -1242,8 +1239,8 @@ public class StringEncryption extends Transformer
 		final String cacheFieldName;
 		final String bigBoizFieldName;
 		final String decryptMethodName;
-		final List<Integer> randomKeyOrder;
-		final List<Integer> keyOrder;
+		final int[] randomKeyOrder;
+		final int[] keyOrder;
 
 		MemberNames()
 		{
@@ -1253,8 +1250,8 @@ public class StringEncryption extends Transformer
 			cacheFieldName = fieldDictionary.nextUniqueString();
 			bigBoizFieldName = fieldDictionary.nextUniqueString();
 			decryptMethodName = getMethodDictionary(className).nextUniqueString();
-			randomKeyOrder = Collections.unmodifiableList(RandomUtils.getRandomInts(0, 3));
-			keyOrder = Collections.unmodifiableList(RandomUtils.getRandomInts(0, 4));
+			randomKeyOrder = ArrayUtils.randomIntArrayOf(0, 3);
+			keyOrder = ArrayUtils.randomIntArrayOf(0, 4);
 		}
 
 		public String[] toStrings()

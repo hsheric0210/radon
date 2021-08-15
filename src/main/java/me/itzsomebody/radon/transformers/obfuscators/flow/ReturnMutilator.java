@@ -36,47 +36,44 @@ public class ReturnMutilator extends FlowObfuscation
 	{
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(this::included).forEach(cw ->
+		getClassWrappers().stream().filter(this::included).forEach(cw -> cw.methods.stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
 		{
-			cw.methods.stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
-			{
-				final MethodNode mn = mw.methodNode;
+			final MethodNode mn = mw.methodNode;
 
-				final LabelNode returnLabel = new LabelNode();
-				final Type returnType = Type.getReturnType(mn.desc);
-				final boolean isVoidType = returnType.getSort() == Type.VOID;
-				int returnSlot = -1;
+			final LabelNode returnLabel = new LabelNode();
+			final Type returnType = Type.getReturnType(mn.desc);
+			final boolean isVoidType = returnType.getSort() == Type.VOID;
+			int returnSlot = -1;
 
-				if (!isVoidType)
-					returnSlot = mn.maxLocals++;
+			if (!isVoidType)
+				returnSlot = mn.maxLocals++;
 
-				final InsnList insns = mn.instructions;
-				for (final AbstractInsnNode insn : insns.toArray())
-					if (insn.getOpcode() >= IRETURN && insn.getOpcode() <= RETURN)
-					{
-						final InsnList insnList = new InsnList();
-
-						if (!isVoidType)
-							insnList.add(new VarInsnNode(returnType.getOpcode(ISTORE), returnSlot));
-
-						insnList.add(new JumpInsnNode(GOTO, returnLabel));
-
-						insns.insert(insn, insnList);
-						insns.remove(insn);
-
-						counter.incrementAndGet();
-					}
-
-				insns.add(returnLabel);
-				if (isVoidType)
-					insns.add(new InsnNode(RETURN));
-				else
+			final InsnList insns = mn.instructions;
+			for (final AbstractInsnNode insn : insns.toArray())
+				if (insn.getOpcode() >= IRETURN && insn.getOpcode() <= RETURN)
 				{
-					insns.add(new VarInsnNode(returnType.getOpcode(ILOAD), returnSlot));
-					insns.add(new InsnNode(returnType.getOpcode(IRETURN)));
+					final InsnList insnList = new InsnList();
+
+					if (!isVoidType)
+						insnList.add(new VarInsnNode(returnType.getOpcode(ISTORE), returnSlot));
+
+					insnList.add(new JumpInsnNode(GOTO, returnLabel));
+
+					insns.insert(insn, insnList);
+					insns.remove(insn);
+
+					counter.incrementAndGet();
 				}
-			});
-		});
+
+			insns.add(returnLabel);
+			if (isVoidType)
+				insns.add(new InsnNode(RETURN));
+			else
+			{
+				insns.add(new VarInsnNode(returnType.getOpcode(ILOAD), returnSlot));
+				insns.add(new InsnNode(returnType.getOpcode(IRETURN)));
+			}
+		}));
 
 		info("+ Mutilated " + counter.get() + " returns");
 	}

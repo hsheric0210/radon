@@ -18,23 +18,20 @@
 
 package me.itzsomebody.radon.transformers.obfuscators;
 
-import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.objectweb.asm.tree.AnnotationNode;
-import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.Type;
 
 import me.itzsomebody.radon.config.Configuration;
 import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.transformers.Transformer;
 
 /**
- * Adds {@code @} annotation to all methods Fernflower refuses to decompile the class.
- * WARNING: Java will crash on attempt to parse annotations.
+ * Original source code: https://github.com/java-deobfuscator/deobfuscator/blob/master/src/main/java/com/javadeobfuscator/deobfuscator/transformers/general/removers/IllegalVarargsRemover.java
  *
- * @author xDark
+ * @author samczsun
  */
-public class BadAnnotation extends Transformer
+public class BadVarargs extends Transformer
 {
 	@Override
 	public void transform()
@@ -43,32 +40,27 @@ public class BadAnnotation extends Transformer
 
 		getClassWrappers().stream().filter(this::included).forEach(cw -> cw.methods.stream().filter(this::included).forEach(mw ->
 		{
-			final MethodNode methodNode = mw.methodNode;
-
-			if (methodNode.visibleAnnotations == null)
-				methodNode.visibleAnnotations = new ArrayList<>();
-			if (methodNode.invisibleAnnotations == null)
-				methodNode.invisibleAnnotations = new ArrayList<>();
-
-			methodNode.visibleAnnotations.add(new AnnotationNode("@"));
-			methodNode.invisibleAnnotations.add(new AnnotationNode("@"));
-
-			counter.incrementAndGet();
+			final Type[] params = Type.getArgumentTypes(mw.getDescription());
+			if (params.length > 0 && params[params.length - 1].getSort() != Type.ARRAY)
+			{
+				mw.setAccessFlags(mw.getAccessFlags() | ACC_VARARGS);
+				counter.incrementAndGet();
+			}
 		}));
 
-		info("+ Added " + counter.get() + " bad annotations");
+		info("+ Added " + counter.get() + " bad varargs access flags");
 	}
 
 	@Override
 	public String getName()
 	{
-		return "Bad Annotations";
+		return "Bad Varargs";
 	}
 
 	@Override
 	public ExclusionType getExclusionType()
 	{
-		return ExclusionType.BAD_ANNOTATIONS;
+		return ExclusionType.BAD_VARARGS;
 	}
 
 	@Override

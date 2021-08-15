@@ -42,24 +42,22 @@ public class GotoReturnInliner extends Optimizer
 		final long current = System.currentTimeMillis();
 
 		getClassWrappers().stream().filter(this::included).forEach(classWrapper ->
-		{
-			classWrapper.methods.stream().filter(methodWrapper -> included(methodWrapper) && methodWrapper.hasInstructions()).forEach(methodWrapper ->
-			{
-				final MethodNode methodNode = methodWrapper.methodNode;
-
-				Stream.of(methodNode.instructions.toArray()).filter(insn -> insn.getOpcode() == GOTO).forEach(insn ->
+				classWrapper.methods.stream().filter(methodWrapper -> included(methodWrapper) && methodWrapper.hasInstructions()).forEach(methodWrapper ->
 				{
-					final JumpInsnNode gotoJump = (JumpInsnNode) insn;
-					final AbstractInsnNode insnAfterTarget = gotoJump.label.getNext();
+					final MethodNode methodNode = methodWrapper.methodNode;
 
-					if (insnAfterTarget != null && ASMUtils.isReturn(insnAfterTarget.getOpcode()))
+					Stream.of(methodNode.instructions.toArray()).filter(insn -> insn.getOpcode() == GOTO).forEach(insn ->
 					{
-						methodNode.instructions.set(insn, new InsnNode(insnAfterTarget.getOpcode()));
-						count.incrementAndGet();
-					}
-				});
-			});
-		});
+						final JumpInsnNode gotoJump = (JumpInsnNode) insn;
+						final AbstractInsnNode insnAfterTarget = gotoJump.label.getNext();
+
+						if (insnAfterTarget != null && ASMUtils.isReturn(insnAfterTarget.getOpcode()))
+						{
+							methodNode.instructions.set(insn, new InsnNode(insnAfterTarget.getOpcode()));
+							count.incrementAndGet();
+						}
+					});
+				}));
 
 		info(String.format("- Inlined %d GOTO->RETURN sequences. [%s]", count.get(), tookThisLong(current)));
 	}

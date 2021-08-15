@@ -64,9 +64,11 @@ public final class EjectorContext
 
 	public int getNextId()
 	{
-		int id = RandomUtils.getRandomInt();
-		while (!ids.add(id))
+		int id;
+		do
 			id = RandomUtils.getRandomInt();
+		while (!ids.add(id));
+
 		return id;
 	}
 }

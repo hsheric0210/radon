@@ -44,7 +44,9 @@ public class StrSequence
 			// try to read [<startChar>-<endChar>] format
 			if (pattern.length() >= 5 && pattern.charAt(index) == '[' && (index == 0 || pattern.charAt(index - 1) != '\\') && pattern.charAt(index + 4) == ']')
 			{
-				for (char c = pattern.charAt(index + 1), end = pattern.charAt(index + 3); c <= end; c++)
+				final char c1 = pattern.charAt(index + 1);
+				final char c2 = pattern.charAt(index + 3);
+				for (char c = (char) Math.min(c1, c2), end = (char) Math.max(c1, c2); c <= end; c++)
 					strings[stringIndex++] = new String(new char[]
 					{
 							c

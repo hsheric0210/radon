@@ -19,7 +19,6 @@
 package me.itzsomebody.radon.utils;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
@@ -67,13 +66,6 @@ public final class RandomUtils
 	public static <T> T getRandomElement(final T... arr)
 	{
 		return arr[getRandomInt(arr.length)];
-	}
-
-	public static List<Integer> getRandomInts(final int startInclusive, final int endExclusive)
-	{
-		final List<Integer> ints = IntStream.range(startInclusive, endExclusive).boxed().collect(Collectors.toList()); // TODO: Replace this shitty algorithm to the better one
-		Collections.shuffle(ints);
-		return ints;
 	}
 
 	public static int getRandomIntWithExclusion(final int startInclusive, final int endExclusive, final Collection<Integer> exclusions)

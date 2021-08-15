@@ -23,6 +23,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import me.itzsomebody.radon.transformers.Transformer;
+import me.itzsomebody.radon.transformers.obfuscators.BadSignature;
 import me.itzsomebody.radon.transformers.miscellaneous.Expiration;
 import me.itzsomebody.radon.transformers.miscellaneous.Packer;
 import me.itzsomebody.radon.transformers.miscellaneous.Watermarker;
@@ -96,7 +97,10 @@ public enum ConfigurationSetting
 	MEMBER_SHUFFLER(Map.class, new MemberShuffler()),
 	EJECTOR(Map.class, new Ejector()),
 	RENAMER(Map.class, new Renamer()),
-	BAD_ANNOTATION(Boolean.class, new BadAnnotation());
+	BAD_ANNOTATION(Boolean.class, new BadAnnotation()),
+	BAD_VARARGS(Boolean.class, new BadVarargs()),
+	BAD_ATTRIBUTES(Boolean.class, new BadAttributes()),
+	BAD_SIGNATURE(Boolean.class, new BadSignature());
 
 	public final Class<?> expectedType;
 	public final Transformer transformer;

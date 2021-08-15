@@ -18,6 +18,8 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.numbers;
 
+import static me.itzsomebody.radon.config.ConfigurationSetting.NUMBER_OBFUSCATION;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -26,8 +28,6 @@ import me.itzsomebody.radon.config.Configuration;
 import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.transformers.Transformer;
 import me.itzsomebody.radon.utils.RandomUtils;
-
-import static me.itzsomebody.radon.config.ConfigurationSetting.NUMBER_OBFUSCATION;
 
 /**
  * Abstract class for number obfuscation transformers.

@@ -171,17 +171,12 @@ public final class ASMUtils implements Opcodes
 
 	public static String getGenericMethodDesc(final String desc)
 	{
-		final Type returnType = Type.getReturnType(desc);
 		final Type[] args = Type.getArgumentTypes(desc);
 		for (int i = 0, j = args.length; i < j; i++)
-		{
-			final Type arg = args[i];
-
-			if (arg.getSort() == Type.OBJECT)
+			if (args[i].getSort() == Type.OBJECT)
 				args[i] = Type.getType("Ljava/lang/Object;");
-		}
 
-		return Type.getMethodDescriptor(returnType, args);
+		return Type.getMethodDescriptor(Type.getReturnType(desc), args);
 	}
 
 	public static int getReturnOpcode(final Type type)
@@ -206,7 +201,7 @@ public final class ASMUtils implements Opcodes
 			case Type.VOID:
 				return RETURN;
 			default:
-				throw new AssertionError("Unknown type sort: " + type.getClassName());
+				throw new IllegalArgumentException("getReturnOpcode(): Unexpected type: " + type.getClassName());
 		}
 	}
 
@@ -230,7 +225,7 @@ public final class ASMUtils implements Opcodes
 			case Type.OBJECT:
 				return store ? ASTORE : ALOAD;
 			default:
-				throw new AssertionError("Unknown type: " + type.getClassName());
+				throw new IllegalArgumentException("getVarOpcode(): Unexpected type " + type.getClassName());
 		}
 	}
 
@@ -326,65 +321,6 @@ public final class ASMUtils implements Opcodes
 		}
 	}
 
-	public static InsnList createNPERaiser()
-	{
-		final int methodOpcode;
-		final String methodOwner;
-		final String methodName;
-		final String methodDescriptor;
-
-		final InsnList insnList = new InsnList();
-
-		switch (RandomUtils.getRandomInt(6))
-		{
-			// Methods in java.lang.Object
-			case 0:
-				methodOpcode = INVOKEVIRTUAL;
-				methodOwner = "java/lang/Object";
-				methodName = "getClass";
-				methodDescriptor = "()Ljava/lang/Class;";
-				break;
-			case 1:
-				methodOpcode = INVOKEVIRTUAL;
-				methodOwner = "java/lang/Object";
-				methodName = "hashCode";
-				methodDescriptor = "()I";
-				break;
-			case 2:
-				insnList.add(new InsnNode(ACONST_NULL));
-				methodOpcode = INVOKEVIRTUAL;
-				methodOwner = "java/lang/Object";
-				methodName = "equals";
-				methodDescriptor = "(Ljava/lang/Object;)Z";
-				break;
-			case 3:
-				methodOpcode = INVOKEVIRTUAL;
-				methodOwner = "java/lang/Object";
-				methodName = "toString";
-				methodDescriptor = "()Ljava/lang/String;";
-				break;
-
-			// java.util.Objects.requireNonNull
-			case 4:
-				methodOpcode = INVOKESTATIC;
-				methodOwner = "java/util/Objects";
-				methodName = "requireNonNull";
-				methodDescriptor = "(Ljava/lang/Object;)Ljava/lang/Object;";
-				break;
-			default:
-				insnList.add(new InsnNode(ACONST_NULL));
-				methodOpcode = INVOKESTATIC;
-				methodOwner = "java/util/Objects";
-				methodName = "requireNonNull";
-				methodDescriptor = "(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;";
-				break;
-		}
-
-		insnList.add(new MethodInsnNode(methodOpcode, methodOwner, methodName, methodDescriptor, false));
-
-		return insnList;
-	}
-
 	public static int evaluateMaxSize(final InsnList insns)
 	{
 		final CodeSizeEvaluator cse = new CodeSizeEvaluator(null);
@@ -417,7 +353,7 @@ public final class ASMUtils implements Opcodes
 		else if (opcode == RET)
 			throw new UnsupportedOperationException("RET is not supported");
 		else
-			throw new UnsupportedOperationException("VarInsnNode has unknown opcode: " + opcode);
+			throw new IllegalArgumentException("VarInsnNode has unexpected opcode: " + opcode);
 
 		switch (offset)
 		{
@@ -433,14 +369,20 @@ public final class ASMUtils implements Opcodes
 				return Type.getType("Ljava/lang/Object;");
 		}
 
-		throw new UnsupportedOperationException("Unknown offset: " + offset);
+		throw new IllegalArgumentException("Unexpected offset: " + offset);
 	}
 
-	public static boolean isSuperCall(final MethodNode mn, final AbstractInsnNode insn)
+	public static boolean isSuperInitializerCall(final MethodNode mn, final AbstractInsnNode insn)
 	{
 		return "<init>".equals(mn.name) // Check if the current method is constructor
 				&& insn != null && insn.getOpcode() == INVOKESPECIAL && "<init>".equals(((MethodInsnNode) insn).name) // Check if the current instruction is INVOKESPECIAL which calling <init>
-				&& insn.getPrevious() != null && insn.getPrevious().getOpcode() == ALOAD && ((VarInsnNode) insn.getPrevious()).var == 0; // Check if the previous instruction is ALOAD_0 (Reference to self)
+				&& insn.getPrevious() != null && insn.getPrevious().getOpcode() == ALOAD && ((VarInsnNode) insn.getPrevious()).var == 0;
+	}
+
+	public static boolean isSuperCall(final AbstractInsnNode insn)
+	{
+		return insn != null && insn.getOpcode() == INVOKESPECIAL && // Check if the current instruction is INVOKESPECIAL
+				insn.getPrevious() != null && insn.getPrevious().getOpcode() == ALOAD && ((VarInsnNode) insn.getPrevious()).var == 0; // Check if the previous instruction is ALOAD_0 (Reference to self)
 	}
 
 	private ASMUtils()

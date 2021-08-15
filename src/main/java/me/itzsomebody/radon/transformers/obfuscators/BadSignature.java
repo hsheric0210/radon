@@ -18,62 +18,60 @@
 
 package me.itzsomebody.radon.transformers.obfuscators;
 
-import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.objectweb.asm.tree.AnnotationNode;
-import org.objectweb.asm.tree.MethodNode;
 
 import me.itzsomebody.radon.config.Configuration;
 import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.transformers.Transformer;
+import me.itzsomebody.radon.utils.ASMUtils;
 
 /**
- * Adds {@code @} annotation to all methods Fernflower refuses to decompile the class.
- * WARNING: Java will crash on attempt to parse annotations.
+ * Sets the class signature to a random string. A known trick to work on JD, CFR, Procyon and Javap.
  *
- * @author xDark
+ * @author ItzSomebody
  */
-public class BadAnnotation extends Transformer
+public class BadSignature extends Transformer
 {
 	@Override
 	public void transform()
 	{
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(this::included).forEach(cw -> cw.methods.stream().filter(this::included).forEach(mw ->
+		getClassWrappers().stream().filter(this::included).forEach(cw ->
 		{
-			final MethodNode methodNode = mw.methodNode;
-
-			if (methodNode.visibleAnnotations == null)
-				methodNode.visibleAnnotations = new ArrayList<>();
-			if (methodNode.invisibleAnnotations == null)
-				methodNode.invisibleAnnotations = new ArrayList<>();
-
-			methodNode.visibleAnnotations.add(new AnnotationNode("@"));
-			methodNode.invisibleAnnotations.add(new AnnotationNode("@"));
-
+			cw.classNode.signature = getGenericDictionary().randomString();
 			counter.incrementAndGet();
-		}));
 
-		info("+ Added " + counter.get() + " bad annotations");
-	}
+			cw.methods.stream().filter(mw -> included(mw) && !ASMUtils.hasAnnotations(mw.methodNode)).forEach(mw ->
+			{
+				mw.methodNode.signature = getGenericDictionary().randomString();
+				counter.incrementAndGet();
+			});
 
-	@Override
-	public String getName()
-	{
-		return "Bad Annotations";
+			cw.fields.stream().filter(fw -> included(fw) && !ASMUtils.hasAnnotations(fw.fieldNode)).filter(fw -> !fw.access.isSynthetic()).forEach(fw ->
+			{
+				fw.fieldNode.signature = getGenericDictionary().randomString();
+				counter.incrementAndGet();
+			});
+		});
+
+		info(String.format("+ Added %d bad signatures.", counter.get()));
 	}
 
 	@Override
 	public ExclusionType getExclusionType()
 	{
-		return ExclusionType.BAD_ANNOTATIONS;
+		return ExclusionType.BAD_SIGNATURE;
+	}
+
+	@Override
+	public String getName()
+	{
+		return "Bad Signature";
 	}
 
 	@Override
 	public void setConfiguration(final Configuration config)
 	{
-		// Not needed
 	}
 }

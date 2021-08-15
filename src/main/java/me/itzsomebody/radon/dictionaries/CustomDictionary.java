@@ -20,8 +20,8 @@ package me.itzsomebody.radon.dictionaries;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
 import java.util.AbstractMap.SimpleImmutableEntry;
+import java.util.*;
 import java.util.Map.Entry;
 import java.util.stream.IntStream;
 
@@ -37,7 +37,6 @@ public class CustomDictionary implements Dictionary
 {
 	private final StrSequence CHARSET;
 	private final Collection<String> cache = new HashSet<>();
-	private int cachedLength;
 	private String lastGenerated;
 
 	public CustomDictionary(final String charset)
@@ -70,9 +69,6 @@ public class CustomDictionary implements Dictionary
 	@Override
 	public final String uniqueRandomString(int length)
 	{
-		if (cachedLength > length)
-			length = cachedLength;
-
 		int count = 0;
 		final int arrLen = CHARSET.length();
 		String s;
@@ -87,62 +83,21 @@ public class CustomDictionary implements Dictionary
 				count = 0;
 			}
 		}
-		while (cache.contains(s));
-
-		cache.add(s);
-		cachedLength = length;
+		while (!cache.add(s));
 		lastGenerated = s;
 		return s;
 	}
 
 	@Override
-	public final String nextUniqueString(final int index)
+	public final String nextUniqueString(final int index, final int length)
 	{
-		return uniqueRandomString(cachedLength);
+		return uniqueRandomString(length);
 	}
 
 	@Override
-	public final String nextUniqueString()
+	public final String nextUniqueString(final int length)
 	{
-		return uniqueRandomString(cachedLength);
-	}
-
-	/**
-	 * @param  index
-	 *                 A unique positive integer
-	 * @param  charset
-	 *                 A dictionary to permutate through
-	 *
-	 * @return         A unique string from for the given integer using permutations of the given charset
-	 */
-	private static String intToStr(int index, final StrSequence charset)
-	{
-		final String[] buf;
-		try
-		{
-			buf = new String[100];
-		}
-		catch (final OutOfMemoryError e)
-		{
-			e.printStackTrace();
-			return "";
-		}
-
-		int charPos = 99;
-
-		index = -index; // Negate
-
-		final int charsetLength = charset.length();
-		while (index <= -charsetLength)
-		{
-			buf[charPos--] = charset.strAt(-(index % charsetLength));
-			index /= charsetLength;
-		}
-		buf[charPos] = charset.strAt(-index);
-
-		final String[] out = new String[100 - charPos];
-		System.arraycopy(buf, charPos, out, 0, 100 - charPos);
-		return String.join("", out);
+		return uniqueRandomString(length);
 	}
 
 	@Override

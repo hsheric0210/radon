@@ -18,7 +18,10 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.references;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.StringJoiner;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.stream.Stream;
@@ -50,12 +53,12 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 
 		final Handle bootstrapHandle = new Handle(H_INVOKESTATIC, memberNames.className, memberNames.bootstrapMethodName, "(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", false);
 
-		getClassWrappers().stream().filter(cw -> included(cw) && !"java/lang/Enum".equals(cw.getSuperName()) && cw.allowsIndy()).forEach(classWrapper ->
+		getClassWrappers().stream().filter(cw -> included(cw) && !"java/lang/Enum".equals(cw.getSuperName()) && cw.allowsIndy()).forEach(cw ->
 		{
-			if ((classWrapper.getAccessFlags() & ACC_INTERFACE) == 0)
-				classWrapper.fields.stream().forEach(fw -> fw.setAccessFlags(fw.getAccessFlags() & ~ACC_FINAL)); // J16 checks 'final' flags
+			if (!cw.access.isInterface())
+				cw.fields.stream().forEach(fw -> fw.setAccessFlags(fw.getAccessFlags() & ~ACC_FINAL)); // J16 checks 'final' flags
 
-			classWrapper.methods.stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
+			cw.methods.stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
 			{
 				final InsnList insns = mw.getInstructions();
 
@@ -88,7 +91,7 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 						final boolean isStatic = f.getOpcode() == GETSTATIC || f.getOpcode() == PUTSTATIC;
 						final boolean isSetter = f.getOpcode() == PUTFIELD || f.getOpcode() == PUTSTATIC;
 
-						if (!(isSetter && (classWrapper.getAccessFlags() & ACC_INTERFACE) != 0))
+						if (!(isSetter && cw.access.isInterface()))
 						{
 							String newDesc = isSetter ? "(" + f.desc + "Ljava/lang/String;J)V" : "(Ljava/lang/String;J)" + f.desc;
 							if (!isStatic)

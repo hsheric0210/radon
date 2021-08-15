@@ -32,114 +32,111 @@ public class InstructionSetReducer extends Transformer
 	@Override
 	public void transform()
 	{
-		getClassWrappers().stream().filter(this::included).forEach(cw ->
+		getClassWrappers().stream().filter(this::included).forEach(cw -> cw.methods.stream().filter(this::included).forEach(mw ->
 		{
-			cw.methods.stream().filter(this::included).forEach(mw ->
+			final InsnList newInsns = new InsnList();
+			insn:
+			for (final AbstractInsnNode abstractInsnNode : mw.getInstructions().toArray())
 			{
-				final InsnList newInsns = new InsnList();
-				insn:
-				for (final AbstractInsnNode abstractInsnNode : mw.getInstructions().toArray())
+				if (abstractInsnNode instanceof TableSwitchInsnNode)
 				{
-					if (abstractInsnNode instanceof TableSwitchInsnNode)
+					final LabelNode trampolineStart = new LabelNode();
+					final InsnNode cleanStack = new InsnNode(POP);
+					final JumpInsnNode jmpDefault = new JumpInsnNode(GOTO, ((TableSwitchInsnNode) abstractInsnNode).dflt);
+					final LabelNode endOfTrampoline = new LabelNode();
+					final JumpInsnNode skipTrampoline = new JumpInsnNode(GOTO, endOfTrampoline);
+
+					// Goto default trampoline
+					newInsns.add(skipTrampoline);
+					newInsns.add(trampolineStart);
+					newInsns.add(cleanStack);
+					newInsns.add(jmpDefault);
+					newInsns.add(endOfTrampoline);
+
+					// < min
+					// I(val)
+					newInsns.add(new InsnNode(DUP));
+					// I(val) I(val)
+					newInsns.add(new LdcInsnNode(-((TableSwitchInsnNode) abstractInsnNode).min));
+					// I(val) I(val) I(-min)
+					newInsns.add(new InsnNode(IADD));
+					// I(val) I(val-min)
+					newInsns.add(new JumpInsnNode(IFLT, trampolineStart));
+					// I(val)
+					// > max
+					newInsns.add(new InsnNode(DUP));
+					// I(val) I(val)
+					newInsns.add(new LdcInsnNode(-((TableSwitchInsnNode) abstractInsnNode).max));
+					// I(val) I(val) I(-max)
+					newInsns.add(new InsnNode(IADD));
+					// I(val) I(val-max)
+					newInsns.add(new JumpInsnNode(IFGT, trampolineStart));
+					// I(val)
+					// = VAL
+					newInsns.add(new InsnNode(DUP));
+					// I(val) I(val)
+					newInsns.add(new LdcInsnNode(-((TableSwitchInsnNode) abstractInsnNode).min));
+					// I(val) I(val) I(-min)
+					newInsns.add(new InsnNode(IADD));
+					// I(val) I(val-min) => 0 = first label, 1 = second label...
+
+					int labelIndex = 0;
+					for (final LabelNode label : ((TableSwitchInsnNode) abstractInsnNode).labels)
 					{
-						final LabelNode trampolineStart = new LabelNode();
-						final InsnNode cleanStack = new InsnNode(POP);
-						final JumpInsnNode jmpDefault = new JumpInsnNode(GOTO, ((TableSwitchInsnNode) abstractInsnNode).dflt);
-						final LabelNode endOfTrampoline = new LabelNode();
-						final JumpInsnNode skipTrampoline = new JumpInsnNode(GOTO, endOfTrampoline);
-
-						// Goto default trampoline
-						newInsns.add(skipTrampoline);
-						newInsns.add(trampolineStart);
-						newInsns.add(cleanStack);
-						newInsns.add(jmpDefault);
-						newInsns.add(endOfTrampoline);
-
-						// < min
-						// I(val)
+						final LabelNode nextBranch = new LabelNode();
 						newInsns.add(new InsnNode(DUP));
-						// I(val) I(val)
-						newInsns.add(new LdcInsnNode(-((TableSwitchInsnNode) abstractInsnNode).min));
-						// I(val) I(val) I(-min)
-						newInsns.add(new InsnNode(IADD));
-						// I(val) I(val-min)
-						newInsns.add(new JumpInsnNode(IFLT, trampolineStart));
-						// I(val)
-						// > max
-						newInsns.add(new InsnNode(DUP));
-						// I(val) I(val)
-						newInsns.add(new LdcInsnNode(-((TableSwitchInsnNode) abstractInsnNode).max));
-						// I(val) I(val) I(-max)
-						newInsns.add(new InsnNode(IADD));
-						// I(val) I(val-max)
-						newInsns.add(new JumpInsnNode(IFGT, trampolineStart));
-						// I(val)
-						// = VAL
-						newInsns.add(new InsnNode(DUP));
-						// I(val) I(val)
-						newInsns.add(new LdcInsnNode(-((TableSwitchInsnNode) abstractInsnNode).min));
-						// I(val) I(val) I(-min)
-						newInsns.add(new InsnNode(IADD));
-						// I(val) I(val-min) => 0 = first label, 1 = second label...
-
-						int labelIndex = 0;
-						for (final LabelNode label : ((TableSwitchInsnNode) abstractInsnNode).labels)
-						{
-							final LabelNode nextBranch = new LabelNode();
-							newInsns.add(new InsnNode(DUP));
-							newInsns.add(new JumpInsnNode(IFNE, nextBranch));
-							newInsns.add(new InsnNode(POP));
-							newInsns.add(new InsnNode(POP));
-							newInsns.add(new JumpInsnNode(GOTO, label));
-
-							newInsns.add(nextBranch);
-							if (labelIndex + 1 != ((TableSwitchInsnNode) abstractInsnNode).labels.size())
-							{
-								newInsns.add(new LdcInsnNode(-1));
-								newInsns.add(new InsnNode(IADD));
-							}
-
-							labelIndex++;
-						}
-						// I(val) I(val-min-totalN)
+						newInsns.add(new JumpInsnNode(IFNE, nextBranch));
 						newInsns.add(new InsnNode(POP));
-						// newInsns.add(new InsnNode(POP));
-						newInsns.add(new JumpInsnNode(GOTO, trampolineStart));
-						// I(val)
-					}
-					else
-						switch (abstractInsnNode.getOpcode())
+						newInsns.add(new InsnNode(POP));
+						newInsns.add(new JumpInsnNode(GOTO, label));
+
+						newInsns.add(nextBranch);
+						if (labelIndex + 1 != ((TableSwitchInsnNode) abstractInsnNode).labels.size())
 						{
-							case ICONST_M1:
-							case ICONST_0:
-							case ICONST_1:
-							case ICONST_2:
-							case ICONST_3:
-							case ICONST_4:
-							case ICONST_5:
-								newInsns.add(new LdcInsnNode(abstractInsnNode.getOpcode() - 3));
-								continue insn;
-							case LCONST_0:
-							case LCONST_1:
-								newInsns.add(new LdcInsnNode(abstractInsnNode.getOpcode() - 9L));
-								continue insn;
-							case FCONST_0:
-							case FCONST_1:
-							case FCONST_2:
-								newInsns.add(new LdcInsnNode(abstractInsnNode.getOpcode() - 11.0F));
-								continue insn;
-							case DCONST_0:
-							case DCONST_1:
-								newInsns.add(new LdcInsnNode(abstractInsnNode.getOpcode() - 14.0D));
-								continue insn;
+							newInsns.add(new LdcInsnNode(-1));
+							newInsns.add(new InsnNode(IADD));
 						}
 
-					newInsns.add(abstractInsnNode);
+						labelIndex++;
+					}
+					// I(val) I(val-min-totalN)
+					newInsns.add(new InsnNode(POP));
+					// newInsns.add(new InsnNode(POP));
+					newInsns.add(new JumpInsnNode(GOTO, trampolineStart));
+					// I(val)
 				}
+				else
+					switch (abstractInsnNode.getOpcode())
+					{
+						case ICONST_M1:
+						case ICONST_0:
+						case ICONST_1:
+						case ICONST_2:
+						case ICONST_3:
+						case ICONST_4:
+						case ICONST_5:
+							newInsns.add(new LdcInsnNode(abstractInsnNode.getOpcode() - 3));
+							continue insn;
+						case LCONST_0:
+						case LCONST_1:
+							newInsns.add(new LdcInsnNode(abstractInsnNode.getOpcode() - 9L));
+							continue insn;
+						case FCONST_0:
+						case FCONST_1:
+						case FCONST_2:
+							newInsns.add(new LdcInsnNode(abstractInsnNode.getOpcode() - 11.0F));
+							continue insn;
+						case DCONST_0:
+						case DCONST_1:
+							newInsns.add(new LdcInsnNode(abstractInsnNode.getOpcode() - 14.0D));
+							continue insn;
+					}
 
-				mw.setInstructions(newInsns);
-			});
-		});
+				newInsns.add(abstractInsnNode);
+			}
+
+			mw.setInstructions(newInsns);
+		}));
 	}
 
 	@Override

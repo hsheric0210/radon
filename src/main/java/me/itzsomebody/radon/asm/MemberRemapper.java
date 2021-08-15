@@ -35,7 +35,6 @@ public class MemberRemapper extends SimpleRemapper
 		super(mappings);
 	}
 
-	// TODO: Upgrade remapper
 	@Override
 	public String mapFieldName(final String owner, final String name, final String desc)
 	{

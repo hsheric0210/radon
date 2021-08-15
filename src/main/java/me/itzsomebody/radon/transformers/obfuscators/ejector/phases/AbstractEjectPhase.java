@@ -35,7 +35,7 @@ import me.itzsomebody.radon.utils.RandomUtils;
 public abstract class AbstractEjectPhase implements Opcodes
 {
 	protected final EjectorContext ejectorContext;
-	private static Map<String, Collection<String>> proxyMethodNameExclusionMap = new HashMap<>();
+	private static final Map<String, Collection<String>> proxyMethodNameExclusionMap = new HashMap<>();
 
 	public AbstractEjectPhase(final EjectorContext ejectorContext)
 	{
@@ -85,13 +85,9 @@ public abstract class AbstractEjectPhase implements Opcodes
 
 		keys.forEach(id ->
 		{
-			final int xorKey = RandomUtils.getRandomInt();
-
 			final InsnList insnList = fixes.get(id);
 			proxyFix.add(new VarInsnNode(Opcodes.ILOAD, idVariable));
-			proxyFix.add(new LdcInsnNode(xorKey));
-			proxyFix.add(new InsnNode(IXOR));
-			proxyFix.add(new LdcInsnNode(id ^ xorKey));
+			obfuscateFixKey(proxyFix, id);
 			final LabelNode labelNode = new LabelNode();
 			proxyFix.add(new JumpInsnNode(Opcodes.IF_ICMPNE, labelNode));
 
@@ -102,6 +98,19 @@ public abstract class AbstractEjectPhase implements Opcodes
 
 		proxyFix.add(end);
 		methodNode.instructions.insert(proxyFix);
+	}
+
+	private static void obfuscateFixKey(final InsnList proxyFix, final int id)
+	{
+		int current = id;
+		for (int i = 0, j = RandomUtils.getRandomInt(3); i < j; i++)
+		{
+			final int xorKey = RandomUtils.getRandomInt();
+			proxyFix.add(new LdcInsnNode(xorKey));
+			proxyFix.add(new InsnNode(IXOR));
+			current ^= xorKey;
+		}
+		proxyFix.add(new LdcInsnNode(current));
 	}
 
 	public abstract void process(MethodWrapper methodWrapper, Frame<AbstractValue>... frames);

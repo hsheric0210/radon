@@ -25,13 +25,42 @@ package me.itzsomebody.radon.dictionaries;
  */
 public class SpacesDictionary extends SimpleDictionary
 {
-	private static final char[] CHARSET = new char[0xF + 1];
+	private static final char[] CHARSET;
 
 	static
 	{
-		// TODO: Add more white-space characters
-		for (int i = 0, j = CHARSET.length; i < j; i++)
-			CHARSET[i] = (char) ('\u2000' + i);
+		CHARSET = new char[21];
+		/*
+		 * \u115F - Hangul Choseong Filler
+		 * \u2000 - En Quad
+		 * \u2001 - Em Quad
+		 * \u2002 - En Space
+		 * \u2003 - Em Space
+		 * \u2004 - Three-Per-Em Space
+		 * \u2005 - Four-Per-Em Space
+		 * \u2006 - Six-Per-Em Space
+		 * \u2007 - Figure Space
+		 * \u2008 - Punctuation Space
+		 * \u2009 - Thin Space
+		 * \u200A - Hair Space
+		 * \u200B - Zero Width Space
+		 * \u200C - Zero Width Non-Joiner
+		 * \u200D - Zero Width Joiner
+		 * \u200E - Left-To-Right Mark
+		 * \u200F - Right-To-Left Mark
+		 * \u205F - Medium Mathematical Space
+		 * \u3000 - Ideographic Space
+		 * \u3164 - Hangul Filler
+		 * \uFEFF - Zero Width No-Break Space
+		 */
+
+		CHARSET[0] = '\u115F';
+		for (int i = 0; i < 16; i++)
+			CHARSET[i + 1] = (char) ('\u2000' + i);
+		CHARSET[17] = '\u205F';
+		CHARSET[18] = '\u3000';
+		CHARSET[19] = '\u3164';
+		CHARSET[20] = '\uFEFF';
 	}
 
 	public SpacesDictionary()

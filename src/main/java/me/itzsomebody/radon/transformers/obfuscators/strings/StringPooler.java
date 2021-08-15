@@ -49,10 +49,7 @@ public class StringPooler extends StringEncryption
 
 		if (master.stringPoolerGlobal)
 		{
-			final List<String> totalStrings = getClassWrappers().parallelStream().filter(this::included).flatMap(classWrapper ->
-			{
-				return classWrapper.methods.parallelStream().filter(methodWrapper -> included(methodWrapper) && methodWrapper.hasInstructions()).map(methodWrapper1 -> methodWrapper1.methodNode).flatMap(methodNode -> Arrays.stream(methodNode.instructions.toArray()).filter(insn -> insn instanceof LdcInsnNode).map(insn -> ((LdcInsnNode) insn).cst).filter(cst -> cst instanceof String).map(cst -> (String) cst).filter(str -> !master.excludedString(str)));
-			}).distinct().collect(Collectors.toList());
+			final List<String> totalStrings = getClassWrappers().parallelStream().filter(this::included).flatMap(classWrapper -> classWrapper.methods.parallelStream().filter(methodWrapper -> included(methodWrapper) && methodWrapper.hasInstructions()).map(methodWrapper1 -> methodWrapper1.methodNode).flatMap(methodNode -> Arrays.stream(methodNode.instructions.toArray()).filter(insn -> insn instanceof LdcInsnNode).map(insn -> ((LdcInsnNode) insn).cst).filter(cst -> cst instanceof String).map(cst -> (String) cst).filter(str -> !master.excludedString(str)))).distinct().collect(Collectors.toList());
 			final int totalStringsCount = totalStrings.size();
 
 			final Map<String, Integer> mappings = new HashMap<>(totalStringsCount);
@@ -95,21 +92,18 @@ public class StringPooler extends StringEncryption
 
 			// Update usages
 			final String fieldName = getFieldDictionary(classPath).nextUniqueString();
-			getClassWrappers().stream().filter(this::included).forEach(cw ->
+			getClassWrappers().stream().filter(this::included).forEach(cw -> cw.methods.stream().filter(methodWrapper -> included(methodWrapper) && methodWrapper.hasInstructions()).map(methodWrapper1 -> methodWrapper1.methodNode).forEach(methodNode -> Stream.of(methodNode.instructions.toArray()).filter(insn -> insn instanceof LdcInsnNode).map(insn -> (LdcInsnNode) insn).filter(ldc -> ldc.cst instanceof String && !master.excludedString((String) ldc.cst)).forEach(ldc ->
 			{
-				cw.methods.stream().filter(methodWrapper -> included(methodWrapper) && methodWrapper.hasInstructions()).map(methodWrapper1 -> methodWrapper1.methodNode).forEach(methodNode -> Stream.of(methodNode.instructions.toArray()).filter(insn -> insn instanceof LdcInsnNode).map(insn -> (LdcInsnNode) insn).filter(ldc -> ldc.cst instanceof String && !master.excludedString((String) ldc.cst)).forEach(ldc ->
+				if (mappings.containsKey((String) ldc.cst))
 				{
-					if (mappings.containsKey((String) ldc.cst))
-					{
-						methodNode.instructions.insertBefore(ldc, new FieldInsnNode(GETSTATIC, classPath, fieldName, "[Ljava/lang/String;"));
-						methodNode.instructions.insertBefore(ldc, ASMUtils.getNumberInsn(mappings.get((String) ldc.cst)));
-						methodNode.instructions.set(ldc, new InsnNode(AALOAD));
-						counter.incrementAndGet();
-					}
-					else
-						verboseWarn(() -> String.format("! String %s not registered in mappings! This can't be happened!!!", ldc.cst));
-				}));
-			});
+					methodNode.instructions.insertBefore(ldc, new FieldInsnNode(GETSTATIC, classPath, fieldName, "[Ljava/lang/String;"));
+					methodNode.instructions.insertBefore(ldc, ASMUtils.getNumberInsn(mappings.get((String) ldc.cst)));
+					methodNode.instructions.set(ldc, new InsnNode(AALOAD));
+					counter.incrementAndGet();
+				}
+				else
+					verboseWarn(() -> String.format("! String %s not registered in mappings! This can't be happened!!!", ldc.cst));
+			})));
 
 			if (!reverseMappings.isEmpty())
 			{
@@ -123,12 +117,7 @@ public class StringPooler extends StringEncryption
 			}
 		}
 		else
-			getClassWrappers().stream().filter(classWrapper -> included(classWrapper) && (classWrapper.getAccessFlags() & ACC_INTERFACE) == 0
-			// *** Interfaces are excluded from pooling for following problem:
-			// Exception in thread "main" java.lang.IncompatibleClassChangeError: Method 'void me.itzsomebody.radon.utils.Constants.vUa0ibitmil4UMsz3Tf2pqwav7CrzmHx()' must be InterfaceMethodref constant
-			// - at me.itzsomebody.radon.utils.Constants.<clinit>(Unknown Source)
-			// - at me.itzsomebody.radon.Main.<clinit>(Unknown Source)
-			).forEach(cw ->
+			getClassWrappers().stream().filter(this::included).forEach(cw ->
 			{
 
 				final List<String> totalStrings = cw.methods.stream().filter(mw -> included(mw) && mw.hasInstructions()).map(MethodWrapper::getInstructions).flatMap(insns -> Stream.of(insns.toArray()).filter(insn -> insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof String).map(insn -> (String) ((LdcInsnNode) insn).cst).filter(string -> !master.excludedString(string)).distinct()).collect(Collectors.toList());
@@ -188,13 +177,14 @@ public class StringPooler extends StringEncryption
 			verboseInfo(() -> String.format("String pool initializer method #%d name: %s", finalI, mn.name));
 		}
 
+		final boolean isInterface = classWrapper.access.isInterface();
 		final Optional<MethodNode> staticBlock = ASMUtils.findMethod(classWrapper.classNode, "<clinit>", "()V");
 		if (staticBlock.isPresent())
 		{
 			final InsnList insns = staticBlock.get().instructions;
 			final InsnList init = new InsnList();
 			for (final MethodNode mn : poolInits)
-				init.add(new MethodInsnNode(INVOKESTATIC, classWrapper.getName(), mn.name, "()V", false));
+				init.add(new MethodInsnNode(INVOKESTATIC, classWrapper.getName(), mn.name, "()V", isInterface));
 			insns.insertBefore(insns.getFirst(), init);
 		}
 		else
@@ -202,7 +192,7 @@ public class StringPooler extends StringEncryption
 			final MethodNode newStaticBlock = new MethodNode(ACC_PRIVATE | ACC_STATIC | ACC_SYNTHETIC, "<clinit>", "()V", null, null);
 			final InsnList insnList = new InsnList();
 			for (final MethodNode mn : poolInits)
-				insnList.add(new MethodInsnNode(INVOKESTATIC, classWrapper.getName(), mn.name, "()V", false));
+				insnList.add(new MethodInsnNode(INVOKESTATIC, classWrapper.getName(), mn.name, "()V", isInterface));
 			insnList.add(new InsnNode(RETURN));
 			newStaticBlock.instructions = insnList;
 			classWrapper.addMethod(newStaticBlock);

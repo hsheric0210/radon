@@ -23,7 +23,7 @@ import java.nio.charset.StandardCharsets;
 
 public class CustomOutputStream extends OutputStream
 {
-	private final BufferedWriter bw;
+	private final Writer bw;
 	private final OutputStream err;
 
 	public CustomOutputStream(final OutputStream err) throws IOException
@@ -39,7 +39,7 @@ public class CustomOutputStream extends OutputStream
 	@Override
 	public void write(final int b) throws IOException
 	{
-		bw.append((char) b);
+		bw.write(b);
 		err.write(b);
 	}
 

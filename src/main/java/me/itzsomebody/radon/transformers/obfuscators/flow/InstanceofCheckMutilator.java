@@ -41,74 +41,71 @@ public class InstanceofCheckMutilator extends FlowObfuscation
 	{
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(this::included).forEach(cw ->
+		getClassWrappers().stream().filter(this::included).forEach(cw -> cw.methods.stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
 		{
-			cw.methods.stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
+			final MethodNode methodNode = mw.methodNode;
+
+			final StackHeightZeroFinder shzf = new StackHeightZeroFinder(methodNode, mw.getInstructions().getLast());
+			try
 			{
-				final MethodNode methodNode = mw.methodNode;
+				shzf.execute(false);
+			}
+			catch (final StackEmulationException e)
+			{
+				e.printStackTrace();
+				throw new RadonException(String.format("Error happened while trying to emulate the stack of %s.%s%s", cw.getName(), mw.getName(), mw.getDescription()));
+			}
+			final Set<AbstractInsnNode> emptyAt = shzf.getEmptyAt();
+			int leeway = mw.getLeewaySize();
 
-				final StackHeightZeroFinder shzf = new StackHeightZeroFinder(methodNode, mw.getInstructions().getLast());
-				try
-				{
-					shzf.execute(false);
-				}
-				catch (final StackEmulationException e)
-				{
-					e.printStackTrace();
-					throw new RadonException(String.format("Error happened while trying to emulate the stack of %s.%s%s", cw.getName(), mw.getName(), mw.getDescription()));
-				}
-				final Set<AbstractInsnNode> emptyAt = shzf.getEmptyAt();
-				int leeway = mw.getLeewaySize();
+			final InsnList insns = methodNode.instructions;
+			for (final AbstractInsnNode insn : insns.toArray())
+			{
+				if (leeway < 10000)
+					break;
 
-				final InsnList insns = methodNode.instructions;
-				for (final AbstractInsnNode insn : insns.toArray())
+				if (insn.getOpcode() == INSTANCEOF && insn.getNext() != null)
 				{
-					if (leeway < 10000)
-						break;
+					final TypeInsnNode instCheck = (TypeInsnNode) insn;
 
-					if (insn.getOpcode() == INSTANCEOF && insn.getNext() != null)
+					final int opcode = insn.getNext().getOpcode();
+					if (opcode == IFEQ || opcode == IFNE)
 					{
-						final TypeInsnNode instCheck = (TypeInsnNode) insn;
+						final JumpInsnNode jump = (JumpInsnNode) insn.getNext();
+						final LabelNode jumpTarget = jump.label;
 
-						final int opcode = insn.getNext().getOpcode();
-						if (opcode == IFEQ || opcode == IFNE)
-						{
-							final JumpInsnNode jump = (JumpInsnNode) insn.getNext();
-							final LabelNode jumpTarget = jump.label;
+						if (!emptyAt.contains(jumpTarget))
+							continue;
 
-							if (!emptyAt.contains(jumpTarget))
-								continue;
+						final LabelNode trapStart = new LabelNode();
+						final LabelNode trapEnd = new LabelNode();
+						final LabelNode catchStart = new LabelNode();
+						final LabelNode catchEnd = new LabelNode();
 
-							final LabelNode trapStart = new LabelNode();
-							final LabelNode trapEnd = new LabelNode();
-							final LabelNode catchStart = new LabelNode();
-							final LabelNode catchEnd = new LabelNode();
+						final InsnList tcInsns = new InsnList();
+						tcInsns.add(trapStart);
+						tcInsns.add(new TypeInsnNode(CHECKCAST, instCheck.desc));
+						tcInsns.add(new InsnNode(POP)); // Ignore the return value of method
+						tcInsns.add(trapEnd);
 
-							final InsnList tcInsns = new InsnList();
-							tcInsns.add(trapStart);
-							tcInsns.add(new TypeInsnNode(CHECKCAST, instCheck.desc));
-							tcInsns.add(new InsnNode(POP)); // Ignore the return value of method
-							tcInsns.add(trapEnd);
+						tcInsns.add(new JumpInsnNode(GOTO, opcode == IFEQ ? catchEnd : jumpTarget));
+						tcInsns.add(catchStart);
+						tcInsns.add(new InsnNode(POP)); // Ignore the catch block parameter
+						if (opcode == IFEQ)
+							tcInsns.add(new JumpInsnNode(GOTO, jumpTarget));
+						tcInsns.add(catchEnd);
 
-							tcInsns.add(new JumpInsnNode(GOTO, opcode == IFEQ ? catchEnd : jumpTarget));
-							tcInsns.add(catchStart);
-							tcInsns.add(new InsnNode(POP)); // Ignore the catch block parameter
-							if (opcode == IFEQ)
-								tcInsns.add(new JumpInsnNode(GOTO, jumpTarget));
-							tcInsns.add(catchEnd);
+						insns.insert(insn, tcInsns);
+						insns.remove(insn);
+						insns.remove(jump);
+						methodNode.tryCatchBlocks.add(0, new TryCatchBlockNode(trapStart, trapEnd, catchStart, Throwables.ClassCastException));
 
-							insns.insert(insn, tcInsns);
-							insns.remove(insn);
-							insns.remove(jump);
-							methodNode.tryCatchBlocks.add(0, new TryCatchBlockNode(trapStart, trapEnd, catchStart, Throwables.ClassCastException));
-
-							counter.incrementAndGet();
-							leeway -= ASMUtils.evaluateMaxSize(tcInsns);
-						}
+						counter.incrementAndGet();
+						leeway -= ASMUtils.evaluateMaxSize(tcInsns);
 					}
 				}
-			});
-		});
+			}
+		}));
 
 		info("+ Mutilated " + counter.get() + " instanceof checks");
 	}

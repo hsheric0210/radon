@@ -53,23 +53,20 @@ public class NumberPooler extends NumberObfuscation
 			final Set<Float> floatsToPoolSet = new HashSet<>();
 			final Set<Double> doublesToPoolSet = new HashSet<>();
 
-			getClassWrappers().stream().filter(this::included).forEach(cw ->
+			getClassWrappers().stream().filter(this::included).forEach(cw -> cw.methods.stream().filter(mw -> included(mw) && mw.hasInstructions()).map(MethodWrapper::getInstructions).forEach(insnList ->
 			{
-				cw.methods.stream().filter(mw -> included(mw) && mw.hasInstructions()).map(MethodWrapper::getInstructions).forEach(insnList ->
-				{
-					if (poolIntegers)
-						Stream.of(insnList.toArray()).filter(ASMUtils::isIntInsn).mapToInt(ASMUtils::getIntegerFromInsn).filter(integer -> !integersToPoolSet.contains(integer)).forEach(integersToPoolSet::add);
+				if (poolIntegers)
+					Stream.of(insnList.toArray()).filter(ASMUtils::isIntInsn).mapToInt(ASMUtils::getIntegerFromInsn).filter(integer -> !integersToPoolSet.contains(integer)).forEach(integersToPoolSet::add);
 
-					if (poolLongs)
-						Stream.of(insnList.toArray()).filter(ASMUtils::isLongInsn).mapToLong(ASMUtils::getLongFromInsn).filter(_long -> !longsToPoolSet.contains(_long)).forEach(longsToPoolSet::add);
+				if (poolLongs)
+					Stream.of(insnList.toArray()).filter(ASMUtils::isLongInsn).mapToLong(ASMUtils::getLongFromInsn).filter(_long -> !longsToPoolSet.contains(_long)).forEach(longsToPoolSet::add);
 
-					if (poolFloats)
-						Stream.of(insnList.toArray()).filter(ASMUtils::isFloatInsn).map(ASMUtils::getFloatFromInsn).filter(_float -> !floatsToPoolSet.contains(_float)).forEach(floatsToPoolSet::add);
+				if (poolFloats)
+					Stream.of(insnList.toArray()).filter(ASMUtils::isFloatInsn).map(ASMUtils::getFloatFromInsn).filter(_float -> !floatsToPoolSet.contains(_float)).forEach(floatsToPoolSet::add);
 
-					if (poolDoubles)
-						Stream.of(insnList.toArray()).filter(ASMUtils::isDoubleInsn).mapToDouble(ASMUtils::getDoubleFromInsn).filter(_double -> !doublesToPoolSet.contains(_double)).forEach(doublesToPoolSet::add);
-				});
-			});
+				if (poolDoubles)
+					Stream.of(insnList.toArray()).filter(ASMUtils::isDoubleInsn).mapToDouble(ASMUtils::getDoubleFromInsn).filter(_double -> !doublesToPoolSet.contains(_double)).forEach(doublesToPoolSet::add);
+			}));
 
 			final List<Integer> integersToPool = new ArrayList<>(integersToPoolSet);
 			final List<Long> longsToPool = new ArrayList<>(longsToPoolSet);
@@ -190,83 +187,80 @@ public class NumberPooler extends NumberObfuscation
 			final String floatPoolFieldName = fieldDictionary.nextUniqueString();
 			final String doublePoolFieldName = fieldDictionary.nextUniqueString();
 
-			getClassWrappers().stream().filter(this::included).forEach(cw ->
+			getClassWrappers().stream().filter(this::included).forEach(cw -> cw.methods.stream().filter(mw -> included(mw) && mw.hasInstructions()).map(MethodWrapper::getInstructions).forEach(insnList ->
 			{
-				cw.methods.stream().filter(mw -> included(mw) && mw.hasInstructions()).map(MethodWrapper::getInstructions).forEach(insnList ->
-				{
-					if (poolIntegers)
-						Stream.of(insnList.toArray()).filter(ASMUtils::isIntInsn).forEach(insn ->
+				if (poolIntegers)
+					Stream.of(insnList.toArray()).filter(ASMUtils::isIntInsn).forEach(insn ->
+					{
+						final int value = ASMUtils.getIntegerFromInsn(insn);
+
+						if (integerMappings.containsKey(value))
 						{
-							final int value = ASMUtils.getIntegerFromInsn(insn);
+							final int index = integerMappings.get(value);
 
-							if (integerMappings.containsKey(value))
-							{
-								final int index = integerMappings.get(value);
+							insnList.insertBefore(insn, new FieldInsnNode(GETSTATIC, classWrapper.getName(), integerPoolFieldName, "[I"));
+							insnList.insertBefore(insn, ASMUtils.getNumberInsn(index));
+							insnList.set(insn, new InsnNode(IALOAD));
+							counter.incrementAndGet();
+						}
+						else
+							verboseWarn(() -> String.format("! Integer %d not registered in integerMappings! This can't be happened!!!", value));
+					});
 
-								insnList.insertBefore(insn, new FieldInsnNode(GETSTATIC, classWrapper.getName(), integerPoolFieldName, "[I"));
-								insnList.insertBefore(insn, ASMUtils.getNumberInsn(index));
-								insnList.set(insn, new InsnNode(IALOAD));
-								counter.incrementAndGet();
-							}
-							else
-								verboseWarn(() -> String.format("! Integer %d not registered in integerMappings! This can't be happened!!!", value));
-						});
+				if (poolLongs)
+					Stream.of(insnList.toArray()).filter(ASMUtils::isLongInsn).forEach(insn ->
+					{
+						final long value = ASMUtils.getLongFromInsn(insn);
 
-					if (poolLongs)
-						Stream.of(insnList.toArray()).filter(ASMUtils::isLongInsn).forEach(insn ->
+						if (longMappings.containsKey(value))
 						{
-							final long value = ASMUtils.getLongFromInsn(insn);
+							final int index = longMappings.get(value);
 
-							if (longMappings.containsKey(value))
-							{
-								final int index = longMappings.get(value);
+							insnList.insertBefore(insn, new FieldInsnNode(GETSTATIC, classWrapper.getName(), longPoolFieldName, "[J"));
+							insnList.insertBefore(insn, ASMUtils.getNumberInsn(index));
+							insnList.set(insn, new InsnNode(LALOAD));
+							counter.incrementAndGet();
+						}
+						else
+							verboseWarn(() -> String.format("! Long %d not registered in integerMappings! This can't be happened!!!", value));
+					});
 
-								insnList.insertBefore(insn, new FieldInsnNode(GETSTATIC, classWrapper.getName(), longPoolFieldName, "[J"));
-								insnList.insertBefore(insn, ASMUtils.getNumberInsn(index));
-								insnList.set(insn, new InsnNode(LALOAD));
-								counter.incrementAndGet();
-							}
-							else
-								verboseWarn(() -> String.format("! Long %d not registered in integerMappings! This can't be happened!!!", value));
-						});
+				if (poolFloats)
+					Stream.of(insnList.toArray()).filter(ASMUtils::isFloatInsn).forEach(insn ->
+					{
+						final float value = ASMUtils.getFloatFromInsn(insn);
 
-					if (poolFloats)
-						Stream.of(insnList.toArray()).filter(ASMUtils::isFloatInsn).forEach(insn ->
+						if (floatMappings.containsKey(value))
 						{
-							final float value = ASMUtils.getFloatFromInsn(insn);
+							final int index = floatMappings.get(value);
 
-							if (floatMappings.containsKey(value))
-							{
-								final int index = floatMappings.get(value);
+							insnList.insertBefore(insn, new FieldInsnNode(GETSTATIC, classWrapper.getName(), floatPoolFieldName, "[F"));
+							insnList.insertBefore(insn, ASMUtils.getNumberInsn(index));
+							insnList.set(insn, new InsnNode(FALOAD));
+							counter.incrementAndGet();
+						}
+						else
+							verboseWarn(() -> String.format("! Float %.6f not registered in integerMappings! This can't be happened!!!", value));
+					});
 
-								insnList.insertBefore(insn, new FieldInsnNode(GETSTATIC, classWrapper.getName(), floatPoolFieldName, "[F"));
-								insnList.insertBefore(insn, ASMUtils.getNumberInsn(index));
-								insnList.set(insn, new InsnNode(FALOAD));
-								counter.incrementAndGet();
-							}
-							else
-								verboseWarn(() -> String.format("! Float %.6f not registered in integerMappings! This can't be happened!!!", value));
-						});
+				if (poolDoubles)
+					Stream.of(insnList.toArray()).filter(ASMUtils::isDoubleInsn).forEach(insn ->
+					{
+						final double value = ASMUtils.getDoubleFromInsn(insn);
 
-					if (poolDoubles)
-						Stream.of(insnList.toArray()).filter(ASMUtils::isDoubleInsn).forEach(insn ->
+						if (doubleMappings.containsKey(value))
 						{
-							final double value = ASMUtils.getDoubleFromInsn(insn);
+							final int index = doubleMappings.get(value);
 
-							if (doubleMappings.containsKey(value))
-							{
-								final int index = doubleMappings.get(value);
-
-								insnList.insertBefore(insn, new FieldInsnNode(GETSTATIC, classWrapper.getName(), doublePoolFieldName, "[D"));
-								insnList.insertBefore(insn, ASMUtils.getNumberInsn(index));
-								insnList.set(insn, new InsnNode(DALOAD));
-								counter.incrementAndGet();
-							}
-							else
-								verboseWarn(() -> String.format("! Float %.16f not registered in integerMappings! This can't be happened!!!", value));
-						});
-				});
-			});
+							insnList.insertBefore(insn, new FieldInsnNode(GETSTATIC, classWrapper.getName(), doublePoolFieldName, "[D"));
+							insnList.insertBefore(insn, ASMUtils.getNumberInsn(index));
+							insnList.set(insn, new InsnNode(DALOAD));
+							counter.incrementAndGet();
+						}
+						else
+							verboseWarn(() -> String.format("! Float %.16f not registered in integerMappings! This can't be happened!!!", value));
+					});
+			}));
 
 			if (!integersToPool.isEmpty() || !longsToPool.isEmpty() || !floatsToPool.isEmpty() || !doublesToPool.isEmpty())
 			{
@@ -280,12 +274,7 @@ public class NumberPooler extends NumberObfuscation
 			}
 		}
 		else
-			getClassWrappers().stream().filter(classWrapper -> included(classWrapper) && (classWrapper.getAccessFlags() & ACC_INTERFACE) == 0
-			// *** Interfaces are excluded from pooling for following problem:
-			// Exception in thread "main" java.lang.IncompatibleClassChangeError: Method 'void me.itzsomebody.radon.utils.Constants.vUa0ibitmil4UMsz3Tf2pqwav7CrzmHx()' must be InterfaceMethodref constant
-			// - at me.itzsomebody.radon.utils.Constants.<clinit>(Unknown Source)
-			// - at me.itzsomebody.radon.Main.<clinit>(Unknown Source)
-			).forEach(cw ->
+			getClassWrappers().stream().filter(this::included).forEach(cw ->
 			{
 				// CHECK: Should use Collections.synchronizedList()?
 				final List<Integer> integersToPool = new ArrayList<>();
@@ -495,13 +484,14 @@ public class NumberPooler extends NumberObfuscation
 		for (final MethodNode mn : poolInits)
 			classWrapper.addMethod(mn);
 
+		final boolean isInterface = classWrapper.access.isInterface();
 		final Optional<MethodNode> staticBlock = ASMUtils.findMethod(classWrapper.classNode, "<clinit>", "()V");
 		if (staticBlock.isPresent())
 		{
 			final InsnList insns = staticBlock.get().instructions;
 			final InsnList init = new InsnList();
 			for (final MethodNode mn : poolInits)
-				init.add(new MethodInsnNode(INVOKESTATIC, classWrapper.getName(), mn.name, "()V", false));
+				init.add(new MethodInsnNode(INVOKESTATIC, classWrapper.getName(), mn.name, "()V", isInterface));
 			insns.insertBefore(insns.getFirst(), init);
 		}
 		else
@@ -509,7 +499,7 @@ public class NumberPooler extends NumberObfuscation
 			final MethodNode newStaticBlock = new MethodNode(ACC_PRIVATE | ACC_STATIC | ACC_SYNTHETIC, "<clinit>", "()V", null, null);
 			final InsnList insnList = new InsnList();
 			for (final MethodNode mn : poolInits)
-				insnList.add(new MethodInsnNode(INVOKESTATIC, classWrapper.getName(), mn.name, "()V", false));
+				insnList.add(new MethodInsnNode(INVOKESTATIC, classWrapper.getName(), mn.name, "()V", isInterface));
 			insnList.add(new InsnNode(RETURN));
 			newStaticBlock.instructions = insnList;
 			classWrapper.classNode.methods.add(newStaticBlock);

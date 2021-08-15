@@ -43,265 +43,262 @@ public class LocalVariableMutilator extends FlowObfuscation
 	{
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(this::included).forEach(cw ->
+		getClassWrappers().stream().filter(this::included).forEach(cw -> cw.methods.stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
 		{
-			cw.methods.stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
+			final MethodNode mn = mw.methodNode;
+
+			final int maxStack = mn.maxStack;
+			final int maxLocals = mn.maxLocals;
+			mn.maxStack = mn.maxLocals = 1000;
+
+			final Frame<BasicValue>[] frames;
+			try
 			{
-				final MethodNode mn = mw.methodNode;
+				frames = new Analyzer<>(new BasicInterpreter()).analyze(mn.name, mn);
+			}
+			catch (final AnalyzerException e)
+			{
+				warn("Failed to analyze method " + mn.name, e);
+				return;
+			}
+			finally
+			{
+				mn.maxStack = maxStack;
+				mn.maxLocals = maxLocals;
+			}
 
-				final int maxStack = mn.maxStack;
-				final int maxLocals = mn.maxLocals;
-				mn.maxStack = mn.maxLocals = 1000;
+			final LocalVariableProvider provider = new LocalVariableProvider(mn);
 
-				final Frame<BasicValue>[] frames;
-				try
+			// Map of local variables and their types. They are added if the type of the variable is double, float, int or long
+			final Map<Integer, Set<Type>> localVarMap = new HashMap<>();
+
+			// KEY: Type of array
+			// VALUE: Array local variable index
+			final Map<Type, Integer> typeArrayVarIndexMap = new HashMap<>();
+
+			// KEY: Original Local variable
+			// VALUE:
+			// - KEY: Type of the local variable
+			// - VALUE: [0]: Local variable index of the array, [1]: Array index
+			final Map<Integer, Map<Type, int[]>> slotMap = new HashMap<>();
+
+			// KEY: Array local variable index
+			// VALUE: Current highest array index
+			final Map<Integer, Integer> arrayIndices = new HashMap<>();
+
+			final Map<Integer, Collection<Integer>> arrayIndexRNGExclusions = new HashMap<>();
+
+			final InsnList insns = mn.instructions;
+			for (final AbstractInsnNode insn : insns.toArray())
+				if (insn instanceof VarInsnNode)
 				{
-					frames = new Analyzer<>(new BasicInterpreter()).analyze(mn.name, mn);
-				}
-				catch (final AnalyzerException e)
-				{
-					warn("Failed to analyze method " + mn.name, e);
-					return;
-				}
-				finally
-				{
-					mn.maxStack = maxStack;
-					mn.maxLocals = maxLocals;
-				}
+					final VarInsnNode varInsn = (VarInsnNode) insn;
+					final int varIndex = varInsn.var;
 
-				final LocalVariableProvider provider = new LocalVariableProvider(mn);
+					if (provider.isArgumentLocal(varIndex))
+						continue;
 
-				// Map of local variables and their types. They are added if the type of the variable is double, float, int or long
-				final Map<Integer, Set<Type>> localVarMap = new HashMap<>();
+					final int opcode = varInsn.getOpcode();
 
-				// KEY: Type of array
-				// VALUE: Array local variable index
-				final Map<Type, Integer> typeArrayVarIndexMap = new HashMap<>();
-
-				// KEY: Original Local variable
-				// VALUE:
-				// - KEY: Type of the local variable
-				// - VALUE: [0]: Local variable index of the array, [1]: Array index
-				final Map<Integer, Map<Type, int[]>> slotMap = new HashMap<>();
-
-				// KEY: Array local variable index
-				// VALUE: Current highest array index
-				final Map<Integer, Integer> arrayIndices = new HashMap<>();
-
-				final Map<Integer, Collection<Integer>> arrayIndexRNGExclusions = new HashMap<>();
-
-				final InsnList insns = mn.instructions;
-				for (final AbstractInsnNode insn : insns.toArray())
-					if (insn instanceof VarInsnNode)
+					if (opcode >= ILOAD && opcode <= DLOAD)
 					{
-						final VarInsnNode varInsn = (VarInsnNode) insn;
-						final int varIndex = varInsn.var;
+						final Type type;
+						switch (opcode - ILOAD)
+						{
+							case 0:
+								type = Type.INT_TYPE;
+								break;
+							case LLOAD - ILOAD:
+								type = Type.LONG_TYPE;
+								break;
+							case FLOAD - ILOAD:
+								type = Type.FLOAT_TYPE;
+								break;
+							default:
+								type = Type.DOUBLE_TYPE;
+								break;
+						}
 
-						if (provider.isArgumentLocal(varIndex))
-							continue;
+						if (!localVarMap.containsKey(varIndex) || !localVarMap.get(varIndex).contains(type))
+							localVarMap.computeIfAbsent(varIndex, i -> new HashSet<>()).add(type);
+					}
 
-						final int opcode = varInsn.getOpcode();
+					if (opcode >= ISTORE && opcode <= DSTORE)
+					{
+						final Frame<BasicValue> currentFrame = frames[insns.indexOf(varInsn)];
+						final Type type = currentFrame.getStack(currentFrame.getStackSize() - 1).getType();
+						if (type != null)
+						{
+							final int typeSort = type.getSort();
+							if (typeSort >= Type.CHAR && typeSort <= Type.DOUBLE)
+							{
+								final Type newType = typeSort < Type.INT ? Type.INT_TYPE : type;
+								if (!localVarMap.containsKey(varIndex) || !localVarMap.get(varIndex).contains(newType))
+									localVarMap.computeIfAbsent(varIndex, i -> new HashSet<>()).add(newType);
+							}
+						}
+					}
+				}
+
+			for (final Set<Type> types : localVarMap.values())
+				for (final Type type : types)
+				{
+					typeArrayVarIndexMap.computeIfAbsent(type, i -> provider.allocateVar(1));
+					final int arrayVarIndex = typeArrayVarIndexMap.get(type);
+					arrayIndices.put(arrayVarIndex, arrayIndices.getOrDefault(arrayVarIndex, 0) + 1);
+				}
+
+			for (final Entry<Integer, Set<Type>> entry : localVarMap.entrySet())
+				for (final Type type : entry.getValue())
+				{
+					final int arrayVarIndex = typeArrayVarIndexMap.get(type);
+					arrayIndexRNGExclusions.computeIfAbsent(arrayVarIndex, i -> new HashSet<>());
+					final int arrayIndex;
+					slotMap.computeIfAbsent(entry.getKey(), i -> new HashMap<>()).put(type, new int[]
+					{
+							arrayVarIndex, arrayIndex = RandomUtils.getRandomIntWithExclusion(0, arrayIndices.get(arrayVarIndex), arrayIndexRNGExclusions.get(arrayVarIndex))
+					});
+					arrayIndexRNGExclusions.get(arrayVarIndex).add(arrayIndex);
+
+					counter.incrementAndGet();
+				}
+
+			final InsnList initialize = new InsnList();
+
+			for (final Entry<Type, Integer> typeArrayVarIndexEntry : typeArrayVarIndexMap.entrySet())
+			{
+				final int arrayTypeSort = typeArrayVarIndexEntry.getKey().getSort();
+
+				final int arrayType;
+				switch (arrayTypeSort)
+				{
+					case Type.INT:
+						arrayType = T_INT;
+						break;
+					case Type.LONG:
+						arrayType = T_LONG;
+						break;
+					case Type.DOUBLE:
+						arrayType = T_DOUBLE;
+						break;
+					case Type.FLOAT:
+						arrayType = T_FLOAT;
+						break;
+					default:
+						verboseWarn(() -> String.format("! Unknown array type: %d", arrayTypeSort));
+						arrayType = -1;
+						break;
+				}
+
+				if (arrayType < 0)
+					continue;
+
+				final Integer varIndex = typeArrayVarIndexEntry.getValue();
+				initialize.add(ASMUtils.getNumberInsn(arrayIndices.get(varIndex)));
+				initialize.add(new IntInsnNode(NEWARRAY, arrayType));
+				initialize.add(new VarInsnNode(ASTORE, varIndex));
+			}
+
+			for (final AbstractInsnNode insn : insns.toArray())
+			{
+				if (insn instanceof VarInsnNode)
+				{
+					final int opcode = insn.getOpcode();
+					final VarInsnNode varInsn = (VarInsnNode) insn;
+					final int varIndex = varInsn.var;
+
+					if (slotMap.containsKey(varIndex))
+					{
+						final Set<Type> types = localVarMap.get(varIndex);
+						final Map<Type, int[]> typeMap = slotMap.get(varIndex);
 
 						if (opcode >= ILOAD && opcode <= DLOAD)
 						{
-							final Type type;
-							switch (opcode - ILOAD)
+							final Optional<Type> optType = types.stream().filter(type -> type.getOpcode(ILOAD) == opcode).findAny();
+							if (optType.isPresent())
 							{
-								case 0:
-									type = Type.INT_TYPE;
-									break;
-								case LLOAD - ILOAD:
-									type = Type.LONG_TYPE;
-									break;
-								case FLOAD - ILOAD:
-									type = Type.FLOAT_TYPE;
-									break;
-								default:
-									type = Type.DOUBLE_TYPE;
-									break;
-							}
+								final Type type = optType.get();
+								final int[] value = typeMap.get(type);
 
-							if (!localVarMap.containsKey(varIndex) || !localVarMap.get(varIndex).contains(type))
-								localVarMap.computeIfAbsent(varIndex, i -> new HashSet<>()).add(type);
+								final InsnList replace = new InsnList();
+								replace.add(new VarInsnNode(ALOAD, value[0]));
+								replace.add(ASMUtils.getNumberInsn(value[1]));
+								replace.add(new InsnNode(type.getOpcode(IALOAD)));
+								insns.insert(varInsn, replace);
+								insns.remove(varInsn);
+							}
 						}
 
 						if (opcode >= ISTORE && opcode <= DSTORE)
 						{
-							final Frame<BasicValue> currentFrame = frames[insns.indexOf(varInsn)];
-							final Type type = currentFrame.getStack(currentFrame.getStackSize() - 1).getType();
-							if (type != null)
+							final Optional<Type> optType = types.stream().filter(type -> type.getOpcode(ISTORE) == opcode).findAny();
+							if (optType.isPresent())
 							{
-								final int typeSort = type.getSort();
-								if (typeSort >= Type.CHAR && typeSort <= Type.DOUBLE)
+								final Type type = optType.get();
+								final boolean isWide = type.getSize() > 1;
+								final int[] value = typeMap.get(type);
+
+								final InsnList replace = new InsnList();
+								replace.add(new VarInsnNode(ALOAD, value[0]));
+								if (isWide)
 								{
-									final Type newType = typeSort < Type.INT ? Type.INT_TYPE : type;
-									if (!localVarMap.containsKey(varIndex) || !localVarMap.get(varIndex).contains(newType))
-										localVarMap.computeIfAbsent(varIndex, i -> new HashSet<>()).add(newType);
+									if (mn.maxStack < 4)
+										mn.maxStack = 4;
+
+									replace.add(new InsnNode(DUP_X2));
+									replace.add(new InsnNode(POP));
 								}
-							}
-						}
-					}
-
-				for (final Set<Type> types : localVarMap.values())
-					for (final Type type : types)
-					{
-						typeArrayVarIndexMap.computeIfAbsent(type, i -> provider.allocateVar(1));
-						final int arrayVarIndex = typeArrayVarIndexMap.get(type);
-						arrayIndices.put(arrayVarIndex, arrayIndices.getOrDefault(arrayVarIndex, 0) + 1);
-					}
-
-				for (final Entry<Integer, Set<Type>> entry : localVarMap.entrySet())
-					for (final Type type : entry.getValue())
-					{
-						final int arrayVarIndex = typeArrayVarIndexMap.get(type);
-						arrayIndexRNGExclusions.computeIfAbsent(arrayVarIndex, i -> new HashSet<>());
-						final int arrayIndex;
-						slotMap.computeIfAbsent(entry.getKey(), i -> new HashMap<>()).put(type, new int[]
-						{
-								arrayVarIndex, arrayIndex = RandomUtils.getRandomIntWithExclusion(0, arrayIndices.get(arrayVarIndex), arrayIndexRNGExclusions.get(arrayVarIndex))
-						});
-						arrayIndexRNGExclusions.get(arrayVarIndex).add(arrayIndex);
-
-						counter.incrementAndGet();
-					}
-
-				final InsnList initialize = new InsnList();
-
-				for (final Entry<Type, Integer> typeArrayVarIndexEntry : typeArrayVarIndexMap.entrySet())
-				{
-					final int arrayTypeSort = typeArrayVarIndexEntry.getKey().getSort();
-
-					final int arrayType;
-					switch (arrayTypeSort)
-					{
-						case Type.INT:
-							arrayType = T_INT;
-							break;
-						case Type.LONG:
-							arrayType = T_LONG;
-							break;
-						case Type.DOUBLE:
-							arrayType = T_DOUBLE;
-							break;
-						case Type.FLOAT:
-							arrayType = T_FLOAT;
-							break;
-						default:
-							verboseWarn(() -> String.format("! Unknown array type: %d", arrayTypeSort));
-							arrayType = -1;
-							break;
-					}
-
-					if (arrayType < 0)
-						continue;
-
-					final Integer varIndex = typeArrayVarIndexEntry.getValue();
-					initialize.add(ASMUtils.getNumberInsn(arrayIndices.get(varIndex)));
-					initialize.add(new IntInsnNode(NEWARRAY, arrayType));
-					initialize.add(new VarInsnNode(ASTORE, varIndex));
-				}
-
-				for (final AbstractInsnNode insn : insns.toArray())
-				{
-					if (insn instanceof VarInsnNode)
-					{
-						final int opcode = insn.getOpcode();
-						final VarInsnNode varInsn = (VarInsnNode) insn;
-						final int varIndex = varInsn.var;
-
-						if (slotMap.containsKey(varIndex))
-						{
-							final Set<Type> types = localVarMap.get(varIndex);
-							final Map<Type, int[]> typeMap = slotMap.get(varIndex);
-
-							if (opcode >= ILOAD && opcode <= DLOAD)
-							{
-								final Optional<Type> optType = types.stream().filter(type -> type.getOpcode(ILOAD) == opcode).findAny();
-								if (optType.isPresent())
+								else
+									replace.add(new InsnNode(SWAP));
+								replace.add(ASMUtils.getNumberInsn(value[1]));
+								if (isWide)
 								{
-									final Type type = optType.get();
-									final int[] value = typeMap.get(type);
-
-									final InsnList replace = new InsnList();
-									replace.add(new VarInsnNode(ALOAD, value[0]));
-									replace.add(ASMUtils.getNumberInsn(value[1]));
-									replace.add(new InsnNode(type.getOpcode(IALOAD)));
-									insns.insert(varInsn, replace);
-									insns.remove(varInsn);
+									replace.add(new InsnNode(DUP_X2));
+									replace.add(new InsnNode(POP));
 								}
+								else
+									replace.add(new InsnNode(SWAP));
+								replace.add(new InsnNode(type.getOpcode(IASTORE)));
+								insns.insert(varInsn, replace);
+								insns.remove(varInsn);
 							}
-
-							if (opcode >= ISTORE && opcode <= DSTORE)
-							{
-								final Optional<Type> optType = types.stream().filter(type -> type.getOpcode(ISTORE) == opcode).findAny();
-								if (optType.isPresent())
-								{
-									final Type type = optType.get();
-									final boolean isWide = type.getSize() > 1;
-									final int[] value = typeMap.get(type);
-
-									final InsnList replace = new InsnList();
-									replace.add(new VarInsnNode(ALOAD, value[0]));
-									if (isWide)
-									{
-										if (mn.maxStack < 4)
-											mn.maxStack = 4;
-
-										replace.add(new InsnNode(DUP_X2));
-										replace.add(new InsnNode(POP));
-									}
-									else
-										replace.add(new InsnNode(SWAP));
-									replace.add(ASMUtils.getNumberInsn(value[1]));
-									if (isWide)
-									{
-										replace.add(new InsnNode(DUP_X2));
-										replace.add(new InsnNode(POP));
-									}
-									else
-										replace.add(new InsnNode(SWAP));
-									replace.add(new InsnNode(type.getOpcode(IASTORE)));
-									insns.insert(varInsn, replace);
-									insns.remove(varInsn);
-								}
-							}
-						}
-					}
-
-					if (insn instanceof IincInsnNode)
-					{
-						final IincInsnNode iinc = (IincInsnNode) insn;
-						final int varIndex = iinc.var;
-
-						if (slotMap.containsKey(varIndex))
-						{
-							final int[] value = slotMap.get(varIndex).get(Type.INT_TYPE); // IINC is only applicable with 'int'
-
-							final InsnList replace = new InsnList();
-
-							replace.add(new VarInsnNode(ALOAD, value[0]));
-							replace.add(ASMUtils.getNumberInsn(value[1]));
-
-							replace.add(new VarInsnNode(ALOAD, value[0]));
-							replace.add(ASMUtils.getNumberInsn(value[1]));
-							replace.add(new InsnNode(IALOAD));
-
-							replace.add(ASMUtils.getNumberInsn(iinc.incr));
-
-							replace.add(new InsnNode(IADD));
-
-							replace.add(new InsnNode(IASTORE));
-
-							insns.insert(iinc, replace);
-							insns.remove(iinc);
 						}
 					}
 				}
 
-				if (!localVarMap.isEmpty())
-					insns.insertBefore(insns.getFirst(), initialize);
-			});
-		});
+				if (insn instanceof IincInsnNode)
+				{
+					final IincInsnNode iinc = (IincInsnNode) insn;
+					final int varIndex = iinc.var;
+
+					if (slotMap.containsKey(varIndex))
+					{
+						final int[] value = slotMap.get(varIndex).get(Type.INT_TYPE); // IINC is only applicable with 'int'
+
+						final InsnList replace = new InsnList();
+
+						replace.add(new VarInsnNode(ALOAD, value[0]));
+						replace.add(ASMUtils.getNumberInsn(value[1]));
+
+						replace.add(new VarInsnNode(ALOAD, value[0]));
+						replace.add(ASMUtils.getNumberInsn(value[1]));
+						replace.add(new InsnNode(IALOAD));
+
+						replace.add(ASMUtils.getNumberInsn(iinc.incr));
+
+						replace.add(new InsnNode(IADD));
+
+						replace.add(new InsnNode(IASTORE));
+
+						insns.insert(iinc, replace);
+						insns.remove(iinc);
+					}
+				}
+			}
+
+			if (!localVarMap.isEmpty())
+				insns.insertBefore(insns.getFirst(), initialize);
+		}));
 
 		info("+ Mutilated " + counter.get() + " local variables");
 	}

@@ -37,6 +37,8 @@ import me.itzsomebody.radon.utils.RandomUtils;
 
 /**
  * Essentially the same thing as ADSS (https://www.sable.mcgill.ca/JBCO/examples.html#ADSS)
+ *
+ * TODO: Improve strength as ZKM :)
  */
 
 public class BogusSwitchJumpInserter extends FlowObfuscation
@@ -49,12 +51,12 @@ public class BogusSwitchJumpInserter extends FlowObfuscation
 	{
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(this::included).forEach(classWrapper ->
+		getClassWrappers().stream().filter(this::included).forEach(cw ->
 		{
 			final AtomicBoolean shouldAdd = new AtomicBoolean();
-			final FieldNode predicate = new FieldNode((classWrapper.getAccessFlags() & ACC_INTERFACE) != 0 ? INTERFACE_PRED_ACCESS : CLASS_PRED_ACCESS, getFieldDictionary(classWrapper.originalName).nextUniqueString(), "I", null, null);
+			final FieldNode predicate = new FieldNode(cw.access.isInterface() ? INTERFACE_PRED_ACCESS : CLASS_PRED_ACCESS, getFieldDictionary(cw.originalName).nextUniqueString(), "I", null, null);
 
-			classWrapper.methods.stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
+			cw.methods.stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
 			{
 				final InsnList insns = mw.getInstructions();
 
@@ -70,7 +72,7 @@ public class BogusSwitchJumpInserter extends FlowObfuscation
 				catch (final StackEmulationException e)
 				{
 					e.printStackTrace();
-					throw new RadonException(String.format("Error happened while trying to emulate the stack of %s.%s%s", classWrapper.getName(), mw.getName(), mw.getDescription()));
+					throw new RadonException(String.format("Error happened while trying to emulate the stack of %s.%s%s", cw.getName(), mw.getName(), mw.getDescription()));
 				}
 
 				final Set<AbstractInsnNode> check = shzf.getEmptyAt();
@@ -113,14 +115,14 @@ public class BogusSwitchJumpInserter extends FlowObfuscation
 				}
 
 				insns.insert(new VarInsnNode(ISTORE, varIndex));
-				insns.insert(new FieldInsnNode(GETSTATIC, classWrapper.getName(), predicate.name, "I"));
+				insns.insert(new FieldInsnNode(GETSTATIC, cw.getName(), predicate.name, "I"));
 
 				counter.addAndGet(targets.size());
 				shouldAdd.set(true);
 			});
 
 			if (shouldAdd.get())
-				classWrapper.addField(predicate);
+				cw.addField(predicate);
 		});
 
 		info("+ Inserted " + counter.get() + " bogus switch jumps");

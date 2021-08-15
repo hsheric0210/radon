@@ -48,47 +48,44 @@ public class FakeCatchBlocks extends FlowObfuscation
 
 		final String methodName = getMethodDictionary(fakeHandler.name).nextUniqueString();
 
-		getClassWrappers().stream().filter(this::included).forEach(classWrapper ->
+		getClassWrappers().stream().filter(this::included).forEach(classWrapper -> classWrapper.methods.stream().filter(mw -> included(mw) && mw.hasInstructions() && !"<init>".equals(mw.originalName)).forEach(methodWrapper ->
 		{
-			classWrapper.methods.stream().filter(mw -> included(mw) && mw.hasInstructions() && !"<init>".equals(mw.originalName)).forEach(methodWrapper ->
+			int leeway = methodWrapper.getLeewaySize();
+			final InsnList insns = methodWrapper.getInstructions();
+
+			for (final AbstractInsnNode insn : insns.toArray())
 			{
-				int leeway = methodWrapper.getLeewaySize();
-				final InsnList insns = methodWrapper.getInstructions();
+				if (leeway < 10000)
+					return;
+				if (!ASMUtils.isInstruction(insn))
+					continue;
 
-				for (final AbstractInsnNode insn : insns.toArray())
+				if (RandomUtils.getRandomInt(5) > 3)
 				{
-					if (leeway < 10000)
-						return;
-					if (!ASMUtils.isInstruction(insn))
-						continue;
+					final LabelNode trapStart = new LabelNode();
+					final LabelNode trapEnd = new LabelNode();
+					final LabelNode catchStart = new LabelNode();
+					final LabelNode catchEnd = new LabelNode();
 
-					if (RandomUtils.getRandomInt(5) > 3)
-					{
-						final LabelNode trapStart = new LabelNode();
-						final LabelNode trapEnd = new LabelNode();
-						final LabelNode catchStart = new LabelNode();
-						final LabelNode catchEnd = new LabelNode();
+					final InsnList catchBlock = new InsnList();
+					catchBlock.add(catchStart);
+					catchBlock.add(new InsnNode(DUP));
+					catchBlock.add(new MethodInsnNode(INVOKEVIRTUAL, fakeHandler.name, methodName, "()V", false));
+					catchBlock.add(new InsnNode(ATHROW));
+					catchBlock.add(catchEnd);
 
-						final InsnList catchBlock = new InsnList();
-						catchBlock.add(catchStart);
-						catchBlock.add(new InsnNode(DUP));
-						catchBlock.add(new MethodInsnNode(INVOKEVIRTUAL, fakeHandler.name, methodName, "()V", false));
-						catchBlock.add(new InsnNode(ATHROW));
-						catchBlock.add(catchEnd);
+					insns.insertBefore(insn, trapStart);
+					insns.insert(insn, catchBlock);
+					insns.insert(insn, new JumpInsnNode(GOTO, catchEnd));
+					insns.insert(insn, trapEnd);
 
-						insns.insertBefore(insn, trapStart);
-						insns.insert(insn, catchBlock);
-						insns.insert(insn, new JumpInsnNode(GOTO, catchEnd));
-						insns.insert(insn, trapEnd);
+					methodWrapper.getTryCatchBlocks().add(new TryCatchBlockNode(trapStart, trapEnd, catchStart, fakeHandler.name));
 
-						methodWrapper.getTryCatchBlocks().add(new TryCatchBlockNode(trapStart, trapEnd, catchStart, fakeHandler.name));
-
-						leeway -= 15;
-						counter.incrementAndGet();
-					}
+					leeway -= 15;
+					counter.incrementAndGet();
 				}
-			});
-		});
+			}
+		}));
 		final ClassWrapper newWrapper = new ClassWrapper(fakeHandler, false);
 		getClasses().put(fakeHandler.name, newWrapper);
 		getClassPath().put(fakeHandler.name, newWrapper);

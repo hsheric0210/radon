@@ -16,48 +16,33 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 
-package me.itzsomebody.radon.exclusions;
+package me.itzsomebody.radon.transformers.obfuscators.flow;
 
-import java.util.Locale;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * All the valid exclusion types in an {@link Enum} representation.
+ * TODO: https://www.sable.mcgill.ca/JBCO/examples.html#PLVB
  *
- * @author ItzSomebody
+ * @author superblaubeere27, hsheric0210
  */
-public enum ExclusionType
+public class LocalVariablePacker extends FlowObfuscation
 {
-	GLOBAL,
-	EXTENDS, // TODO
-	IMPLEMENTS, // TODO
-	OPTIMIZER,
-	SHRINKER,
-	RENAMER,
-	RESOURCE_RENAMER,
-	ANTI_DEBUG,
-	REFERENCE_OBFUSCATION,
-	STRING_ENCRYPTION,
-	FLOW_OBFUSCATION,
-	NUMBER_OBFUSCATION,
-	HIDE_CODE,
-	BAD_SIGNATURE,
-	EXPIRATION,
-	SHUFFLER,
-	EJECTOR,
-	INSTRUCTION_SET_REDUCER,
-	BAD_ANNOTATIONS,
-	BAD_VARARGS,
-	BAD_ATTRIBUTES,
-	STATIC_INITIALIZATION,
-	VIRTUALIZER,
-	LV2ARRAY, // TODO
-	WATERMARKER,
-	ANTI_TAMPER,
-	TRASH_CLASSES,
-	PACKER;
+	@Override
+	public void transform()
+	{
+		final AtomicInteger counter = new AtomicInteger();
 
+		getClassWrappers().stream().filter(this::included).forEach(cw -> cw.methods.stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
+		{
+			// TODO
+		}));
+
+		info("+ Packed " + counter.get() + " local variables");
+	}
+
+	@Override
 	public String getName()
 	{
-		return name().toLowerCase(Locale.ENGLISH);
+		return "Local Variable Packer";
 	}
 }

@@ -37,6 +37,8 @@ import me.itzsomebody.radon.utils.RandomUtils;
  * To determine where we should insert the conditions, we use an analyzer to determine where the stack is empty.
  * This leads to less complication when applying obfuscation.
  *
+ * TODO: Improve strength as ZKM :)
+ *
  * @author ItzSomebody
  */
 public class BogusJumpInserter extends FlowObfuscation
@@ -57,7 +59,7 @@ public class BogusJumpInserter extends FlowObfuscation
 			final String predicateDescriptor = predicateType.getDescriptor();
 			final Object predicateInitialValue = RandomUtils.getRandomFloat() > 0.2F ? RandomUtils.getRandomValue(predicateType) : null;
 
-			final FieldNode predicate = new FieldNode((cw.getAccessFlags() & ACC_INTERFACE) != 0 ? INTERFACE_PRED_ACCESS : CLASS_PRED_ACCESS, getFieldDictionary(cw.originalName).nextUniqueString(), predicateDescriptor, null, predicateInitialValue);
+			final FieldNode predicate = new FieldNode(cw.access.isInterface() ? INTERFACE_PRED_ACCESS : CLASS_PRED_ACCESS, getFieldDictionary(cw.originalName).nextUniqueString(), predicateDescriptor, null, predicateInitialValue);
 
 			cw.methods.stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
 			{
@@ -93,7 +95,7 @@ public class BogusJumpInserter extends FlowObfuscation
 					// Bad way of detecting if this class was instantiated
 					if (isCtor && !calledSuper)
 					{
-						calledSuper = ASMUtils.isSuperCall(mw.methodNode, insn);
+						calledSuper = ASMUtils.isSuperInitializerCall(mw.methodNode, insn);
 						superCall = insn;
 					}
 

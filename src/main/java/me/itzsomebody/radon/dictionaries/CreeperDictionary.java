@@ -87,33 +87,33 @@ public class CreeperDictionary implements Dictionary
 		String s;
 		do
 			s = randomString(length);
-		while (cache.contains(s));
-
-		cache.add(s);
+		while (!cache.add(s));
 
 		return s;
 	}
 
-	public String nextUniqueString(final int index, final int loop)
+	public String nextUniqueString0(final int index, final int loop)
 	{
 		final String loops = Integer.toString(loop);
 		return IntStream.range(0, 4 - loops.length()).mapToObj(i -> String.valueOf(0)).collect(Collectors.joining("", "", loops)) + "_" + LYRICS[index < 0 ? index : this.index];
 	}
 
 	@Override
-	public String nextUniqueString(final int index)
+	public String nextUniqueString(final int index, final int length)
 	{
-		return nextUniqueString(index % LYRICS.length, index);
+		return nextUniqueString0(index % LYRICS.length, index);
 	}
 
 	@Override
-	public String nextUniqueString()
+	public String nextUniqueString(final int length)
 	{
 		if (index >= LYRICS.length)
+		{
 			index = 0;
-		lastGenerated = nextUniqueString(index, loop);
+			loop++;
+		}
+		lastGenerated = nextUniqueString0(index, loop);
 		index++;
-		loop++;
 		return lastGenerated;
 	}
 

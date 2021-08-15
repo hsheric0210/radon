@@ -37,86 +37,83 @@ public class ArithmeticObfuscator extends NumberObfuscation
 	{
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(this::included).forEach(classWrapper ->
+		getClassWrappers().stream().filter(this::included).forEach(classWrapper -> classWrapper.methods.stream().filter(this::included).forEach(methodWrapper ->
 		{
-			classWrapper.methods.stream().filter(this::included).forEach(methodWrapper ->
+			int leeway = methodWrapper.getLeewaySize();
+			final InsnList methodInstructions = methodWrapper.getInstructions();
+
+			for (final AbstractInsnNode insn : methodInstructions.toArray())
 			{
-				int leeway = methodWrapper.getLeewaySize();
-				final InsnList methodInstructions = methodWrapper.getInstructions();
+				if (leeway < 10000)
+					break;
 
-				for (final AbstractInsnNode insn : methodInstructions.toArray())
+				if (ASMUtils.isIntInsn(insn) && master.integerTamperingEnabled)
 				{
-					if (leeway < 10000)
-						break;
+					final int originalNum = ASMUtils.getIntegerFromInsn(insn);
+					final InsnList insns = obfuscateNumber(originalNum);
 
-					if (ASMUtils.isIntInsn(insn) && master.integerTamperingEnabled)
-					{
-						final int originalNum = ASMUtils.getIntegerFromInsn(insn);
-						final InsnList insns = obfuscateNumber(originalNum);
+					methodInstructions.insert(insn, insns);
+					methodInstructions.remove(insn);
 
-						methodInstructions.insert(insn, insns);
-						methodInstructions.remove(insn);
-
-						counter.incrementAndGet();
-						leeway -= ASMUtils.evaluateMaxSize(insns);
-					}
-					else if (ASMUtils.isLongInsn(insn) && master.longTamperingEnabled)
-					{
-						final long originalNum = ASMUtils.getLongFromInsn(insn);
-						final InsnList insns = obfuscateNumber(originalNum);
-
-						methodInstructions.insert(insn, insns);
-						methodInstructions.remove(insn);
-
-						counter.incrementAndGet();
-						leeway -= ASMUtils.evaluateMaxSize(insns);
-					}
-					else if (ASMUtils.isFloatInsn(insn) && master.floatTamperingEnabled)
-					{
-						final float originalNum = ASMUtils.getFloatFromInsn(insn);
-						if (originalNum == Float.MIN_VALUE || Float.isNaN(originalNum) || Float.isInfinite(originalNum)) // Cannot support these cases
-							continue;
-						final InsnList insns = obfuscateNumber(originalNum);
-
-						methodInstructions.insert(insn, insns);
-						methodInstructions.remove(insn);
-
-						counter.incrementAndGet();
-						leeway -= ASMUtils.evaluateMaxSize(insns);
-					}
-					else if (ASMUtils.isDoubleInsn(insn) && master.doubleTamperingEnabled)
-					{
-						final double originalNum = ASMUtils.getDoubleFromInsn(insn);
-						if (originalNum == Double.MAX_VALUE || Double.isNaN(originalNum) || Double.isInfinite(originalNum)) // Cannot support these cases
-							continue;
-						final InsnList insns = obfuscateNumber(originalNum);
-
-						methodInstructions.insert(insn, insns);
-						methodInstructions.remove(insn);
-
-						counter.incrementAndGet();
-						leeway -= ASMUtils.evaluateMaxSize(insns);
-					}
-					else if (insn.getOpcode() == IINC && master.integerTamperingEnabled)
-					{
-						final IincInsnNode iincInsn = (IincInsnNode) insn;
-						final int var = iincInsn.var;
-						final int originalNum = iincInsn.incr;
-
-						final InsnList insns = new InsnList();
-						insns.add(new VarInsnNode(ILOAD, var));
-						insns.add(obfuscateNumber(originalNum));
-						insns.add(new InsnNode(IADD));
-						insns.add(new VarInsnNode(ISTORE, var));
-						methodInstructions.insert(insn, insns);
-						methodInstructions.remove(insn);
-
-						counter.incrementAndGet();
-						leeway -= ASMUtils.evaluateMaxSize(insns);
-					}
+					counter.incrementAndGet();
+					leeway -= ASMUtils.evaluateMaxSize(insns);
 				}
-			});
-		});
+				else if (ASMUtils.isLongInsn(insn) && master.longTamperingEnabled)
+				{
+					final long originalNum = ASMUtils.getLongFromInsn(insn);
+					final InsnList insns = obfuscateNumber(originalNum);
+
+					methodInstructions.insert(insn, insns);
+					methodInstructions.remove(insn);
+
+					counter.incrementAndGet();
+					leeway -= ASMUtils.evaluateMaxSize(insns);
+				}
+				else if (ASMUtils.isFloatInsn(insn) && master.floatTamperingEnabled)
+				{
+					final float originalNum = ASMUtils.getFloatFromInsn(insn);
+					if (originalNum == Float.MIN_VALUE || Float.isNaN(originalNum) || Float.isInfinite(originalNum)) // Cannot support these cases
+						continue;
+					final InsnList insns = obfuscateNumber(originalNum);
+
+					methodInstructions.insert(insn, insns);
+					methodInstructions.remove(insn);
+
+					counter.incrementAndGet();
+					leeway -= ASMUtils.evaluateMaxSize(insns);
+				}
+				else if (ASMUtils.isDoubleInsn(insn) && master.doubleTamperingEnabled)
+				{
+					final double originalNum = ASMUtils.getDoubleFromInsn(insn);
+					if (originalNum == Double.MAX_VALUE || Double.isNaN(originalNum) || Double.isInfinite(originalNum)) // Cannot support these cases
+						continue;
+					final InsnList insns = obfuscateNumber(originalNum);
+
+					methodInstructions.insert(insn, insns);
+					methodInstructions.remove(insn);
+
+					counter.incrementAndGet();
+					leeway -= ASMUtils.evaluateMaxSize(insns);
+				}
+				else if (insn.getOpcode() == IINC && master.integerTamperingEnabled)
+				{
+					final IincInsnNode iincInsn = (IincInsnNode) insn;
+					final int var = iincInsn.var;
+					final int originalNum = iincInsn.incr;
+
+					final InsnList insns = new InsnList();
+					insns.add(new VarInsnNode(ILOAD, var));
+					insns.add(obfuscateNumber(originalNum));
+					insns.add(new InsnNode(IADD));
+					insns.add(new VarInsnNode(ISTORE, var));
+					methodInstructions.insert(insn, insns);
+					methodInstructions.remove(insn);
+
+					counter.incrementAndGet();
+					leeway -= ASMUtils.evaluateMaxSize(insns);
+				}
+			}
+		}));
 
 		info("+ Split " + counter.get() + " number constants into arithmetic instructions (minIteration: " + master.minIteration + ", maxIteration: " + master.maxIteration + ")");
 	}

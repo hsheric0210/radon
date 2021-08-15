@@ -31,6 +31,7 @@ public enum FlowObfuscationSetting
 	INSERT_BAD_POPS(new BadPopInserter()),
 	REPLACE_GOTO(new GotoReplacer()),
 	MUTILATE_RETURN(new ReturnMutilator()),
+	PACK_LOCAL_VARIABLES(new LocalVariablePacker()),
 	MUTILATE_LOCAL_VARIABLES(new LocalVariableMutilator());
 
 	private final FlowObfuscation flowObfuscation;

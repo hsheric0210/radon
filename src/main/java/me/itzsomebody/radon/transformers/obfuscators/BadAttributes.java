@@ -21,54 +21,47 @@ package me.itzsomebody.radon.transformers.obfuscators;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.objectweb.asm.tree.AnnotationNode;
-import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.ClassNode;
 
 import me.itzsomebody.radon.config.Configuration;
 import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.transformers.Transformer;
 
 /**
- * Adds {@code @} annotation to all methods Fernflower refuses to decompile the class.
- * WARNING: Java will crash on attempt to parse annotations.
+ * Original source code: https://github.com/GraxCode/threadtear/blob/master/core/src/main/java/me/nov/threadtear/execution/paramorphism/BadAttributeRemover.java
  *
- * @author xDark
+ * @author GraxCode
  */
-public class BadAnnotation extends Transformer
+public class BadAttributes extends Transformer
 {
 	@Override
 	public void transform()
 	{
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(this::included).forEach(cw -> cw.methods.stream().filter(this::included).forEach(mw ->
+		getClassWrappers().stream().filter(this::included).forEach(cw ->
 		{
-			final MethodNode methodNode = mw.methodNode;
+			// TODO
+			final ClassNode cn = cw.classNode;
+			cn.innerClasses = new ArrayList<>();
+			cn.outerClass = getGenericDictionary().randomString();
+			cn.outerMethod = getGenericDictionary().randomString();
+			cn.outerMethodDesc = getGenericDictionary().randomString();
+		});
 
-			if (methodNode.visibleAnnotations == null)
-				methodNode.visibleAnnotations = new ArrayList<>();
-			if (methodNode.invisibleAnnotations == null)
-				methodNode.invisibleAnnotations = new ArrayList<>();
-
-			methodNode.visibleAnnotations.add(new AnnotationNode("@"));
-			methodNode.invisibleAnnotations.add(new AnnotationNode("@"));
-
-			counter.incrementAndGet();
-		}));
-
-		info("+ Added " + counter.get() + " bad annotations");
+		info("+ Added " + counter.get() + " bad attributes");
 	}
 
 	@Override
 	public String getName()
 	{
-		return "Bad Annotations";
+		return "Bad Attributes";
 	}
 
 	@Override
 	public ExclusionType getExclusionType()
 	{
-		return ExclusionType.BAD_ANNOTATIONS;
+		return ExclusionType.BAD_ATTRIBUTES;
 	}
 
 	@Override

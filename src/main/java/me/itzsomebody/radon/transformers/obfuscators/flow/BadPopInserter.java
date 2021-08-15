@@ -31,8 +31,10 @@ import me.itzsomebody.radon.utils.RandomUtils;
  * Inserts redundant POP instructions which does nothing to confuse decompilers and skidders.
  * Original source code of Javari BadPop Obfuscator: https://github.com/NeroReal/Javari/blob/master/roman/finn/javari/obfmethods/BadPop.java
  * Original source code of JObf BadPop Obfuscator: https://github.com/superblaubeere27/obfuscator/blob/master/obfuscator-core/src/main/java/me/superblaubeere27/jobf/processors/flowObfuscation/FlowObfuscator.java
+ * Original source code of LdcSwapInvokeSwapPopRemover: https://github.com/java-deobfuscator/deobfuscator/blob/master/src/main/java/com/javadeobfuscator/deobfuscator/transformers/general/peephole/LdcSwapInvokeSwapPopRemover.java
+ * Original source code of SkidSuite BadPop: https://github.com/GenericException/SkidSuite/blob/master/archive/skidsuite-2/obfu/src/main/java/me/lpk/obfuscation/MiscAnti.java
  *
- * @author superblaubeere27, Roman
+ * @author superblaubeere27, Roman, samczsun, GenericException
  */
 public class BadPopInserter extends FlowObfuscation
 {
@@ -41,40 +43,46 @@ public class BadPopInserter extends FlowObfuscation
 	{
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(this::included).forEach(cw ->
+		getClassWrappers().stream().filter(this::included).forEach(cw -> cw.methods.stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
 		{
-			cw.methods.stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
+			int leeway = mw.getLeewaySize();
+
+			final InsnList insns = mw.getInstructions();
+			for (final AbstractInsnNode insn : insns.toArray())
 			{
-				int leeway = mw.getLeewaySize();
+				if (leeway < 10000)
+					break;
 
-				final InsnList insns = mw.getInstructions();
-				for (final AbstractInsnNode insn : insns.toArray())
+				final int opcode = insn.getOpcode();
+				if (opcode == GOTO)
 				{
-					if (leeway < 10000)
-						break;
+					final InsnList badPop = createBadPOP(POP);
+					insns.insertBefore(insn, badPop);
+					leeway -= ASMUtils.evaluateMaxSize(badPop);
 
-					final int opcode = insn.getOpcode();
-					if (opcode == GOTO)
-					{
-						final InsnList badPop = createBadPOP(POP);
-						insns.insertBefore(insn, badPop);
-						leeway -= ASMUtils.evaluateMaxSize(badPop);
-
-						counter.incrementAndGet();
-					}
-
-					if (opcode == POP)
-					{
-						final InsnList badPop = createBadPOP(POP2);
-						insns.insert(insn, badPop);
-						insns.remove(insn);
-						leeway -= ASMUtils.evaluateMaxSize(badPop);
-
-						counter.incrementAndGet();
-					}
+					counter.incrementAndGet();
 				}
-			});
-		});
+
+				if (opcode == POP)
+				{
+					final InsnList badPop = createBadPOP(POP2);
+					insns.insert(insn, badPop);
+					insns.remove(insn);
+					leeway -= ASMUtils.evaluateMaxSize(badPop);
+
+					counter.incrementAndGet();
+				}
+
+				if (opcode == ALOAD || opcode == ILOAD || opcode == FLOAD)
+				{
+					// SkidSuite BadPop
+					final VarInsnNode varInsn = (VarInsnNode) insn;
+					insns.insert(varInsn, new InsnNode(POP2));
+					insns.insertBefore(varInsn, new VarInsnNode(opcode, varInsn.var));
+					insns.insertBefore(varInsn, new VarInsnNode(opcode, varInsn.var));
+				}
+			}
+		}));
 
 		info("+ Inserted " + counter.get() + " bad POP instructions");
 	}
@@ -86,34 +94,34 @@ public class BadPopInserter extends FlowObfuscation
 		if (RandomUtils.getRandomBoolean())
 		{
 			// Javari BadPop obfuscsation
-			insns.add(createRandomInsn());
-			insns.add(createRandomInsn());
-			insns.add(createRandomInsn());
+			insns.add(createRandomPushInsn());
+			insns.add(createRandomPushInsn());
+			insns.add(createRandomPushInsn());
 			insns.add(new InsnNode(POP));
 			insns.add(new InsnNode(SWAP));
 			insns.add(new InsnNode(POP));
-			insns.add(createRandomInsn());
+			insns.add(createRandomPushInsn());
 			insns.add(new InsnNode(POP2));
 			if (popOpcode == POP2)
 				insns.add(new InsnNode(POP));
 			return insns;
 		}
 
-		insns.add(createRandomStringInsn());
+		insns.add(createRandomStringPushInsn());
 		insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/String", "length", "()I", false));
 		insns.add(new InsnNode(popOpcode));
 		return insns;
 	}
 
-	private AbstractInsnNode createRandomInsn()
+	private AbstractInsnNode createRandomPushInsn()
 	{
 		final Type type = ASMUtils.getRandomType();
-		if (type.getSize() > 1)
-			return createRandomStringInsn();
+		if (type.getSize() > 1) // wide types(long, double) are not supported
+			return createRandomStringPushInsn();
 		return ASMUtils.getRandomInsn(type);
 	}
 
-	private AbstractInsnNode createRandomStringInsn()
+	private AbstractInsnNode createRandomStringPushInsn()
 	{
 		if (RandomUtils.getRandomInt(50) == 0)
 			return new LdcInsnNode(Main.ATTRIBUTION);

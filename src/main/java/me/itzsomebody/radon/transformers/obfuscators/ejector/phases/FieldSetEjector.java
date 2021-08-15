@@ -176,7 +176,7 @@ public final class FieldSetEjector extends AbstractEjectPhase
 					proxyFixes.putAll(createJunkArguments(setInsns, isStatic));
 			}
 
-			insertFixes(proxyMethod, proxyFixes,  getLastArgumentVar(Type.getArgumentTypes(proxyMethod.desc)));
+			insertFixes(proxyMethod, proxyFixes, getLastArgumentVar(Type.getArgumentTypes(proxyMethod.desc)));
 		});
 
 		patches.forEach((patchTarget, patch) ->
@@ -214,5 +214,4 @@ public final class FieldSetEjector extends AbstractEjectPhase
 			return Objects.hash(opcode, desc);
 		}
 	}
-
 }

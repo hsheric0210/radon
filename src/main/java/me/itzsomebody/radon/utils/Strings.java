@@ -1,6 +1,7 @@
 package me.itzsomebody.radon.utils;
 
 import java.nio.charset.StandardCharsets;
+import java.util.StringJoiner;
 
 public final class Strings
 {
@@ -35,6 +36,14 @@ public final class Strings
 			builder.append('0');
 		builder.append(hexStr);
 		return builder.toString();
+	}
+
+	public static String serializeOrder(final int[] order)
+	{
+		final StringJoiner identifierOrderBuilder = new StringJoiner(", ", "[", "]");
+		for (final int i : order)
+			identifierOrderBuilder.add(Integer.toString(i));
+		return identifierOrderBuilder.toString();
 	}
 
 	private Strings()
