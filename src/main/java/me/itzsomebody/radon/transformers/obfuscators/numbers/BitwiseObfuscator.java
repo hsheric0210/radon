@@ -37,20 +37,23 @@ public class BitwiseObfuscator extends NumberObfuscation
 	{
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(this::included).forEach(classWrapper -> classWrapper.methods.stream().filter(methodWrapper -> included(methodWrapper) && methodWrapper.hasInstructions()).forEach(methodWrapper ->
+		getClassWrappers().stream().filter(this::included).forEach(cw -> cw.methods.stream().filter(methodWrapper -> included(methodWrapper) && methodWrapper.hasInstructions()).forEach(mw ->
 		{
-			int leeway = methodWrapper.getLeewaySize();
-			final InsnList methodInstructions = methodWrapper.getInstructions();
+			int leeway = mw.getLeewaySize();
+			final InsnList methodInstructions = mw.getInstructions();
 
 			for (final AbstractInsnNode insn : methodInstructions.toArray())
 			{
 				if (leeway < 10000)
+				{
+					verboseWarn(() -> "Number obfuscation in method '" + cw.getName() + "." + mw.getName() + mw.getDescription() + "' might not be finished due leeway limit (Try to reduce number-obfuscation iteration count in configuration)");
 					break;
+				}
 
 				if (ASMUtils.isIntInsn(insn) && master.integerTamperingEnabled)
 				{
 					final int originalNum = ASMUtils.getIntegerFromInsn(insn);
-					final InsnList insns = obfuscateNumber(originalNum);
+					final InsnList insns = obfuscateNumber(originalNum, leeway);
 
 					methodInstructions.insert(insn, insns);
 					methodInstructions.remove(insn);
@@ -61,7 +64,7 @@ public class BitwiseObfuscator extends NumberObfuscation
 				else if (ASMUtils.isLongInsn(insn) && master.longTamperingEnabled)
 				{
 					final long originalNum = ASMUtils.getLongFromInsn(insn);
-					final InsnList insns = obfuscateNumber(originalNum);
+					final InsnList insns = obfuscateNumber(originalNum, leeway);
 
 					methodInstructions.insert(insn, insns);
 					methodInstructions.remove(insn);
@@ -75,7 +78,7 @@ public class BitwiseObfuscator extends NumberObfuscation
 					if (Float.isNaN(originalNum))
 						continue;
 
-					final InsnList insns = obfuscateNumber(Float.floatToIntBits(originalNum));
+					final InsnList insns = obfuscateNumber(Float.floatToIntBits(originalNum), leeway);
 					insns.add(new MethodInsnNode(INVOKESTATIC, "java/lang/Float", "intBitsToFloat", "(I)F", false));
 
 					methodInstructions.insert(insn, insns);
@@ -90,7 +93,7 @@ public class BitwiseObfuscator extends NumberObfuscation
 					if (Double.isNaN(originalNum))
 						continue;
 
-					final InsnList insns = obfuscateNumber(Double.doubleToLongBits(originalNum));
+					final InsnList insns = obfuscateNumber(Double.doubleToLongBits(originalNum), leeway);
 					insns.add(new MethodInsnNode(INVOKESTATIC, "java/lang/Double", "longBitsToDouble", "(J)D", false));
 
 					methodInstructions.insert(insn, insns);
@@ -107,7 +110,7 @@ public class BitwiseObfuscator extends NumberObfuscation
 
 					final InsnList insns = new InsnList();
 					insns.add(new VarInsnNode(ILOAD, var));
-					insns.add(obfuscateNumber(originalNum));
+					insns.add(obfuscateNumber(originalNum, leeway));
 					insns.add(new InsnNode(IADD));
 					insns.add(new VarInsnNode(ISTORE, var));
 					methodInstructions.insert(insn, insns);
@@ -122,7 +125,7 @@ public class BitwiseObfuscator extends NumberObfuscation
 		info("+ Split " + counter.get() + " number constants into bitwise instructions (minIteration: " + master.minIteration + ", maxIteration: " + master.maxIteration + ")");
 	}
 
-	private InsnList obfuscateNumber(final int originalNum)
+	private InsnList obfuscateNumber(final int originalNum, final int _leeway)
 	{
 		int current = randomInt(originalNum);
 
@@ -132,7 +135,9 @@ public class BitwiseObfuscator extends NumberObfuscation
 		final StringBuilder builder = new StringBuilder("! [BitwiseObfuscator] Verify failed: Obfuscate int '" + originalNum + "' to '");
 		builder.append(current);
 
-		for (int i = 0, iterations = RandomUtils.getRandomInt(master.minIteration, master.maxIteration); i < iterations; i++)
+		int leeway = _leeway - 3;
+
+		for (int i = 0, j = RandomUtils.getRandomInt(master.minIteration, master.maxIteration); i < j && leeway >= 10000; i++)
 		{
 			final int operand;
 
@@ -179,11 +184,11 @@ public class BitwiseObfuscator extends NumberObfuscation
 				}
 				case 4:
 				{
-					int j = 0x1F;
-					while (j > 0 && (current << j == 0 || current << j <= Integer.MIN_VALUE || current << j >= Integer.MAX_VALUE))
-						j--;
+					int k = 0x1F;
+					while (k > 0 && (current << k == 0 || current << k <= Integer.MIN_VALUE || current << k >= Integer.MAX_VALUE))
+						k--;
 
-					operand = RandomUtils.getRandomInt(1, j > 0 ? j : 0x1E);
+					operand = RandomUtils.getRandomInt(1, k > 0 ? k : 0x1E);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
 					insns.add(new InsnNode(ISHL));
@@ -193,11 +198,11 @@ public class BitwiseObfuscator extends NumberObfuscation
 				}
 				case 5:
 				{
-					int j = 0x1E;
-					while (j > 0 && (current >> j == 0 || current >> j <= Integer.MIN_VALUE || current >> j >= Integer.MAX_VALUE))
-						j--;
+					int k = 0x1E;
+					while (k > 0 && (current >> k == 0 || current >> k <= Integer.MIN_VALUE || current >> k >= Integer.MAX_VALUE))
+						k--;
 
-					operand = RandomUtils.getRandomInt(1, j > 0 ? j : 0x1E);
+					operand = RandomUtils.getRandomInt(1, k > 0 ? k : 0x1E);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
 					insns.add(new InsnNode(ISHR));
@@ -207,11 +212,11 @@ public class BitwiseObfuscator extends NumberObfuscation
 				}
 				case 6:
 				{
-					int j = 0x1E;
-					while (j > 0 && (current >>> j == 0 || current >>> j <= Integer.MIN_VALUE || current >>> j >= Integer.MAX_VALUE))
-						j--;
+					int k = 0x1E;
+					while (k > 0 && (current >>> k == 0 || current >>> k <= Integer.MIN_VALUE || current >>> k >= Integer.MAX_VALUE))
+						k--;
 
-					operand = RandomUtils.getRandomInt(1, j > 0 ? j : 0x1E);
+					operand = RandomUtils.getRandomInt(1, k > 0 ? k : 0x1E);
 
 					insns.add(ASMUtils.getNumberInsn(operand));
 					insns.add(new InsnNode(IUSHR));
@@ -220,6 +225,8 @@ public class BitwiseObfuscator extends NumberObfuscation
 					break;
 				}
 			}
+
+			leeway -= 4;
 		}
 
 		final int correctionOperand = originalNum ^ current;
@@ -240,7 +247,7 @@ public class BitwiseObfuscator extends NumberObfuscation
 		return insns;
 	}
 
-	private InsnList obfuscateNumber(final long originalNum)
+	private InsnList obfuscateNumber(final long originalNum, final int _leeway)
 	{
 		long current = randomLong(originalNum);
 
@@ -250,7 +257,9 @@ public class BitwiseObfuscator extends NumberObfuscation
 		final StringBuilder builder = new StringBuilder("! [BitwiseObfuscator] Verify failed: Obfuscate long '" + originalNum + "' to '");
 		builder.append(current);
 
-		for (int i = 0, iterations = RandomUtils.getRandomInt(master.minIteration, master.maxIteration); i < iterations; i++)
+		int leeway = _leeway - 3;
+
+		for (int i = 0, j = RandomUtils.getRandomInt(master.minIteration, master.maxIteration); i < j && leeway >= 10000; i++)
 		{
 			final long operand;
 
@@ -295,11 +304,11 @@ public class BitwiseObfuscator extends NumberObfuscation
 				}
 				case 4:
 				{
-					int j = 0x3F;
-					while (j > 0 && (current << j == 0 || current << j <= Long.MIN_VALUE || current << j >= Long.MAX_VALUE))
-						j--;
+					int k = 0x3F;
+					while (k > 0 && (current << k == 0 || current << k <= Long.MIN_VALUE || current << k >= Long.MAX_VALUE))
+						k--;
 
-					operand = RandomUtils.getRandomInt(1, j > 0 ? j : 0x3F);
+					operand = RandomUtils.getRandomInt(1, k > 0 ? k : 0x3F);
 
 					insns.add(ASMUtils.getNumberInsn((int) operand));
 					insns.add(new InsnNode(LSHL));
@@ -309,11 +318,11 @@ public class BitwiseObfuscator extends NumberObfuscation
 				}
 				case 5:
 				{
-					int j = 0x3F;
-					while (j > 0 && (current >> j == 0 || current >> j <= Long.MIN_VALUE || current >> j >= Long.MAX_VALUE))
-						j--;
+					int k = 0x3F;
+					while (k > 0 && (current >> k == 0 || current >> k <= Long.MIN_VALUE || current >> k >= Long.MAX_VALUE))
+						k--;
 
-					operand = RandomUtils.getRandomInt(1, j > 0 ? j : 0x3F);
+					operand = RandomUtils.getRandomInt(1, k > 0 ? k : 0x3F);
 
 					insns.add(ASMUtils.getNumberInsn((int) operand));
 					insns.add(new InsnNode(LSHR));
@@ -323,11 +332,11 @@ public class BitwiseObfuscator extends NumberObfuscation
 				}
 				case 6:
 				{
-					int j = 0x3F;
-					while (j > 0 && (current >>> j == 0 || current >>> j <= Long.MIN_VALUE || current >>> j >= Long.MAX_VALUE))
-						j--;
+					int k = 0x3F;
+					while (k > 0 && (current >>> k == 0 || current >>> k <= Long.MIN_VALUE || current >>> k >= Long.MAX_VALUE))
+						k--;
 
-					operand = RandomUtils.getRandomInt(1, j > 0 ? j : 0x3F);
+					operand = RandomUtils.getRandomInt(1, k > 0 ? k : 0x3F);
 
 					insns.add(ASMUtils.getNumberInsn((int) operand));
 					insns.add(new InsnNode(LUSHR));
@@ -336,6 +345,8 @@ public class BitwiseObfuscator extends NumberObfuscation
 					break;
 				}
 			}
+
+			leeway -= 4;
 		}
 
 		final long correctionOperand = originalNum ^ current;

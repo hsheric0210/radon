@@ -22,15 +22,18 @@ import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.InnerClassNode;
 
 import me.itzsomebody.radon.config.Configuration;
+import me.itzsomebody.radon.dictionaries.WrappedDictionary;
 import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.transformers.Transformer;
+import me.itzsomebody.radon.utils.RandomUtils;
 
 /**
  * Original source code: https://github.com/GraxCode/threadtear/blob/master/core/src/main/java/me/nov/threadtear/execution/paramorphism/BadAttributeRemover.java
  *
- * @author GraxCode
+ * @author GraxCode, hsheric0210
  */
 public class BadAttributes extends Transformer
 {
@@ -41,12 +44,17 @@ public class BadAttributes extends Transformer
 
 		getClassWrappers().stream().filter(this::included).forEach(cw ->
 		{
-			// TODO
 			final ClassNode cn = cw.classNode;
 			cn.innerClasses = new ArrayList<>();
-			cn.outerClass = getGenericDictionary().randomString();
-			cn.outerMethod = getGenericDictionary().randomString();
-			cn.outerMethodDesc = getGenericDictionary().randomString();
+			final WrappedDictionary classDictionary = getClassDictionary(cw.getPackageName());
+			final WrappedDictionary methodDictionary = getMethodDictionary(null);
+			for (int i = 0, j = RandomUtils.getRandomInt(10); i < j; i++)
+				cn.innerClasses.add(new InnerClassNode(classDictionary.randomString(), classDictionary.randomString(), classDictionary.randomString(), ACC_PUBLIC));
+			cn.outerClass = classDictionary.randomString();
+			cn.outerMethod = methodDictionary.randomString();
+			cn.outerMethodDesc = "(L" + classDictionary.randomString() + ";)L" + classDictionary.randomString() + ";";
+
+			counter.incrementAndGet();
 		});
 
 		info("+ Added " + counter.get() + " bad attributes");

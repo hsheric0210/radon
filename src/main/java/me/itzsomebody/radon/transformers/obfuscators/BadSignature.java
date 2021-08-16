@@ -18,9 +18,13 @@
 
 package me.itzsomebody.radon.transformers.obfuscators;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.objectweb.asm.tree.LocalVariableNode;
+
 import me.itzsomebody.radon.config.Configuration;
+import me.itzsomebody.radon.dictionaries.WrappedDictionary;
 import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.transformers.Transformer;
 import me.itzsomebody.radon.utils.ASMUtils;
@@ -36,21 +40,27 @@ public class BadSignature extends Transformer
 	public void transform()
 	{
 		final AtomicInteger counter = new AtomicInteger();
+		final WrappedDictionary dictionary = getGenericDictionary();
 
 		getClassWrappers().stream().filter(this::included).forEach(cw ->
 		{
-			cw.classNode.signature = getGenericDictionary().randomString();
+			cw.classNode.signature = dictionary.randomString();
 			counter.incrementAndGet();
 
 			cw.methods.stream().filter(mw -> included(mw) && !ASMUtils.hasAnnotations(mw.methodNode)).forEach(mw ->
 			{
-				mw.methodNode.signature = getGenericDictionary().randomString();
+				final List<LocalVariableNode> locals = mw.methodNode.localVariables;
+				if (locals != null && !locals.isEmpty())
+					for (final LocalVariableNode node : locals)
+						node.signature = dictionary.randomString();
+
+				mw.methodNode.signature = dictionary.randomString();
 				counter.incrementAndGet();
 			});
 
 			cw.fields.stream().filter(fw -> included(fw) && !ASMUtils.hasAnnotations(fw.fieldNode)).filter(fw -> !fw.access.isSynthetic()).forEach(fw ->
 			{
-				fw.fieldNode.signature = getGenericDictionary().randomString();
+				fw.fieldNode.signature = dictionary.randomString();
 				counter.incrementAndGet();
 			});
 		});

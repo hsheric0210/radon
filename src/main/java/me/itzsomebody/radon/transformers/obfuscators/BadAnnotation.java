@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.objectweb.asm.tree.AnnotationNode;
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import me.itzsomebody.radon.config.Configuration;
@@ -41,20 +43,50 @@ public class BadAnnotation extends Transformer
 	{
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(this::included).forEach(cw -> cw.methods.stream().filter(this::included).forEach(mw ->
+		getClassWrappers().stream().filter(this::included).forEach(cw ->
 		{
-			final MethodNode methodNode = mw.methodNode;
+			final ClassNode cn = cw.classNode;
 
-			if (methodNode.visibleAnnotations == null)
-				methodNode.visibleAnnotations = new ArrayList<>();
-			if (methodNode.invisibleAnnotations == null)
-				methodNode.invisibleAnnotations = new ArrayList<>();
+			if (cn.visibleAnnotations == null)
+				cn.visibleAnnotations = new ArrayList<>();
+			if (cn.invisibleAnnotations == null)
+				cn.invisibleAnnotations = new ArrayList<>();
 
-			methodNode.visibleAnnotations.add(new AnnotationNode("@"));
-			methodNode.invisibleAnnotations.add(new AnnotationNode("@"));
+			cn.visibleAnnotations.add(new AnnotationNode("@"));
+			cn.invisibleAnnotations.add(new AnnotationNode("@"));
 
 			counter.incrementAndGet();
-		}));
+
+			cw.methods.stream().filter(this::included).forEach(mw ->
+			{
+				final MethodNode mn = mw.methodNode;
+
+				if (mn.visibleAnnotations == null)
+					mn.visibleAnnotations = new ArrayList<>();
+				if (mn.invisibleAnnotations == null)
+					mn.invisibleAnnotations = new ArrayList<>();
+
+				mn.visibleAnnotations.add(new AnnotationNode("@"));
+				mn.invisibleAnnotations.add(new AnnotationNode("@"));
+
+				counter.incrementAndGet();
+			});
+
+			cw.fields.stream().filter(this::included).forEach(fw ->
+			{
+				final FieldNode fn = fw.fieldNode;
+
+				if (fn.visibleAnnotations == null)
+					fn.visibleAnnotations = new ArrayList<>();
+				if (fn.invisibleAnnotations == null)
+					fn.invisibleAnnotations = new ArrayList<>();
+
+				fn.visibleAnnotations.add(new AnnotationNode("@"));
+				fn.invisibleAnnotations.add(new AnnotationNode("@"));
+
+				counter.incrementAndGet();
+			});
+		});
 
 		info("+ Added " + counter.get() + " bad annotations");
 	}

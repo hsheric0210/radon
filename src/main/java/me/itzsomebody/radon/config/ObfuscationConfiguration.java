@@ -152,12 +152,18 @@ public final class ObfuscationConfiguration
 		obfConfig.nTrashClasses = config.getOrDefault(TRASH_CLASSES, 0);
 		obfConfig.verboseLogging = config.getOrDefault(VERBOSE_LOGGING, false);
 
+		obfConfig.renamerPresent = false;
+
 		// TRANSFORMERS
 
 		final List<Transformer> transformers = new ArrayList<>();
 		Stream.of(values()).filter(setting -> setting.transformer != null).filter(config::contains).forEach(setting ->
 		{
 			final Transformer transformer = setting.transformer;
+
+			if (setting == RENAMER)
+				obfConfig.renamerPresent = true;
+
 			if (config.get(setting) instanceof Map)
 			{
 				transformer.setConfiguration(config);
@@ -189,4 +195,5 @@ public final class ObfuscationConfiguration
 	public WrappedDictionary fieldDictionary;
 
 	public List<Transformer> transformers;
+	public boolean renamerPresent;
 }

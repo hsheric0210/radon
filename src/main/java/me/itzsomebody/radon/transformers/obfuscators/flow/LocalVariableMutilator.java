@@ -126,13 +126,13 @@ public class LocalVariableMutilator extends FlowObfuscation
 					if (opcode >= ISTORE && opcode <= DSTORE)
 					{
 						final Frame<BasicValue> currentFrame = frames[insns.indexOf(varInsn)];
-						final Type type = currentFrame.getStack(currentFrame.getStackSize() - 1).getType();
-						if (type != null)
+						final Type operandType = currentFrame.getStack(currentFrame.getStackSize() - 1).getType();
+						if (operandType != null)
 						{
-							final int typeSort = type.getSort();
-							if (typeSort >= Type.CHAR && typeSort <= Type.DOUBLE)
+							final int operandTypeSort = operandType.getSort();
+							if (operandTypeSort >= Type.CHAR && operandTypeSort <= Type.DOUBLE)
 							{
-								final Type newType = typeSort < Type.INT ? Type.INT_TYPE : type;
+								final Type newType = operandTypeSort < Type.INT ? Type.INT_TYPE : operandType;
 								if (!localVarMap.containsKey(varIndex) || !localVarMap.get(varIndex).contains(newType))
 									localVarMap.computeIfAbsent(varIndex, i -> new HashSet<>()).add(newType);
 							}

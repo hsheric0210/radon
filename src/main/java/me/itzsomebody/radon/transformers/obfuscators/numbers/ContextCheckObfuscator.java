@@ -156,7 +156,7 @@ public class ContextCheckObfuscator extends NumberObfuscation
 			}
 		}));
 
-		final ClassNode decoder = createConstantDecoder(memberNames);
+		final ClassNode decoder = createConstantDecoder(memberNames, false /* TODO */);
 		getClasses().put(decoder.name, new ClassWrapper(decoder, false));
 		verboseInfo(() -> String.format("Number context checker and decoder injected into class '%s'", decoder.name));
 
@@ -188,12 +188,18 @@ public class ContextCheckObfuscator extends NumberObfuscation
 	}
 
 	@SuppressWarnings("Duplicates")
-	private static ClassNode createConstantDecoder(final MemberNames memberNames)
+	private ClassNode createConstantDecoder(final MemberNames memberNames, final boolean inject)
 	{
-		final ClassNode cw = new ClassNode();
+		final ClassNode cw;
 		MethodVisitor mv;
 
-		cw.visit(V1_5, ACC_PUBLIC | ACC_SUPER, memberNames.className, null, "java/lang/Thread", null);
+		if (inject)
+			cw = randomExistingClass().classNode;
+		else
+		{
+			cw = new ClassNode();
+			cw.visit(V1_5, ACC_PUBLIC | ACC_SUPER, memberNames.className, null, "java/lang/Thread", null);
+		}
 
 		FieldVisitor fv = cw.visitField(ACC_PRIVATE + ACC_STATIC + ACC_VOLATILE, memberNames.constantFieldName, "Ljava/lang/Object;", null, null);
 		fv.visitEnd();

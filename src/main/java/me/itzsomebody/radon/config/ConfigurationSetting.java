@@ -98,7 +98,6 @@ public enum ConfigurationSetting
 	EJECTOR(Map.class, new Ejector()),
 	RENAMER(Map.class, new Renamer()),
 	BAD_ANNOTATION(Boolean.class, new BadAnnotation()),
-	BAD_VARARGS(Boolean.class, new BadVarargs()),
 	BAD_ATTRIBUTES(Boolean.class, new BadAttributes()),
 	BAD_SIGNATURE(Boolean.class, new BadSignature());
 

@@ -21,6 +21,7 @@ package me.itzsomebody.radon.transformers;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.objectweb.asm.Opcodes;
 
@@ -53,7 +54,7 @@ public abstract class Transformer implements Opcodes
 		this.radon = radon;
 	}
 
-	protected boolean included(final String str)
+	protected boolean included(final CharSequence str)
 	{
 		return !radon.config.exclusionManager.isExcluded(str, getExclusionType());
 	}
@@ -83,13 +84,20 @@ public abstract class Transformer implements Opcodes
 
 	public String randomClassName()
 	{
-		// TODO: Better class name generation algorithm
+		if (radon.config.renamerPresent)
+			return getClassDictionary(randomExistingClass().getPackageName()).nextUniqueString(); // FIXME: The generated class always located on the last entry in a package
+
 		final List<String> list = new ArrayList<>(getClasses().keySet());
 
 		final String first = RandomUtils.getRandomElement(list);
 		final String second = RandomUtils.getRandomElement(list);
 
 		return first + '$' + second.substring(second.lastIndexOf('/') + 1);
+	}
+
+	public ClassWrapper randomExistingClass()
+	{
+		return RandomUtils.getRandomElement(getClasses().values().stream().filter(cw -> included(cw) && !cw.access.isInterface()).collect(Collectors.toCollection(() -> new ArrayList<>(getClasses().size()))));
 	}
 
 	protected final Map<String, ClassWrapper> getClasses()

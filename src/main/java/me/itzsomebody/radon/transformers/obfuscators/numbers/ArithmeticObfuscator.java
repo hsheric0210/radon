@@ -37,20 +37,23 @@ public class ArithmeticObfuscator extends NumberObfuscation
 	{
 		final AtomicInteger counter = new AtomicInteger();
 
-		getClassWrappers().stream().filter(this::included).forEach(classWrapper -> classWrapper.methods.stream().filter(this::included).forEach(methodWrapper ->
+		getClassWrappers().stream().filter(this::included).forEach(cw -> cw.methods.stream().filter(this::included).forEach(mw ->
 		{
-			int leeway = methodWrapper.getLeewaySize();
-			final InsnList methodInstructions = methodWrapper.getInstructions();
+			int leeway = mw.getLeewaySize();
+			final InsnList methodInstructions = mw.getInstructions();
 
 			for (final AbstractInsnNode insn : methodInstructions.toArray())
 			{
 				if (leeway < 10000)
+				{
+					verboseWarn(() -> "Number obfuscation in method '" + cw.getName() + "." + mw.getName() + mw.getDescription() + "' might not be finished due leeway limit (Try to reduce number-obfuscation iteration count in configuration)");
 					break;
+				}
 
 				if (ASMUtils.isIntInsn(insn) && master.integerTamperingEnabled)
 				{
 					final int originalNum = ASMUtils.getIntegerFromInsn(insn);
-					final InsnList insns = obfuscateNumber(originalNum);
+					final InsnList insns = obfuscateNumber(originalNum, leeway);
 
 					methodInstructions.insert(insn, insns);
 					methodInstructions.remove(insn);
@@ -61,7 +64,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 				else if (ASMUtils.isLongInsn(insn) && master.longTamperingEnabled)
 				{
 					final long originalNum = ASMUtils.getLongFromInsn(insn);
-					final InsnList insns = obfuscateNumber(originalNum);
+					final InsnList insns = obfuscateNumber(originalNum, leeway);
 
 					methodInstructions.insert(insn, insns);
 					methodInstructions.remove(insn);
@@ -74,7 +77,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 					final float originalNum = ASMUtils.getFloatFromInsn(insn);
 					if (originalNum == Float.MIN_VALUE || Float.isNaN(originalNum) || Float.isInfinite(originalNum)) // Cannot support these cases
 						continue;
-					final InsnList insns = obfuscateNumber(originalNum);
+					final InsnList insns = obfuscateNumber(originalNum, leeway);
 
 					methodInstructions.insert(insn, insns);
 					methodInstructions.remove(insn);
@@ -87,7 +90,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 					final double originalNum = ASMUtils.getDoubleFromInsn(insn);
 					if (originalNum == Double.MAX_VALUE || Double.isNaN(originalNum) || Double.isInfinite(originalNum)) // Cannot support these cases
 						continue;
-					final InsnList insns = obfuscateNumber(originalNum);
+					final InsnList insns = obfuscateNumber(originalNum, leeway);
 
 					methodInstructions.insert(insn, insns);
 					methodInstructions.remove(insn);
@@ -103,7 +106,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 
 					final InsnList insns = new InsnList();
 					insns.add(new VarInsnNode(ILOAD, var));
-					insns.add(obfuscateNumber(originalNum));
+					insns.add(obfuscateNumber(originalNum, leeway));
 					insns.add(new InsnNode(IADD));
 					insns.add(new VarInsnNode(ISTORE, var));
 					methodInstructions.insert(insn, insns);
@@ -118,7 +121,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 		info("+ Split " + counter.get() + " number constants into arithmetic instructions (minIteration: " + master.minIteration + ", maxIteration: " + master.maxIteration + ")");
 	}
 
-	private InsnList obfuscateNumber(final int originalNum)
+	private InsnList obfuscateNumber(final int originalNum, final int _leeway)
 	{
 		final StringBuilder builder = new StringBuilder("! [ArithmeticObfuscator] Verify failed: Obfuscate int '" + originalNum + "' to '");
 
@@ -128,7 +131,9 @@ public class ArithmeticObfuscator extends NumberObfuscation
 		insns.add(ASMUtils.getNumberInsn(current));
 		builder.append(current);
 
-		for (int i = 0, j = RandomUtils.getRandomInt(master.minIteration, master.maxIteration); i < j; i++)
+		int leeway = _leeway - 3;
+
+		for (int i = 0, j = RandomUtils.getRandomInt(master.minIteration, master.maxIteration); i < j && leeway >= 10000; i++)
 		{
 			final int operand;
 
@@ -185,6 +190,8 @@ public class ArithmeticObfuscator extends NumberObfuscation
 					break;
 				}
 			}
+
+			leeway -= 4;
 		}
 
 		final int correctionOperand = originalNum - current;
@@ -220,7 +227,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 		return insns;
 	}
 
-	private InsnList obfuscateNumber(final long originalNum)
+	private InsnList obfuscateNumber(final long originalNum, final int _leeway)
 	{
 		final StringBuilder builder = new StringBuilder("! [ArithmeticObfuscator] Verify failed: Obfuscate long '" + originalNum + "' to '");
 
@@ -230,7 +237,9 @@ public class ArithmeticObfuscator extends NumberObfuscation
 		insns.add(ASMUtils.getNumberInsn(current));
 		builder.append(current);
 
-		for (int i = 0, j = RandomUtils.getRandomInt(master.minIteration, master.maxIteration); i < j; i++)
+		int leeway = _leeway - 3;
+
+		for (int i = 0, j = RandomUtils.getRandomInt(master.minIteration, master.maxIteration); i < j && leeway >= 10000; i++)
 		{
 			final long operand;
 
@@ -287,6 +296,8 @@ public class ArithmeticObfuscator extends NumberObfuscation
 					break;
 				}
 			}
+
+			leeway -= 4;
 		}
 
 		final long correctionOperand = originalNum - current;
@@ -322,7 +333,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 		return insns;
 	}
 
-	private InsnList obfuscateNumber(final float originalNum) // TODO: Overflow protection
+	private InsnList obfuscateNumber(final float originalNum, final int _leeway)
 	{
 		final StringBuilder builder = new StringBuilder("! [ArithmeticObfuscator] Verify failed: Obfuscate float '" + originalNum + "' to '");
 
@@ -332,7 +343,9 @@ public class ArithmeticObfuscator extends NumberObfuscation
 		insnList.add(ASMUtils.getNumberInsn(current));
 		builder.append(current);
 
-		for (int i = 0, iterations = RandomUtils.getRandomInt(master.minIteration, master.maxIteration); i < iterations; i++)
+		int leeway = _leeway - 3;
+
+		for (int i = 0, j = RandomUtils.getRandomInt(master.minIteration, master.maxIteration); i < j && leeway >= 10000; i++)
 		{
 			final float operand;
 
@@ -401,6 +414,8 @@ public class ArithmeticObfuscator extends NumberObfuscation
 					break;
 				}
 			}
+
+			leeway -= 4;
 		}
 
 		final float correctionOperand = originalNum - current;
@@ -437,7 +452,7 @@ public class ArithmeticObfuscator extends NumberObfuscation
 		return insnList;
 	}
 
-	private InsnList obfuscateNumber(final double originalNum) // TODO: Overflow protection
+	private InsnList obfuscateNumber(final double originalNum, final int _leeway)
 	{
 		final StringBuilder builder = new StringBuilder("! [ArithmeticObfuscator] Verify failed: Obfuscate double '" + originalNum + "' to '");
 
@@ -447,7 +462,9 @@ public class ArithmeticObfuscator extends NumberObfuscation
 		insnList.add(ASMUtils.getNumberInsn(current));
 		builder.append(current);
 
-		for (int i = 0, iterations = RandomUtils.getRandomInt(master.minIteration, master.maxIteration); i < iterations; i++)
+		int leeway = _leeway - 3;
+
+		for (int i = 0, j = RandomUtils.getRandomInt(master.minIteration, master.maxIteration); i < j && leeway >= 10000; i++)
 		{
 			final double operand;
 
@@ -516,6 +533,8 @@ public class ArithmeticObfuscator extends NumberObfuscation
 					break;
 				}
 			}
+
+			leeway -= 4;
 		}
 
 		final double correctionOperand = originalNum - current;
