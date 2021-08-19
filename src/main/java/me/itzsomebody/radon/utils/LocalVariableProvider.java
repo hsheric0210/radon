@@ -1,7 +1,5 @@
 package me.itzsomebody.radon.utils;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -11,10 +9,7 @@ import java.util.stream.Collectors;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
-import org.objectweb.asm.util.Textifier;
-import org.objectweb.asm.util.TraceMethodVisitor;
 
-import me.itzsomebody.radon.Main;
 import me.itzsomebody.radon.asm.MethodWrapper;
 
 /**
@@ -58,7 +53,8 @@ public class LocalVariableProvider implements Opcodes
 		localVariables = new ArrayList<>();
 
 		for (final LocalVariableNode local : mw.originalLocals)
-			localVariables.add(new Local(local.index, Type.getType(local.desc), local.start, local.end, insns, mw.originalName.equalsIgnoreCase("main") ? mw.methodNode : null));
+			if (!isArgumentLocal(local.index))
+				localVariables.add(new Local(local.index, Type.getType(local.desc), local.start, local.end, insns));
 	}
 
 	private void registerExisting(final int varIndex, final int typeSize)
@@ -103,11 +99,6 @@ public class LocalVariableProvider implements Opcodes
 
 		public Local(final int varIndex, final Type type, final LabelNode start, final LabelNode end, final InsnList insns)
 		{
-			this(varIndex, type, start, end, insns, null);
-		}
-
-		public Local(final int varIndex, final Type type, final LabelNode start, final LabelNode end, final InsnList insns, final MethodNode debugNode)
-		{
 			this.varIndex = varIndex;
 			this.type = type;
 
@@ -126,46 +117,6 @@ public class LocalVariableProvider implements Opcodes
 				final List<LabelNode> labelList = insnList.stream().filter(insn -> insn instanceof LabelNode).map(insn -> (LabelNode) insn).collect(Collectors.toList());
 				final int actualStartIndex = insnList.indexOf(labelList.get(Math.max(labelList.indexOf(start) - 1, 0)));
 				availableOn.addAll(insnList.subList(actualStartIndex, insns.indexOf(end)));
-
-				if (debugNode != null)
-				{
-//					final StringWriter beforeSW = new StringWriter();
-//					{
-//						final InsnList beforeInsns = new InsnList();
-//						for (final AbstractInsnNode ain : insnList.subList(insns.indexOf(start), insns.indexOf(end)))
-//							beforeInsns.add(ain);
-//
-//						final PrintWriter beforePW = new PrintWriter(beforeSW);
-//						final Textifier t = new Textifier();
-//						beforeInsns.accept(new TraceMethodVisitor(t));
-//						t.print(beforePW);
-//					}
-
-//					final StringWriter afterSW = new StringWriter();
-//					{
-//						final InsnList afterInsns = new InsnList();
-//						for (final AbstractInsnNode ain : insnList.subList(actualStartIndex, insns.indexOf(end)))
-//							afterInsns.add(ain);
-//
-//						final PrintWriter afterPW = new PrintWriter(afterSW);
-//						final Textifier t2 = new Textifier();
-//						afterInsns.accept(new TraceMethodVisitor(t2));
-//						t2.print(afterPW);
-//					}
-
-//					Main.info(String.format("var #%d (type=%s) before=\n%s", varIndex, type.getDescriptor(), beforeSW));
-//					Main.info(String.format("var #%d (type=%s) after=\n%s", varIndex, type.getDescriptor(), afterSW));
-
-					final StringWriter sw = new StringWriter();
-					{
-						final PrintWriter pw = new PrintWriter(sw);
-						final Textifier t = new Textifier();
-						for (final AbstractInsnNode ain : availableOn)
-							ain.accept(new TraceMethodVisitor(t));
-						t.print(pw);
-					}
-					Main.info(String.format("var #%d (type=%s) availableOn=\n%s", varIndex, type.getDescriptor(), sw));
-				}
 			}
 
 			this.type = type;

@@ -87,7 +87,7 @@ public class LocalVariablePacker extends FlowObfuscation
 			final Map<Local, Local> intToNewLocals = new HashMap<>();
 			int total = booleans.size() + (bytes.size() << 3) + (chars.size() << 4) + (ints.size() << 5);
 			final Map<Local, Map<Local, Integer>> newLocals = new HashMap<>();
-			while (total >= 32 && booleans.size() + bytes.size() + chars.size() + ints.size() > 2)
+			while (total >= 0 && booleans.size() + bytes.size() + chars.size() + ints.size() > 0)
 			{
 				final Local nloc = new Local(varProvider.allocateVar(2), Type.LONG_TYPE, null, null, null);
 				final Map<Local, Integer> nlocMap = new HashMap<>();
@@ -96,54 +96,49 @@ public class LocalVariablePacker extends FlowObfuscation
 				int index = 0;
 				while (index < 64 && !done)
 				{
-					int max = 64 - index;
-					max = max > 31 ? 4 : max > 15 ? 3 : max > 7 ? 2 : 1;
-					final int rand = RandomUtils.getRandomInt(max);
-					max = index;
+					int leeway = 64 - index;
+					final int rand = getRandomSwitchKey(leeway >= 32 ? 4 : leeway >= 16 ? 3 : leeway >= 8 ? 2 : 1, ints, chars, bytes, booleans);
+					leeway = index;
 					switch (rand)
 					{
-						case 3:
-							if (ints.size() > 0)
-							{
-								final Local l = ints.remove(RandomUtils.getRandomInt(ints.size()));
-								nlocMap.put(l, index);
-								index += 32;
-								intToNewLocals.put(l, nloc);
-								index = getNewIndex(index, ints, chars, bytes, booleans);
-								break;
-							}
-						case 2:
-							if (chars.size() > 0)
-							{
-								final Local l = chars.remove(RandomUtils.getRandomInt(chars.size()));
-								nlocMap.put(l, index);
-								index += 16;
-								intToNewLocals.put(l, nloc);
-								index = getNewIndex(index, ints, chars, bytes, booleans);
-								break;
-							}
-						case 1:
-							if (bytes.size() > 0)
-							{
-								final Local l = bytes.remove(RandomUtils.getRandomInt(bytes.size()));
-								nlocMap.put(l, index);
-								index += 8;
-								intToNewLocals.put(l, nloc);
-								index = getNewIndex(index, ints, chars, bytes, booleans);
-								break;
-							}
 						case 0:
-							if (booleans.size() > 0)
-							{
-								final Local l = booleans.remove(RandomUtils.getRandomInt(booleans.size()));
-								nlocMap.put(l, index++);
-								intToNewLocals.put(l, nloc);
-								index = getNewIndex(index, ints, chars, bytes, booleans);
-								break;
-							}
+						{
+							final Local l = booleans.remove(RandomUtils.getRandomInt(booleans.size()));
+							nlocMap.put(l, index++);
+							intToNewLocals.put(l, nloc);
+							index = getNewIndex(index, ints, chars, bytes, booleans);
+							break;
+						}
+						case 1:
+						{
+							final Local l = bytes.remove(RandomUtils.getRandomInt(bytes.size()));
+							nlocMap.put(l, index);
+							index += 8;
+							intToNewLocals.put(l, nloc);
+							index = getNewIndex(index, ints, chars, bytes, booleans);
+							break;
+						}
+						case 2:
+						{
+							final Local l = chars.remove(RandomUtils.getRandomInt(chars.size()));
+							nlocMap.put(l, index);
+							index += 16;
+							intToNewLocals.put(l, nloc);
+							index = getNewIndex(index, ints, chars, bytes, booleans);
+							break;
+						}
+						case 3:
+						{
+							final Local l = ints.remove(RandomUtils.getRandomInt(ints.size()));
+							nlocMap.put(l, index);
+							index += 32;
+							intToNewLocals.put(l, nloc);
+							index = getNewIndex(index, ints, chars, bytes, booleans);
+							break;
+						}
 					}
 
-					if (max == index)
+					if (leeway == index)
 						done = true;
 				}
 				newLocals.put(nloc, nlocMap);
@@ -189,10 +184,10 @@ public class LocalVariablePacker extends FlowObfuscation
 									replace.add(ASMUtils.getNumberInsn(index));
 									replace.add(new InsnNode(LSHL));
 								}
-								replace.add(ASMUtils.getNumberInsn(~longmask));
+								replace.add(ASMUtils.getNumberInsn(longmask));
 								replace.add(new InsnNode(LAND));
 								replace.add(new VarInsnNode(LLOAD, longLocal.varIndex));
-								replace.add(ASMUtils.getNumberInsn(longmask));
+								replace.add(ASMUtils.getNumberInsn(~longmask));
 								replace.add(new InsnNode(LAND));
 								replace.add(new InsnNode(LXOR));
 								replace.add(new VarInsnNode(LSTORE, longLocal.varIndex));
@@ -319,7 +314,7 @@ public class LocalVariablePacker extends FlowObfuscation
 		return t;
 	}
 
-	private int getNewIndex(int index, final Collection<Local> ints, final Collection<Local> chars, final Collection<Local> bytes, final Collection<Local> booleans)
+	private static int getNewIndex(int index, final Collection<Local> ints, final Collection<Local> chars, final Collection<Local> bytes, final Collection<Local> booleans)
 	{
 		int max = 0;
 		if (!booleans.isEmpty() && index < 63)
@@ -342,5 +337,20 @@ public class LocalVariablePacker extends FlowObfuscation
 			index += max;
 		}
 		return index;
+	}
+
+	private static int getRandomSwitchKey(final int leeway, final Collection<Local> ints, final Collection<Local> chars, final Collection<Local> bytes, final Collection<Local> booleans)
+	{
+		final int[] candidates = new int[4];
+		int index = 0;
+		if (!ints.isEmpty() && leeway == 4)
+			candidates[index++] = 3;
+		if (!chars.isEmpty() && leeway >= 3)
+			candidates[index++] = 2;
+		if (!bytes.isEmpty() && leeway >= 2)
+			candidates[index++] = 1;
+		if (!booleans.isEmpty() && leeway >= 1)
+			candidates[index++] = 0;
+		return index > 0 ? candidates[RandomUtils.getRandomInt(index)] : -1;
 	}
 }

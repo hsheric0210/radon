@@ -30,7 +30,10 @@ import java.util.zip.ZipFile;
 import me.itzsomebody.radon.cli.CommandArgumentsParser;
 import me.itzsomebody.radon.config.Configuration;
 import me.itzsomebody.radon.config.ObfuscationConfiguration;
-import me.itzsomebody.radon.utils.*;
+import me.itzsomebody.radon.utils.Constants;
+import me.itzsomebody.radon.utils.CustomOutputStream;
+import me.itzsomebody.radon.utils.IOUtils;
+import me.itzsomebody.radon.utils.WatermarkUtils;
 
 /**
  * Main class of obfuscator. \o/
@@ -67,43 +70,6 @@ public final class Main
 	 */
 	public static void main(final String[] args) throws IOException
 	{
-		switch (RandomUtils.getRandomInt(100) > 0 ? 0 : 3)
-		{
-			case 0:
-				int a = 12345;
-				if (RandomUtils.getRandomBoolean())
-					a = 234;
-
-				final int afzi = a ^ 2 ^ 3 | 0xFFFF;
-				System.out.println(afzi);
-				break;
-			case 1:
-				short b = 12345;
-				if (RandomUtils.getRandomBoolean())
-					b = 234;
-
-				dummyShortOp(b);
-				break;
-			case 2:
-				byte c = 12;
-				if (RandomUtils.getRandomBoolean())
-					c = 45;
-
-				dummyByteOp(c);
-				break;
-			case 3:
-				boolean ba = false;
-
-				if (RandomUtils.getRandomBoolean() || !RandomUtils.getRandomBoolean())
-					ba = true;
-
-				if (ba)
-					dummyByteOp((byte)12);
-
-				System.out.println(Boolean.toString(ba));
-				break;
-		}
-
 		final CustomOutputStream cos = new CustomOutputStream(System.err);
 		System.setErr(new PrintStream(cos));
 
