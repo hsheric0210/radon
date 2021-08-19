@@ -20,6 +20,7 @@ package me.itzsomebody.radon.transformers;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -131,6 +132,12 @@ public abstract class Transformer implements Opcodes
 			Main.info(String.format("[VERBOSE] [%1$s] %2$s", getName(), verboseMessage.get()));
 	}
 
+	protected final void verboseInfo(final Function<Object[], String> verboseMessage, final Object... params)
+	{
+		if (enableVerboseLogging())
+			Main.info(String.format("[VERBOSE] [%1$s] %2$s", getName(), verboseMessage.apply(params)));
+	}
+
 	protected final void verboseInfos(final Supplier<String[]> verboseMessages)
 	{
 		if (enableVerboseLogging())
@@ -142,6 +149,12 @@ public abstract class Transformer implements Opcodes
 	{
 		if (enableVerboseLogging())
 			Main.warn(String.format("[VERBOSE] [%1$s] %2$s", getName(), verboseMessage.get()));
+	}
+
+	protected final void verboseWarn(final Function<Object[], String> verboseMessage, final Object... params)
+	{
+		if (enableVerboseLogging())
+			Main.warn(String.format("[VERBOSE] [%1$s] %2$s", getName(), verboseMessage.apply(params)));
 	}
 
 	protected final void info(final String message)

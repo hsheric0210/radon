@@ -43,6 +43,8 @@ public final class RandomUtils
 	{
 		if (!(endExclusive > 0))
 			throw new IllegalArgumentException("bound " + endExclusive + " is zero or negative");
+		if (endExclusive == 1)
+			return 0;
 		return ThreadLocalRandom.current().nextInt(endExclusive);
 	}
 

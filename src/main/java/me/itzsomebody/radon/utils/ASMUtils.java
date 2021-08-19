@@ -169,6 +169,72 @@ public final class ASMUtils implements Opcodes
 		throw new RadonException("Unexpected instruction");
 	}
 
+	public static AbstractInsnNode getPrimitiveCastInsn(final Type from, final Type to)
+	{
+		int srcSort = from.getSort();
+		if (srcSort >= Type.BOOLEAN && srcSort <= Type.SHORT)
+			srcSort = Type.INT;
+
+		int destSort = to.getSort();
+		if (destSort >= Type.BOOLEAN && destSort <= Type.SHORT)
+			destSort = Type.INT;
+
+		switch (srcSort - Type.INT)
+		{
+			case 0: // INT
+				switch (to.getSort() - Type.CHAR)
+				{
+					case 0: // CHAR
+						return new InsnNode(I2C);
+					case Type.SHORT - Type.CHAR: // SHORT
+						return new InsnNode(I2S);
+					case Type.BYTE - Type.CHAR: // BYTE
+						return new InsnNode(I2B);
+					case Type.FLOAT - Type.CHAR: // FLOAT
+						return new InsnNode(I2F);
+					case Type.LONG - Type.CHAR: // LONG
+						return new InsnNode(I2L);
+					case Type.DOUBLE - Type.CHAR: // DOUBLE
+						return new InsnNode(I2D);
+				}
+				break;
+			case 1: // FLOAT
+				switch (destSort - Type.INT)
+				{
+					case 0: // INT
+						return new InsnNode(F2I);
+					case 2: // LONG
+						return new InsnNode(F2L);
+					case 3: // DOUBLE
+						return new InsnNode(F2D);
+				}
+				break;
+			case 2: // LONG
+				switch (destSort - Type.INT)
+				{
+					case 0: // INT
+						return new InsnNode(L2I);
+					case 1: // FLOAT
+						return new InsnNode(L2F);
+					case 3: // DOUBLE
+						return new InsnNode(L2D);
+				}
+				break;
+			case 3: // DOUBLE
+				switch (destSort - Type.INT)
+				{
+					case 0: // INT
+						return new InsnNode(D2I);
+					case 1: // FLOAT
+						return new InsnNode(D2F);
+					case 2: // LONG
+						return new InsnNode(D2L);
+				}
+		}
+
+		throw new AssertionError("From=" + from + ", To=" + to);
+	}
+
 	public static String getGenericMethodDesc(final String desc)
 	{
 		final Type[] args = Type.getArgumentTypes(desc);

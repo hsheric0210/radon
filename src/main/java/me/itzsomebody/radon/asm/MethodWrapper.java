@@ -21,6 +21,7 @@ package me.itzsomebody.radon.asm;
 import java.util.List;
 
 import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.LocalVariableNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 
@@ -39,6 +40,7 @@ public class MethodWrapper
 	public MethodNode methodNode;
 	public final String originalName;
 	public final String originalDescription;
+	public final List<LocalVariableNode> originalLocals;
 
 	public final Access access;
 	public final ClassWrapper owner;
@@ -56,6 +58,7 @@ public class MethodWrapper
 		this.methodNode = methodNode;
 		originalName = methodNode.name;
 		originalDescription = methodNode.desc;
+		originalLocals = methodNode.localVariables;
 		access = new MethodAccess(this);
 		this.owner = owner;
 	}
@@ -143,6 +146,16 @@ public class MethodWrapper
 	public boolean hasInstructions()
 	{
 		return methodNode.instructions != null && methodNode.instructions.size() > 0;
+	}
+
+	public List<LocalVariableNode> getLocals()
+	{
+		return methodNode.localVariables;
+	}
+
+	public boolean hasLocals()
+	{
+		return getLocals() != null && !getLocals().isEmpty();
 	}
 
 	/**

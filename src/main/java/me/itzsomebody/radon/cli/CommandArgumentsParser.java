@@ -55,11 +55,11 @@ public class CommandArgumentsParser
 
 			// Is it a switch?
 			if (arg.startsWith("--"))
-				arg = arg.substring("--".length());
+				arg = arg.substring(2);
 			else if (!arg.isEmpty() && arg.charAt(0) == '-')
-				arg = arg.substring("-".length());
+				arg = arg.substring(1);
 			else if (!arg.isEmpty() && arg.charAt(0) == '/')
-				arg = arg.substring("/".length());
+				arg = arg.substring(1);
 			else
 				throw new RadonException("Unexpected command argument: " + arg);
 

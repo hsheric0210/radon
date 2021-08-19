@@ -38,6 +38,7 @@ import me.itzsomebody.radon.utils.RandomUtils;
  * This leads to less complication when applying obfuscation.
  *
  * TODO: Improve strength as ZKM :)
+ * TODO: Bogus jumps based on INSTANCEOF
  *
  * @author ItzSomebody
  */

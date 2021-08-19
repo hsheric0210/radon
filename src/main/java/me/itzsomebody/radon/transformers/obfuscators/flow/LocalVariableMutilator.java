@@ -67,7 +67,7 @@ public class LocalVariableMutilator extends FlowObfuscation
 				mn.maxLocals = maxLocals;
 			}
 
-			final LocalVariableProvider provider = new LocalVariableProvider(mn);
+			final LocalVariableProvider provider = new LocalVariableProvider(mw);
 
 			// Map of local variables and their types. They are added if the type of the variable is double, float, int or long
 			final Map<Integer, Set<Type>> localVarMap = new HashMap<>();
@@ -271,7 +271,7 @@ public class LocalVariableMutilator extends FlowObfuscation
 					final IincInsnNode iinc = (IincInsnNode) insn;
 					final int varIndex = iinc.var;
 
-					if (slotMap.containsKey(varIndex))
+					if (slotMap.containsKey(varIndex) && slotMap.get(varIndex).containsKey(Type.INT_TYPE))
 					{
 						final int[] value = slotMap.get(varIndex).get(Type.INT_TYPE); // IINC is only applicable with 'int'
 
