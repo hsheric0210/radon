@@ -78,19 +78,20 @@ public class StackHeightZeroFinder implements Opcodes
 	/**
 	 * Weakly emulates stack execution until no more instructions are left or the breakpoint is reached.
 	 */
-	public void execute(final boolean debug) throws StackEmulationException
+	public void execute() throws StackEmulationException
 	{
 		int stackSize = 0; // Emulated stack
-		final Set<LabelNode> excHandlers = methodNode.tryCatchBlocks.stream().map(tryCatchBlockNode -> tryCatchBlockNode.handler).collect(Collectors.toSet());
+		final Set<LabelNode> handlers = methodNode.tryCatchBlocks.stream().map(tryCatchBlockNode -> tryCatchBlockNode.handler).collect(Collectors.toSet());
 		for (int i = 0, j = methodNode.instructions.size(); i < j; i++)
 		{
 			final AbstractInsnNode insn = methodNode.instructions.get(i);
 
-			if (insn instanceof LabelNode && excHandlers.contains(insn))
+			if (insn instanceof LabelNode && handlers.contains(insn))
 				stackSize = 1; // Stack gets cleared and exception is pushed.
 
 			if (stackSize < 0) // Should never happen
-				throw new StackEmulationException("stackSize < 0");
+				throw new StackEmulationException("Stack underrun (stackSize < 0)");
+
 			if (stackSize == 0)
 				emptyAt.add(insn);
 
@@ -295,8 +296,8 @@ public class StackHeightZeroFinder implements Opcodes
 	private static int doMethodEmulation(final String desc)
 	{
 		int result = 0;
+
 		final Type[] args = Type.getArgumentTypes(desc);
-		final Type returnType = Type.getReturnType(desc);
 		for (final Type type : args)
 		{
 			if (type.getSort() == Type.LONG || type.getSort() == Type.DOUBLE)
@@ -304,10 +305,15 @@ public class StackHeightZeroFinder implements Opcodes
 
 			result--;
 		}
-		if (returnType.getSort() == Type.LONG || returnType.getSort() == Type.DOUBLE)
-			result++;
+
+		final Type returnType = Type.getReturnType(desc);
 		if (returnType.getSort() != Type.VOID)
+		{
+			if (returnType.getSort() == Type.LONG || returnType.getSort() == Type.DOUBLE)
+				result++;
+
 			result++;
+		}
 
 		return result;
 	}

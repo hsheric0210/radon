@@ -53,6 +53,11 @@ public final class Main
 	};
 	public static final String ATTRIBUTION = String.format(String.join(Constants.LINE_SEPARATOR, "Radon is a free and open-source Java obfuscator with contributions from %s.", "Version: %s", "Original website: https://github.com/ItzSomebody/Radon", "Forked version website: https://github.com/hsheric0210/Radon"), formatContributorList(), VERSION);
 
+
+	public static boolean getBoolean()
+	{
+		return false;
+	}
 	private static String formatContributorList()
 	{
 		final StringBuilder sb = new StringBuilder();
@@ -70,6 +75,11 @@ public final class Main
 	 */
 	public static void main(final String[] args) throws IOException
 	{
+		do  {
+			System.out.println("push!");
+			if (!getBoolean())
+				break;
+		} while(true);
 		final CustomOutputStream cos = new CustomOutputStream(System.err);
 		System.setErr(new PrintStream(cos));
 

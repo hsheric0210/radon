@@ -26,6 +26,8 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.CodeSizeEvaluator;
 import org.objectweb.asm.tree.*;
+import org.objectweb.asm.tree.analysis.BasicValue;
+import org.objectweb.asm.tree.analysis.Frame;
 
 import me.itzsomebody.radon.exceptions.RadonException;
 
@@ -449,6 +451,59 @@ public final class ASMUtils implements Opcodes
 	{
 		return insn != null && insn.getOpcode() == INVOKESPECIAL && // Check if the current instruction is INVOKESPECIAL
 				insn.getPrevious() != null && insn.getPrevious().getOpcode() == ALOAD && ((VarInsnNode) insn.getPrevious()).var == 0; // Check if the previous instruction is ALOAD_0 (Reference to self)
+	}
+
+	public static void insertAfterConstructorCall(final MethodNode mn, final InsnList inserted)
+	{
+		final InsnList insns = mn.instructions;
+		final Optional<AbstractInsnNode> optSuperCall = "<init>".equals(mn.name) ? Arrays.stream(insns.toArray()).filter(insn -> isSuperInitializerCall(mn, insn)).findFirst() : Optional.empty();
+		if (optSuperCall.isPresent())
+		{
+			insns.insert(optSuperCall.get(), inserted);
+			return;
+		}
+
+		insns.insert(inserted);
+	}
+
+	public static FrameNode createStackMapFrame(final int frameType, final Frame<? extends BasicValue> currentFrame)
+	{
+		final int numStack = currentFrame.getStackSize();
+		final int numLocal = currentFrame.getLocals();
+
+		final Object[] stack;
+		if (numStack > 0)
+		{
+			stack = new Object[numStack];
+			for (int i = 0; i < numStack; i++)
+			{
+				final Type type = currentFrame.getStack(i).getType();
+				if (type == null)
+					stack[i] = NULL;
+				else
+					stack[i] = type.getInternalName();
+			}
+		}
+		else
+			stack = null;
+
+		final Object[] local;
+		if (numLocal > 0)
+		{
+			local = new Object[numLocal];
+			for (int i = 0; i < numLocal; i++)
+			{
+				final Type type = currentFrame.getLocal(i).getType();
+				if (type == null)
+					local[i] = NULL;
+				else
+					local[i] = type.getInternalName();
+			}
+		}
+		else
+			local = null;
+
+		return new FrameNode(frameType, numLocal, local, numStack, stack);
 	}
 
 	private ASMUtils()

@@ -297,7 +297,7 @@ public class LocalVariableMutilator extends FlowObfuscation
 			}
 
 			if (!localVarMap.isEmpty())
-				insns.insertBefore(insns.getFirst(), initialize);
+				ASMUtils.insertAfterConstructorCall(mn, initialize);
 		}));
 
 		info("+ Mutilated " + counter.get() + " local variables");

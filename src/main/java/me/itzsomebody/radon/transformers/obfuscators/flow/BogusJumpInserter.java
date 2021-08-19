@@ -18,17 +18,23 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.flow;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
+import org.objectweb.asm.tree.analysis.*;
 
+import me.itzsomebody.radon.asm.MethodWrapper;
 import me.itzsomebody.radon.asm.StackHeightZeroFinder;
 import me.itzsomebody.radon.exceptions.RadonException;
 import me.itzsomebody.radon.exceptions.StackEmulationException;
 import me.itzsomebody.radon.utils.ASMUtils;
+import me.itzsomebody.radon.utils.ArrayUtils;
 import me.itzsomebody.radon.utils.BogusJumps;
 import me.itzsomebody.radon.utils.RandomUtils;
 
@@ -50,7 +56,8 @@ public class BogusJumpInserter extends FlowObfuscation
 	@Override
 	public void transform()
 	{
-		final AtomicInteger counter = new AtomicInteger();
+		final AtomicInteger fakePredicates = new AtomicInteger();
+		final AtomicInteger fakeLoops = new AtomicInteger();
 
 		getClassWrappers().stream().filter(this::included).forEach(cw ->
 		{
@@ -62,128 +69,193 @@ public class BogusJumpInserter extends FlowObfuscation
 
 			final FieldNode predicate = new FieldNode(cw.access.isInterface() ? INTERFACE_PRED_ACCESS : CLASS_PRED_ACCESS, getFieldDictionary(cw.originalName).nextUniqueString(), predicateDescriptor, null, predicateInitialValue);
 
-			cw.methods.stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
+			for (MethodWrapper mw : cw.methods)
 			{
-				final InsnList insns = mw.getInstructions();
-
-				int leeway = mw.getLeewaySize();
-				final int varIndex = mw.getMaxLocals();
-				mw.methodNode.maxLocals += predicateType.getSize(); // Prevents breaking of other transformers which rely on this field.
-
-				final AbstractInsnNode[] untouchedList = insns.toArray();
-				final LabelNode jumpTo = createBogusJumpTarget(mw.methodNode);
-
-				final StackHeightZeroFinder shzf = new StackHeightZeroFinder(mw.methodNode, insns.getLast());
-				try
+				if (included(mw) && mw.hasInstructions())
 				{
-					shzf.execute(false);
-				}
-				catch (final StackEmulationException e)
-				{
-					e.printStackTrace();
-					throw new RadonException(String.format("Error happened while trying to emulate the stack of %s.%s%s", cw.getName(), mw.getName(), mw.getDescription()));
-				}
-				final Set<AbstractInsnNode> emptyAt = shzf.getEmptyAt();
+					final MethodNode mn = mw.methodNode;
 
-				final boolean isCtor = "<init>".equals(mw.getName());
-				boolean calledSuper = false;
-				AbstractInsnNode superCall = null;
-				for (final AbstractInsnNode insn : untouchedList)
-				{
-					if (leeway < 10000)
-						break;
+					final int maxStack = mn.maxStack;
+					final int maxLocals = mn.maxLocals;
+					mn.maxStack = mn.maxLocals = 1000;
 
-					// Bad way of detecting if this class was instantiated
-					if (isCtor && !calledSuper)
+					final Frame<BasicValue>[] frames;
+					try
 					{
-						calledSuper = ASMUtils.isSuperInitializerCall(mw.methodNode, insn);
-						superCall = insn;
+						frames = new Analyzer<>(new BasicInterpreter()).analyze(mn.name, mn);
+					}
+					catch (final AnalyzerException e)
+					{
+						warn("Failed to analyze method " + mn.name, e);
+						continue;
+					}
+					finally
+					{
+						mn.maxStack = maxStack;
+						mn.maxLocals = maxLocals;
 					}
 
-					if (insn != insns.getFirst() && !(insn instanceof LineNumberNode))
+					final InsnList insns = mw.getInstructions();
+
+					int leeway = mw.getLeewaySize();
+					final int varIndex = mw.getMaxLocals();
+					mw.methodNode.maxLocals += predicateType.getSize(); // Prevents breaking of other transformers which rely on this field.
+
+					final AbstractInsnNode[] untouchedList = insns.toArray();
+					final LabelNode jumpTo = createBogusJumpTarget(mw.methodNode);
+
+					final StackHeightZeroFinder shzf = new StackHeightZeroFinder(mw.methodNode, insns.getLast());
+					try
 					{
+						shzf.execute();
+					}
+					catch (final StackEmulationException e)
+					{
+						e.printStackTrace();
+						throw new RadonException(String.format("Error happened while trying to emulate the stack of %s.%s%s", cw.getName(), mw.getName(), mw.getDescription()));
+					}
+					final Set<AbstractInsnNode> emptyAt = shzf.getEmptyAt();
+					final List<LabelNode> labels = emptyAt.stream().filter(insn -> insn instanceof LabelNode).map(insn -> (LabelNode) insn).collect(Collectors.toList());
+
+					final boolean isCtor = "<init>".equals(mw.getName());
+					boolean calledSuper = false;
+					AbstractInsnNode currentLabel = null;
+					for (final AbstractInsnNode insn : untouchedList)
+					{
+						if (insn instanceof LabelNode)
+							currentLabel = insn;
+
+						if (insn instanceof FrameNode)
+
+							if (leeway < 10000)
+								break;
+
+						// Bad way of detecting if this class was instantiated
 						if (isCtor && !calledSuper)
-							continue;
+							calledSuper = ASMUtils.isSuperInitializerCall(mw.methodNode, insn);
 
-						if (emptyAt.contains(insn))
+						if (insn != insns.getFirst() && !(insn instanceof LineNumberNode))
 						{
-							// We need to make sure stack is empty before making jumps
+							if (isCtor && !calledSuper)
+								continue;
 
-							// <TODO>
-							// while(true) [or for (;;)]
-							// {
-							// ... (original code)
-							//
-							// if (inverted fakepredicate)
-							// break;
-							// }
-							// which same as
-							// do {
-							// i++;
-							// } while (fakepredicate);
-							//
-							// and
-							//
-							// while(inverted fakepredicate) [or for(;inverted fakepredicate;)]
-							// {
-							// ... (original code)
-							// }
-							//
-							//
-							// Impl:
-							// L0
-							// - Original Codes...
-							// L1
-							// - IF (FAKEPREDICATE) GOTO L3
-							// L2
-							// - GOTO L0
-							// L3
-							// - Original Codes...
-							//
-							// </TODO>
+							if (emptyAt.contains(insn))
+							{
+								// We need to make sure stack is empty before making jumps
 
-							final InsnList fakeJump = BogusJumps.createBogusJump(varIndex, predicateType, predicateInitialValue, jumpTo, false);
-							insns.insertBefore(insn, fakeJump);
+								// <TODO>
+								// while(true) [or for (;;)]
+								// {
+								// ... (original code)
+								//
+								// if (inverted fakepredicate)
+								// break;
+								// }
+								// which same as
+								// do {
+								// i++;
+								// } while (fakepredicate);
+								//
+								// and
+								//
+								// while(inverted fakepredicate) [or for(;inverted fakepredicate;)]
+								// {
+								// ... (original code)
+								// }
+								//
+								//
+								// Impl:
+								// L0
+								// - Original Codes...
+								// L1
+								// - IF (FAKEPREDICATE ALWAYS RETURN TRUE) GOTO L3
+								// L2
+								// - GOTO L0
+								// L3
+								// - Original Codes...
+								//
+								// </TODO>
 
-							leeway -= ASMUtils.evaluateMaxSize(insns);
-							counter.incrementAndGet();
-							shouldAdd.set(true);
+								if (labels.size() > 3 && RandomUtils.getRandomBoolean()) // Jump to the random label
+								{
+									final Frame<BasicValue> currentFrame = frames[ArrayUtils.indexOf(untouchedList, insn)];
+									if (currentFrame != null)
+									{
+										final InsnList insertedBefore = new InsnList();
+										final InsnList insertAfter = new InsnList();
+
+										final LabelNode startLabel = new LabelNode();
+										final LabelNode endLabel = new LabelNode();
+
+										insertedBefore.add(startLabel);
+										insertedBefore.add(ASMUtils.createStackMapFrame(F_NEW, currentFrame));
+
+										final int currentLabelIndex = labels.indexOf(currentLabel);
+
+										insertAfter.add(new LabelNode());
+
+										if (RandomUtils.getRandomBoolean())
+										{
+											// Exclude the current label and adjacent two labels
+											insertAfter.add(BogusJumps.createBogusJump(varIndex, predicateType, predicateInitialValue, endLabel, true));
+
+											insertAfter.add(new LabelNode());
+											insertAfter.add(new JumpInsnNode(GOTO, labels.get(RandomUtils.getRandomIntWithExclusion(0, labels.size(), Arrays.asList(currentLabelIndex - 1, currentLabelIndex, currentLabelIndex + 1)))));
+										}
+										else
+										{
+											// Exclude the current label and adjacent two labels
+											insertAfter.add(BogusJumps.createBogusJump(varIndex, predicateType, predicateInitialValue, startLabel, false));
+										}
+
+										insertAfter.add(endLabel);
+										fakeLoops.incrementAndGet();
+									}
+								}
+								else
+								{
+									// Insert fake IF's
+									final InsnList inserted = BogusJumps.createBogusJump(varIndex, predicateType, predicateInitialValue, jumpTo, false);
+									insns.insertBefore(insn, inserted);
+									leeway -= ASMUtils.evaluateMaxSize(inserted);
+									fakePredicates.incrementAndGet();
+								}
+
+								shouldAdd.set(true);
+							}
 						}
 					}
-				}
 
-				if (shouldAdd.get())
-				{
-					final InsnList initializer = new InsnList();
-					initializer.add(new FieldInsnNode(GETSTATIC, cw.getName(), predicate.name, predicateDescriptor));
-					switch (predicateType.getSort())
+					if (shouldAdd.get())
 					{
-						case Type.FLOAT:
-							initializer.add(new VarInsnNode(FSTORE, varIndex));
-							break;
-						case Type.LONG:
-							initializer.add(new VarInsnNode(LSTORE, varIndex));
-							break;
-						case Type.DOUBLE:
-							initializer.add(new VarInsnNode(DSTORE, varIndex));
-							break;
-						default:
-							initializer.add(new VarInsnNode(ISTORE, varIndex));
-							break;
-					}
+						final InsnList initializer = new InsnList();
+						initializer.add(new FieldInsnNode(GETSTATIC, cw.getName(), predicate.name, predicateDescriptor));
+						switch (predicateType.getSort())
+						{
+							case Type.FLOAT:
+								initializer.add(new VarInsnNode(FSTORE, varIndex));
+								break;
+							case Type.LONG:
+								initializer.add(new VarInsnNode(LSTORE, varIndex));
+								break;
+							case Type.DOUBLE:
+								initializer.add(new VarInsnNode(DSTORE, varIndex));
+								break;
+							default:
+								initializer.add(new VarInsnNode(ISTORE, varIndex));
+								break;
+						}
 
-					if (superCall == null)
-						insns.insert(initializer);
-					else
-						insns.insert(superCall, initializer);
+						ASMUtils.insertAfterConstructorCall(mw.methodNode, initializer);
+					}
 				}
-			});
+			}
 
 			if (shouldAdd.get())
 				cw.addField(predicate);
 		});
 
-		info(String.format("+ Inserted %d bogus jumps", counter.get()));
+		info(String.format("+ Inserted %d bogus predicates, %d bogus loops (jumps)", fakePredicates.get(), fakeLoops.get()));
 	}
 
 	@Override
@@ -203,15 +275,13 @@ public class BogusJumpInserter extends FlowObfuscation
 	{
 		final LabelNode label = new LabelNode();
 		final LabelNode escapeNode = new LabelNode();
-		final InsnList insnList = mn.instructions;
-		final AbstractInsnNode first = insnList.getFirst();
 
 		final InsnList pattern = new InsnList();
 		pattern.add(new JumpInsnNode(GOTO, escapeNode));
 		pattern.add(label);
 		pattern.add(BogusJumps.createBogusExit(mn));
 		pattern.add(escapeNode);
-		insnList.insertBefore(first, pattern);
+		ASMUtils.insertAfterConstructorCall(mn, pattern);
 
 		return label;
 	}

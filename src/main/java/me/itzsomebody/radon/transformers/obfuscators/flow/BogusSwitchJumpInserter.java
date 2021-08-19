@@ -67,7 +67,7 @@ public class BogusSwitchJumpInserter extends FlowObfuscation
 				final StackHeightZeroFinder shzf = new StackHeightZeroFinder(mw.methodNode, insns.getLast());
 				try
 				{
-					shzf.execute(false);
+					shzf.execute();
 				}
 				catch (final StackEmulationException e)
 				{

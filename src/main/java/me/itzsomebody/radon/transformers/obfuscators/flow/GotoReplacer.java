@@ -63,7 +63,6 @@ public class GotoReplacer extends FlowObfuscation
 				mw.methodNode.maxLocals += predicateType.getSize(); // Prevents breaking of other transformers which rely on this field.
 
 				final boolean isCtor = "<init>".equals(mw.getName());
-				AbstractInsnNode superCall = null;
 				boolean calledSuper = false;
 				for (final AbstractInsnNode insn : insns.toArray())
 				{
@@ -72,10 +71,7 @@ public class GotoReplacer extends FlowObfuscation
 
 					// Bad way of detecting if this class was instantiated
 					if (isCtor && !calledSuper)
-					{
 						calledSuper = ASMUtils.isSuperInitializerCall(mw.methodNode, insn);
-						superCall = insn;
-					}
 
 					if (insn.getOpcode() == GOTO && !(isCtor && !calledSuper))
 					{
@@ -112,10 +108,7 @@ public class GotoReplacer extends FlowObfuscation
 							break;
 					}
 
-					if (superCall == null)
-						insns.insert(initializer);
-					else
-						insns.insert(superCall, initializer);
+					ASMUtils.insertAfterConstructorCall(mw.methodNode, initializer);
 				}
 			});
 

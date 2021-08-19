@@ -29,6 +29,7 @@ import me.itzsomebody.radon.config.Configuration;
 import me.itzsomebody.radon.exceptions.RadonException;
 import me.itzsomebody.radon.exclusions.ExclusionType;
 import me.itzsomebody.radon.transformers.Transformer;
+import me.itzsomebody.radon.utils.ASMUtils;
 
 import static me.itzsomebody.radon.config.ConfigurationSetting.EXPIRATION;
 
@@ -50,8 +51,7 @@ public class Expiration extends Transformer
 
 		getClassWrappers().stream().filter(this::included).map(classWrapper -> classWrapper.classNode).forEach(classNode -> classNode.methods.stream().filter(methodNode -> "<init>".equals(methodNode.name)).forEach(methodNode ->
 		{
-			final InsnList expirationCode = createExpirationInstructions();
-			methodNode.instructions.insertBefore(methodNode.instructions.getFirst(), expirationCode);
+			ASMUtils.insertAfterConstructorCall(methodNode, createExpirationInstructions());
 			counter.incrementAndGet();
 		}));
 

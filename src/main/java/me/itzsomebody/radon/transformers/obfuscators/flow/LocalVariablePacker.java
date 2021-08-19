@@ -295,7 +295,7 @@ public class LocalVariablePacker extends FlowObfuscation
 			}
 
 			if (initializer != null)
-				insns.insertBefore(insns.getFirst(), initializer);
+				ASMUtils.insertAfterConstructorCall(mw.methodNode, initializer);
 		}));
 
 		info("+ Packed " + newLongsCounter.get() + " local variables (" + totalFound.get() + " locals found)");

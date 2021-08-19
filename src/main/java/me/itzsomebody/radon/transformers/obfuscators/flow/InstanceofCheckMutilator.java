@@ -48,7 +48,7 @@ public class InstanceofCheckMutilator extends FlowObfuscation
 			final StackHeightZeroFinder shzf = new StackHeightZeroFinder(methodNode, mw.getInstructions().getLast());
 			try
 			{
-				shzf.execute(false);
+				shzf.execute();
 			}
 			catch (final StackEmulationException e)
 			{

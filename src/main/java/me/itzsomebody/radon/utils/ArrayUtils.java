@@ -63,6 +63,14 @@ public final class ArrayUtils
 		return -1;
 	}
 
+	public static <T> int indexOf(final T[] arr, final T value)
+	{
+		for (int i = 0, j = arr.length; i < j; i++)
+			if (arr[i] == value)
+				return i;
+		return -1;
+	}
+
 	private ArrayUtils()
 	{
 
