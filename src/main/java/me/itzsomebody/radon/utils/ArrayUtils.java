@@ -121,6 +121,14 @@ public final class ArrayUtils
 		return IntStream.range(0, length).map(i -> arr[order[i]]).toArray();
 	}
 
+	public static int[] toIndexArray(final int[] arr)
+	{
+		final int length = arr.length;
+		if (length <= 0)
+			throw new IllegalArgumentException("Empty array");
+		return IntStream.range(0, length).map(i -> indexOf(arr, i)).toArray();
+	}
+
 	private ArrayUtils()
 	{
 

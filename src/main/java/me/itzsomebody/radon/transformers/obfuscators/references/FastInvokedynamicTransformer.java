@@ -170,9 +170,9 @@ public class FastInvokedynamicTransformer extends ReferenceObfuscation
 			mv.visitVarInsn(ASTORE, 3);
 			final Label l3 = new Label();
 			mv.visitLabel(l3);
-			mv.visitVarInsn(ALOAD, 0);
+			mv.visitVarInsn(ALOAD, 2);
 			mv.visitInsn(ICONST_0);
-			mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "charAt", "(I)C", false);
+			mv.visitInsn(CALOAD);
 			if (memberNames.offsetOfOffset > 0)
 			{
 				ASMUtils.getNumberInsn(memberNames.offsetOfOffset).accept(mv);
@@ -295,9 +295,7 @@ public class FastInvokedynamicTransformer extends ReferenceObfuscation
 
 		final int[] argsOrder = memberNames.getMethodHandleMethodArgumentOrder;
 		{
-			final int[] argsIndex = new int[argsOrder.length];
-			for (int i = 0, j = argsOrder.length; i < j; i++)
-				argsIndex[i] = ArrayUtils.indexOf(argsOrder, i);
+			final int[] argsIndex = ArrayUtils.toIndexArray(argsOrder);
 			mv = cw.visitMethod(ACC_PRIVATE | ACC_STATIC, memberNames.getMethodHandleMethodName, memberNames.getMethodHandleMethodDescriptor, null, new String[]
 			{
 					"java/lang/Exception"
@@ -370,9 +368,7 @@ public class FastInvokedynamicTransformer extends ReferenceObfuscation
 		mv.visitLabel(l3);
 
 		final int[] idOrder = memberNames.identifierOrder;
-		final int[] idIndex = new int[idOrder.length];
-		for (int i = 0, j = idOrder.length; i < j; i++)
-			idIndex[i] = ArrayUtils.indexOf(idOrder, i);
+		final int[] idIndex = ArrayUtils.toIndexArray(idOrder);
 
 		Consumer<MethodVisitor>[] argumentPushes = new Consumer[]
 		{
@@ -473,7 +469,7 @@ public class FastInvokedynamicTransformer extends ReferenceObfuscation
 			bootstrapMethodName = methodDictionary.nextUniqueString();
 
 			getMethodHandleMethodName = methodDictionary.nextUniqueString();
-			getMethodHandleMethodArgumentOrder = new int[] {0,1,2,3,4}/*ArrayUtils.randomIntArrayOf(0, 5)*/;
+			getMethodHandleMethodArgumentOrder = ArrayUtils.randomIntArrayOf(0, 5);
 			String[] descs =
 			{
 					"Ljava/lang/invoke/MethodHandles$Lookup;", "Ljava/lang/String;", "Ljava/lang/String;", "Ljava/lang/String;", "C"
@@ -491,7 +487,7 @@ public class FastInvokedynamicTransformer extends ReferenceObfuscation
 
 			identifierOrder = ArrayUtils.randomIntArrayOf(0, 4);
 
-			offsetOfOffset = /* RandomUtils.getRandomInt(1, 255) */100;
+			offsetOfOffset =  RandomUtils.getRandomInt(']' + 1, 1024);
 		}
 
 		public String[] toStrings()
