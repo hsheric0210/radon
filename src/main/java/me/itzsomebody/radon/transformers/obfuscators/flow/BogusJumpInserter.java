@@ -143,38 +143,29 @@ public class BogusJumpInserter extends FlowObfuscation
 							{
 								// We need to make sure stack is empty before making jumps
 
-								// <TODO>
-								// while(true) [or for (;;)]
-								// {
-								// ... (original code)
-								//
-								// if (inverted fakepredicate)
-								// break;
-								// }
-								// which same as
-								// do {
-								// i++;
-								// } while (fakepredicate);
-								//
-								// and
-								//
-								// while(inverted fakepredicate) [or for(;inverted fakepredicate;)]
-								// {
-								// ... (original code)
-								// }
-								//
-								//
-								// Impl:
+								// Type A:
 								// L0
-								// - Original Codes...
+								// - ORIGINAL CODE...
 								// L1
 								// - IF (FAKEPREDICATE ALWAYS RETURN TRUE) GOTO L3
+								//
+								// - TRASH CODE...
 								// L2
 								// - GOTO L0
 								// L3
 								// - Original Codes...
+
+								// Type B:
+								// L0
+								// - ORIGINAL CODE...
+								// L1
+								// - IF (FAKEPREDICATE ALWAYS RETURN FALSE) GOTO L0
 								//
-								// </TODO>
+								// - TRASH CODE...
+								// L2
+								// - GOTO L0
+								// L3
+								// - Original Codes...
 
 								if (labels.size() > 3 && RandomUtils.getRandomBoolean()) // Jump to the random label
 								{

@@ -39,8 +39,7 @@ import me.itzsomebody.radon.utils.*;
 /**
  * Hides INVOKEVIRTUALs and INVOKESTATICs with invokedynamic instructions.
  *
- * @author ItzSomebody
- * @fixer  eric0210
+ * @author ItzSomebody, hsheric0210
  */
 public class FastInvokedynamicTransformer extends ReferenceObfuscation
 {
@@ -411,7 +410,7 @@ public class FastInvokedynamicTransformer extends ReferenceObfuscation
 			};
 			for (int i = 0; i < 5; i++)
 				ArrayUtils.swap(getMethodHandleMethodDescriptors, i, getMethodHandleMethodArgumentOrder[i]);
-			getMethodHandleMethodDescriptor = "(" + getMethodHandleMethodDescriptors[0] + getMethodHandleMethodDescriptors[1] + getMethodHandleMethodDescriptors[2] + ")Ljava/lang/invoke/MethodHandle;";
+			getMethodHandleMethodDescriptor = "(" + getMethodHandleMethodDescriptors[0] + getMethodHandleMethodDescriptors[1] + getMethodHandleMethodDescriptors[2] + getMethodHandleMethodDescriptors[3] + getMethodHandleMethodDescriptors[4] + ")Ljava/lang/invoke/MethodHandle;";
 
 			decryptMethodName = methodDictionary.nextUniqueString();
 
@@ -432,9 +431,8 @@ public class FastInvokedynamicTransformer extends ReferenceObfuscation
 			strings[5] = "GetMethodHandle method descriptor: " + getMethodHandleMethodDescriptor;
 			strings[6] = "GetMethodHandle method argument order: " + Strings.serializeOrder(getMethodHandleMethodArgumentOrder);
 			strings[7] = "Decrypt method name: " + decryptMethodName;
-			strings[8] = "INVOKESTATIC opcode flag: " + Strings.intToHexByte(invokeStaticFlag, 4);
+			strings[8] = (invertIdentifierVerifySystem ? "INVOKEVIRTUAL" : "INVOKESTATIC") + " opcode flag: " + Strings.intToHexByte(invokeStaticFlag, 4);
 			strings[9] = "Invocation data separator : '" + separator + "' (" + Strings.stringToHexBytes(separator) + ")";
-			strings[10] = "Invert identifier verify system: " + invertIdentifierVerifySystem;
 			strings[11] = "Identifier order: " + Strings.serializeOrder(identifierOrder);
 			return strings;
 		}

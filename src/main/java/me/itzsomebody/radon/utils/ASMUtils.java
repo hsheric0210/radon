@@ -442,8 +442,7 @@ public final class ASMUtils implements Opcodes
 
 	public static boolean isSuperInitializerCall(final MethodNode mn, final AbstractInsnNode insn)
 	{
-		return "<init>".equals(mn.name) // Check if the current method is constructor
-				&& insn != null && insn.getOpcode() == INVOKESPECIAL && "<init>".equals(((MethodInsnNode) insn).name) // Check if the current instruction is INVOKESPECIAL which calling <init>
+		return insn != null && insn.getOpcode() == INVOKESPECIAL && "<init>".equals(((MethodInsnNode) insn).name) // Check if the current instruction is INVOKESPECIAL which calling <init>
 				&& insn.getPrevious() != null && insn.getPrevious().getOpcode() == ALOAD && ((VarInsnNode) insn.getPrevious()).var == 0;
 	}
 
