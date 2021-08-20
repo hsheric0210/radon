@@ -505,6 +505,14 @@ public final class ASMUtils implements Opcodes
 		return new FrameNode(frameType, numLocal, local, numStack, stack);
 	}
 
+	/**
+	 * @see <a href="https://github.com/openjdk/jdk/blob/master/src/hotspot/share/classfile/classFileParser.cpp">classFileParser.cpp</a>, line 4741
+	 */
+	public static boolean isIllegalMethodName(final char character)
+	{
+		return character == '.' || character == ';' || character == '[' || character == '/' || character == '<' || character == '>';
+	}
+
 	private ASMUtils()
 	{
 	}

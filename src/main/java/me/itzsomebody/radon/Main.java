@@ -75,11 +75,6 @@ public final class Main
 	 */
 	public static void main(final String[] args) throws IOException
 	{
-		do  {
-			System.out.println("push!");
-			if (!getBoolean())
-				break;
-		} while(true);
 		final CustomOutputStream cos = new CustomOutputStream(System.err);
 		System.setErr(new PrintStream(cos));
 

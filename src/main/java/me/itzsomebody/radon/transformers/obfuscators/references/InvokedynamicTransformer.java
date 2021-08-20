@@ -31,10 +31,8 @@ import org.objectweb.asm.tree.*;
 
 import me.itzsomebody.radon.asm.ClassWrapper;
 import me.itzsomebody.radon.dictionaries.WrappedDictionary;
-import me.itzsomebody.radon.utils.ASMUtils;
+import me.itzsomebody.radon.utils.*;
 import me.itzsomebody.radon.utils.Constants;
-import me.itzsomebody.radon.utils.RandomUtils;
-import me.itzsomebody.radon.utils.Strings;
 
 /**
  * Hides INVOKESTATICs, INVOKEVIRTUALs, INVOKESPECIALs, GETSTATIC, PUTSTATIC, GETFIELD and PUTFIELD operations by swapping them out with an invokedynamic instruction.
@@ -987,14 +985,12 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 
 		String generateMethodName(final int nameFlagIndex, final boolean isMethodAccess)
 		{
-			final Collection<Character> separatorChars = new HashSet<>(separator.length());
-			for (final char c : separator.toCharArray())
-				separatorChars.add(c);
+			final char[] separatorChars = separator.toCharArray();
 
 			char positionOfTrueFlag;
 			do
 				positionOfTrueFlag = (char) RandomUtils.getRandomInt(nameLength);
-			while (isInvalidMethodName(positionOfTrueFlag) || separatorChars.contains(positionOfTrueFlag));
+			while (ASMUtils.isIllegalMethodName(positionOfTrueFlag) || ArrayUtils.indexOf(separatorChars, positionOfTrueFlag) > 0);
 
 			final char[] chars = new char[nameLength];
 
@@ -1023,18 +1019,12 @@ public class InvokedynamicTransformer extends ReferenceObfuscation
 					char randomChar;
 					do
 						randomChar = (char) RandomUtils.getRandomInt(Character.MAX_VALUE);
-					while (isInvalidMethodName(randomChar) || separatorChars.contains(randomChar));
+					while (ASMUtils.isIllegalMethodName(randomChar) || ArrayUtils.indexOf(separatorChars, randomChar) > 0);
 
 					chars[i] = randomChar;
 				}
 
 			return accessFlag + separator + (char) (positionOfTrueFlag + 1) + separator + String.valueOf(chars);
-		}
-
-		private boolean isInvalidMethodName(final char positionOfTrueValueFlag)
-		{
-			// See https://github.com/openjdk/jdk/blob/master/src/hotspot/share/classfile/classFileParser.cpp, line 4741
-			return positionOfTrueValueFlag == '.' || positionOfTrueValueFlag == ';' || positionOfTrueValueFlag == '[' || positionOfTrueValueFlag == '/' || positionOfTrueValueFlag == '<' || positionOfTrueValueFlag == '>';
 		}
 
 		public String[] toStrings()
