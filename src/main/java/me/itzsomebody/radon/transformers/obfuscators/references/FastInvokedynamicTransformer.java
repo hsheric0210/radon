@@ -37,7 +37,6 @@ import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InvokeDynamicInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 
-import me.itzsomebody.radon.Main;
 import me.itzsomebody.radon.asm.ClassWrapper;
 import me.itzsomebody.radon.dictionaries.WrappedDictionary;
 import me.itzsomebody.radon.utils.*;
@@ -71,56 +70,58 @@ public class FastInvokedynamicTransformer extends ReferenceObfuscation
 					return;
 
 				final int opcode = method.getOpcode();
+
+				// Prepare the invocation descriptor
 				String descriptor = method.desc;
 				if (opcode != INVOKESTATIC)
 					descriptor = Constants.OPENING_BRACE_PATTERN.matcher(descriptor).replaceAll(Matcher.quoteReplacement("(Ljava/lang/Object;")); // To send the reference to self
 				descriptor = ASMUtils.getGenericMethodDesc(descriptor);
 
+				// Prepare the call flag
 				boolean flag = opcode == INVOKESTATIC;
 				if (memberNames.invertIdentifierVerifySystem)
 					flag = !flag;
-
 				final char[] separatorChars = memberNames.separator.toCharArray();
 				char callFlagChar;
 				do
 				{
 					final int flagKey = RandomUtils.getRandomInt(1, Character.MAX_VALUE);
 					callFlagChar = (char) (flag ? flagKey | memberNames.callFlag : flagKey & ~memberNames.callFlag);
-				} while (ArrayUtils.indexOf(separatorChars, callFlagChar) >= 0);
+				}
+				while (ArrayUtils.indexOf(separatorChars, callFlagChar) >= 0);
 
+				// Prepare the (plain) invocation data
 				final String plain = String.join(memberNames.separator, ArrayUtils.reorder(new String[]
 				{
 						method.owner.replace('/', '.'), method.name, method.desc, String.valueOf(callFlagChar)
 				}, memberNames.identifierOrder, String.class));
 				final int plainLength = plain.length();
-				final char[] dest = new char[plainLength];
+
+				// Perform the encryption
 				final char[] nameChars = new char[plainLength + 1];
-				nameChars[0] = (char) (encrypt(plain, dest, memberNames) + memberNames.offsetOfOffset);
-				System.arraycopy(dest, 0, nameChars, 1, plainLength);
-				final InvokeDynamicInsnNode invDyn;
+				final char offsetChar = (char) (encrypt(plain, nameChars, memberNames) + memberNames.offsetOfOffset);
+				System.arraycopy(nameChars, 0, nameChars, 1, plainLength);
+				nameChars[0] = offsetChar;
 				final String name = new String(nameChars);
-				if (memberNames.useBsmArgsInstead)
-				{
-					final int argsCount = memberNames.bsmArgsCount;
-					final int trueArgIndex = memberNames.bsmTrueArgIndex;
-					final Object[] args = new Object[argsCount];
-					for (int i = 0; i < argsCount; i++)
-						if (i == trueArgIndex)
-							args[trueArgIndex] = name;
-						else if (cachedNames.size() > 4 && RandomUtils.getRandomInt(5) > 2)
-							args[i] = RandomUtils.getRandomElement(cachedNames);
-						else
-							args[i] = randomString(nameChars.length);
 
-					invDyn = new InvokeDynamicInsnNode(RandomUtils.getRandomElement(Main.CONTRIBUTORS) /* XD TODO: Improve name generation algorithm */, descriptor, bsmHandle, args);
+				// Prepare arguments
+				final int trueArgIndex = memberNames.bsmTrueArgIndex;
+				final Object[] args = new Object[memberNames.bsmArgsCount + 1]; // Note that the value of args[0] is Invokedynamic Name, not Invokedynamic bsmArgs[0]
+				for (int i = 0, j = args.length; i < j; i++)
+					if (i == trueArgIndex)
+						args[trueArgIndex] = name;
+					else if (cachedNames.size() > 4 && RandomUtils.getRandomInt(5) > 2)
+						args[i] = RandomUtils.getRandomElement(cachedNames);
+					else
+						args[i] = randomString(nameChars.length, separatorChars);
 
-					while (cachedNames.size() >= 10)
-						cachedNames.remove(0);
-					if (!cachedNames.contains(name))
-						cachedNames.add(name);
-				}
-				else
-					invDyn = new InvokeDynamicInsnNode(name, descriptor, bsmHandle);
+				final InvokeDynamicInsnNode invDyn = new InvokeDynamicInsnNode((String) args[0], descriptor, bsmHandle, Arrays.copyOfRange(args, 1, args.length));
+
+				while (cachedNames.size() >= 10)
+					cachedNames.remove(0);
+				if (!cachedNames.contains(name))
+					cachedNames.add(name);
+
 				insnList.set(method, invDyn);
 
 				if (opcode == INVOKESTATIC)
@@ -136,11 +137,18 @@ public class FastInvokedynamicTransformer extends ReferenceObfuscation
 		info("+ Hid " + invokeVirtuals.get() + " Invokevirtuals and " + invokeStatics.get() + " Invokestatics using fast Invokedynamic");
 	}
 
-	private static String randomString(final int length)
+	private static String randomString(final int length, final char[] separatorChars)
 	{
 		final char[] chars = new char[length];
 		for (int i = 0; i < length; i++)
-			chars[i] = (char) RandomUtils.getRandomInt(Character.MAX_VALUE);
+		{
+			char ch;
+			do
+			{
+				ch = (char) RandomUtils.getRandomInt(Character.MAX_VALUE);
+			} while(ASMUtils.isIllegalMethodName(ch) || ArrayUtils.indexOf(separatorChars, ch) >= 0);
+			chars[i] = ch;
+		}
 		return new String(chars);
 	}
 
@@ -403,7 +411,7 @@ public class FastInvokedynamicTransformer extends ReferenceObfuscation
 		final Label l2 = new Label();
 		mv.visitTryCatchBlock(l0, l1, l2, "java/lang/Exception");
 		mv.visitLabel(l0);
-		mv.visitVarInsn(ALOAD, memberNames.useBsmArgsInstead ? 3 + memberNames.bsmTrueArgIndex : 1);
+		mv.visitVarInsn(ALOAD, memberNames.bsmTrueArgIndex == 0 ? 1 : 2 + memberNames.bsmTrueArgIndex);
 		mv.visitMethodInsn(INVOKESTATIC, memberNames.className, memberNames.decryptMethodName, "(Ljava/lang/String;)Ljava/lang/String;", false);
 		mv.visitLdcInsn(memberNames.separator);
 		mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "split", "(Ljava/lang/String;)[Ljava/lang/String;", false);
@@ -505,8 +513,6 @@ public class FastInvokedynamicTransformer extends ReferenceObfuscation
 		final int[] identifierOrder;
 		final int offsetOfOffset;
 
-		final boolean useBsmArgsInstead;
-
 		public int bsmArgsCount;
 		public int bsmTrueArgIndex;
 
@@ -514,18 +520,13 @@ public class FastInvokedynamicTransformer extends ReferenceObfuscation
 		{
 			className = randomClassName();
 
-			useBsmArgsInstead = RandomUtils.getRandomBoolean();
 			bsmArgsCount = RandomUtils.getRandomInt(2, 5);
-			bsmTrueArgIndex = RandomUtils.getRandomInt(bsmArgsCount); // TODO: Paramorphic index
+			bsmTrueArgIndex = RandomUtils.getRandomInt(bsmArgsCount + 1);
 
 			final WrappedDictionary methodDictionary = getMethodDictionary(className);
 
-			String bsmArgsDesc = null;
-			if (useBsmArgsInstead)
-				bsmArgsDesc = IntStream.range(0, bsmArgsCount).mapToObj(i -> "Ljava/lang/String;").collect(Collectors.joining());
-
 			bootstrapMethodName = methodDictionary.nextUniqueString();
-			bootstrapMethodDesc = "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;" + (useBsmArgsInstead ? bsmArgsDesc : "") + ")Ljava/lang/invoke/CallSite;";
+			bootstrapMethodDesc = "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;" + IntStream.range(0, bsmArgsCount).mapToObj(i -> "Ljava/lang/String;").collect(Collectors.joining()) + ")Ljava/lang/invoke/CallSite;";
 
 			getMethodHandleMethodName = methodDictionary.nextUniqueString();
 			getMethodHandleMethodArgumentOrder = ArrayUtils.randomIntArrayOf(0, 5);
@@ -548,7 +549,7 @@ public class FastInvokedynamicTransformer extends ReferenceObfuscation
 
 		public String[] toStrings()
 		{
-			final String[] strings = new String[useBsmArgsInstead ? 13 : 11];
+			final String[] strings = new String[12];
 			strings[0] = "Decryptor class name: " + className;
 			strings[1] = "Bootstrap method name: " + bootstrapMethodName;
 			strings[2] = "GetMethodHandle method name: " + getMethodHandleMethodName;
@@ -567,12 +568,8 @@ public class FastInvokedynamicTransformer extends ReferenceObfuscation
 					"Method-Owner", "Method-Name", "Method-Descriptor", "Call-Flag"
 			}, identifierOrder, String.class)) + ")";
 			strings[9] = "Offset of offset: " + offsetOfOffset;
-			strings[10] = "Use Bootstrap Method Arguments instead of Name to transfer invocation data: " + useBsmArgsInstead;
-			if (useBsmArgsInstead)
-			{
-				strings[11] = "Bootstrap Method Argument Count: " + bsmArgsCount;
-				strings[12] = "True Bootstrap Method Argument Index: " + bsmTrueArgIndex;
-			}
+			strings[10] = "Bootstrap Method Argument Count: " + bsmArgsCount;
+			strings[11] = "Invocation Data Position: " + bsmTrueArgIndex + " -> (Invokedynamic " + (bsmTrueArgIndex == 0 ? "Name" : Strings.toOrdinal(bsmTrueArgIndex) + " BsmArgs") + ")";
 			return strings;
 		}
 	}

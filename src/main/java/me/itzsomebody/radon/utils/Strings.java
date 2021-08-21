@@ -49,4 +49,21 @@ public final class Strings
 	private Strings()
 	{
 	}
+
+	public static String toOrdinal(final int number)
+	{
+		if (number <= 0)
+			throw new IllegalArgumentException("Negative ordinal");
+
+		switch (number)
+		{
+			case 1:
+				return "1st";
+			case 2:
+				return "2nd";
+			case 3:
+				return "3rd";
+		}
+		return number + "th";
+	}
 }
