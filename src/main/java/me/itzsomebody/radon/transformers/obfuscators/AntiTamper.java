@@ -40,7 +40,9 @@ import me.itzsomebody.radon.utils.RandomUtils;
 
 /**
  * This applies passive integrity checking to the application with a special type of string encryption.
- * todo: scrap and remake
+ * <p>
+ * TODO: Scrap and remake
+ * </p>
  *
  * @author ItzSomebody
  */

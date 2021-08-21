@@ -32,6 +32,32 @@ import me.itzsomebody.radon.utils.RandomUtils;
  * Replaces GOTO instructions with an expression which is always true.
  * This does nothing more than adding a one more edge to a control flow graph for every GOTO instruction present.
  *
+ * <p>
+ * 
+ * <pre>
+ *     FROM:
+ *     GOTO L0
+ *
+ *     TO:
+ *     IF (FAKEPREDICATE ALWAYS RETURN TRUE) GOTO L0
+ * </pre>
+ * </p>
+ *
+ * <p>
+ * TODO: Inverted condition
+ * 
+ * <pre>
+ *     if (FAKEPREDICATE ALWAYS RETURN FALSE)
+ *     {
+ *         - TRASH CODE
+ *     }
+ *     else
+ *     {
+ *         - ORIGINAL CODE
+ *     }
+ * </pre>
+ * </p>
+ *
  * @author ItzSomebody
  */
 public class GotoReplacer extends FlowObfuscation

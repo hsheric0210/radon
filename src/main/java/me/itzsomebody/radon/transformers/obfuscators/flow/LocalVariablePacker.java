@@ -41,9 +41,8 @@ public class LocalVariablePacker extends FlowObfuscation
 	@Override
 	public void transform()
 	{
-		final AtomicInteger totalFound = new AtomicInteger();
-		final AtomicInteger newLongsCounter = new AtomicInteger();
-		final AtomicInteger affectedCounter = new AtomicInteger();
+		final AtomicInteger affected = new AtomicInteger();
+		final AtomicInteger generated = new AtomicInteger();
 
 		getClassWrappers().stream().filter(this::included).forEach(cw -> cw.methods.stream().filter(mw -> included(mw) && mw.hasInstructions()).forEach(mw ->
 		{
@@ -58,9 +57,6 @@ public class LocalVariablePacker extends FlowObfuscation
 			final List<Local> chars = new ArrayList<>();
 			final List<Local> ints = new ArrayList<>();
 			for (final Local local : locals)
-			{
-				totalFound.incrementAndGet();
-
 				if (local != null)
 				{
 					final int sort = local.typeSort;
@@ -80,7 +76,6 @@ public class LocalVariablePacker extends FlowObfuscation
 								ints.add(local);
 						}
 				}
-			}
 
 			InsnList initializer = null;
 
@@ -140,6 +135,8 @@ public class LocalVariablePacker extends FlowObfuscation
 
 					if (leeway == index)
 						done = true;
+
+					affected.incrementAndGet();
 				}
 				newLocals.put(nloc, nlocMap);
 
@@ -290,7 +287,7 @@ public class LocalVariablePacker extends FlowObfuscation
 				if (intToNewLocals.containsKey(local))
 				{
 					iterator.remove();
-					newLongsCounter.incrementAndGet();
+					generated.incrementAndGet();
 				}
 			}
 
@@ -298,7 +295,7 @@ public class LocalVariablePacker extends FlowObfuscation
 				ASMUtils.insertAfterConstructorCall(mw.methodNode, initializer);
 		}));
 
-		info("+ Packed " + newLongsCounter.get() + " local variables (" + totalFound.get() + " locals found)");
+		info("+ Packed " + affected.get() + " number local variables into " + generated.get() + " long local variables");
 	}
 
 	@Override

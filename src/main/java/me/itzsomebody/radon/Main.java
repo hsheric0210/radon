@@ -38,7 +38,10 @@ import me.itzsomebody.radon.utils.WatermarkUtils;
 /**
  * Main class of obfuscator. \o/
  * <p>
- * TODO: Renamer transformer should correct strings used for reflection. (i.e. Class.forName("me.itzsomebody.Thing")) TODO: Clean code up in general. TODO: InstanceofCheckMutilator (replace 'instanceof' checks into try-catch of ClassCastException)
+ * TODO: Renamer transformer should correct strings used for reflection. (i.e. Class.forName("me.itzsomebody.Thing"))
+ * </p>
+ * <p>
+ * TODO: Clean code up in general.
  * </p>
  *
  * @author ItzSomebody
@@ -53,11 +56,13 @@ public final class Main
 	};
 	public static final String ATTRIBUTION = String.format(String.join(Constants.LINE_SEPARATOR, "Radon is a free and open-source Java obfuscator with contributions from %s.", "Version: %s", "Original website: https://github.com/ItzSomebody/Radon", "Forked version website: https://github.com/hsheric0210/Radon"), formatContributorList(), VERSION);
 
+	public static final String WATERMARK = "RADON" + VERSION;
 
 	public static boolean getBoolean()
 	{
 		return false;
 	}
+
 	private static String formatContributorList()
 	{
 		final StringBuilder sb = new StringBuilder();

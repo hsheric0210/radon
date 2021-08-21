@@ -89,6 +89,7 @@ public class NullCheckMutilator extends FlowObfuscation
 					tcInsns.add(new InsnNode(POP)); // Ignore the return value of method
 					tcInsns.add(trapEnd);
 
+					// TODO: Insert Trash Codes
 					tcInsns.add(new JumpInsnNode(GOTO, insn.getOpcode() == IFNULL ? catchEnd : jumpTarget));
 					tcInsns.add(catchStart);
 					tcInsns.add(new InsnNode(POP)); // Ignore the catch block parameter

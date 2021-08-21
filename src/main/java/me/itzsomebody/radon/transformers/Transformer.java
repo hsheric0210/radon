@@ -19,6 +19,7 @@
 package me.itzsomebody.radon.transformers;
 
 import java.util.*;
+import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -88,12 +89,20 @@ public abstract class Transformer implements Opcodes
 		if (radon.config.renamerPresent)
 			return getClassDictionary(randomExistingClass().getPackageName()).nextUniqueString(); // FIXME: The generated class always located on the last entry in a package
 
-		final List<String> list = new ArrayList<>(getClasses().keySet());
+		final List<String> list = getClasses().entrySet().stream().filter(e -> included(e.getValue())).map(Entry::getKey).distinct().collect(Collectors.toList());
 
 		final String first = RandomUtils.getRandomElement(list);
-		final String second = RandomUtils.getRandomElement(list);
+		String result;
+		do
+		{
+			final String second = RandomUtils.getRandomElement(list);
 
-		return first + '$' + second.substring(second.lastIndexOf('/') + 1);
+			String secondName = second.substring(second.lastIndexOf('/') + 1);
+			if (secondName.contains("$"))
+				secondName = secondName.substring(0, secondName.indexOf('$'));
+			result = first + '$' + secondName;
+		} while(list.contains(result));
+		return result;
 	}
 
 	public ClassWrapper randomExistingClass()

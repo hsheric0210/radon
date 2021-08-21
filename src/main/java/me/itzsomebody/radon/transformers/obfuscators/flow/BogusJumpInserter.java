@@ -43,8 +43,41 @@ import me.itzsomebody.radon.utils.RandomUtils;
  * To determine where we should insert the conditions, we use an analyzer to determine where the stack is empty.
  * This leads to less complication when applying obfuscation.
  *
- * TODO: Improve strength as ZKM :)
+ * <p>
  * TODO: Bogus jumps based on INSTANCEOF
+ * </p>
+ * 
+ * <p>
+ * TODO: Insert bogus conditions between original conditions
+ * 
+ * <pre>
+ *     FROM:
+ *     if (a == 0 && b == 1)
+ *     {
+ *         - ORIGINAL CODE 1
+ *     }
+ *     else
+ *     {
+ *         - ORIGINAL CODE 2
+ *     }
+ *
+ *     TO:
+ *     if (FAKECONDITION ALWAYS RETURN TRUE && a == 0 && b == 1 || FAKECONDITION ALWAYS RETURN FALSE)
+ *     {
+ *         - ORIGINAL CODE 1
+ *     }
+ *     else if (FAKECONDITION ALWAYS RETURN TRUE)
+ *     {
+ *         - ORIGINAL CODE 2
+ *     }
+ *     else
+ *     {
+ *         - TRASH CODE
+ *     }
+ * </pre>
+ * </p>
+ *
+ * TODO:
  *
  * @author ItzSomebody
  */
@@ -142,66 +175,54 @@ public class BogusJumpInserter extends FlowObfuscation
 							if (emptyAt.contains(insn))
 							{
 								// We need to make sure stack is empty before making jumps
-
-								// Type A:
-								// L0
-								// - ORIGINAL CODE...
-								// L1
-								// - IF (FAKEPREDICATE ALWAYS RETURN TRUE) GOTO L3
-								//
-								// - TRASH CODE...
-								// L2
-								// - GOTO L0
-								// L3
-								// - Original Codes...
-
-								// Type B:
-								// L0
-								// - ORIGINAL CODE...
-								// L1
-								// - IF (FAKEPREDICATE ALWAYS RETURN FALSE) GOTO L0
-								//
-								// - TRASH CODE...
-								// L2
-								// - GOTO L0
-								// L3
-								// - Original Codes...
-
-								if (labels.size() > 3 && RandomUtils.getRandomBoolean()) // Jump to the random label
+								final Frame<BasicValue> currentFrame = frames[ArrayUtils.indexOf(untouchedList, insn)];
+								if (currentFrame != null && labels.size() > 3 && RandomUtils.getRandomBoolean()) // Jump to the random label
 								{
-									final Frame<BasicValue> currentFrame = frames[ArrayUtils.indexOf(untouchedList, insn)];
-									if (currentFrame != null)
+									final InsnList insertedBefore = new InsnList();
+									final InsnList insertAfter = new InsnList();
+
+									final LabelNode startLabel = new LabelNode();
+									final LabelNode endLabel = new LabelNode();
+
+									insertedBefore.add(startLabel);
+									insertedBefore.add(ASMUtils.createStackMapFrame(F_NEW, currentFrame));
+
+									final int currentLabelIndex = labels.indexOf(currentLabel);
+
+									insertAfter.add(new LabelNode());
+
+									if (RandomUtils.getRandomBoolean())
 									{
-										final InsnList insertedBefore = new InsnList();
-										final InsnList insertAfter = new InsnList();
 
-										final LabelNode startLabel = new LabelNode();
-										final LabelNode endLabel = new LabelNode();
+										insertAfter.add(BogusJumps.createBogusJump(varIndex, predicateType, predicateInitialValue, endLabel, true));
 
-										insertedBefore.add(startLabel);
-										insertedBefore.add(ASMUtils.createStackMapFrame(F_NEW, currentFrame));
-
-										final int currentLabelIndex = labels.indexOf(currentLabel);
-
+										// while(true)
+										// {
+										// if (FAKEPREDICATE ALWAYS RETURN FALSE)
+										// {
+										// - TRASH CODE
+										// continue;
+										// }
+										// - ORIGINAL CODE
+										// }
 										insertAfter.add(new LabelNode());
 
-										if (RandomUtils.getRandomBoolean())
-										{
-											// Exclude the current label and adjacent two labels
-											insertAfter.add(BogusJumps.createBogusJump(varIndex, predicateType, predicateInitialValue, endLabel, true));
-
-											insertAfter.add(new LabelNode());
-											insertAfter.add(new JumpInsnNode(GOTO, labels.get(RandomUtils.getRandomIntWithExclusion(0, labels.size(), Arrays.asList(currentLabelIndex - 1, currentLabelIndex, currentLabelIndex + 1)))));
-										}
-										else
-										{
-											// Exclude the current label and adjacent two labels
-											insertAfter.add(BogusJumps.createBogusJump(varIndex, predicateType, predicateInitialValue, startLabel, false));
-										}
-
-										insertAfter.add(endLabel);
-										fakeLoops.incrementAndGet();
+										// Exclude the current label and adjacent two labels
+										insertAfter.add(new JumpInsnNode(GOTO, labels.get(RandomUtils.getRandomIntWithExclusion(0, labels.size(), Arrays.asList(currentLabelIndex - 1, currentLabelIndex, currentLabelIndex + 1)))));
 									}
+									else
+									{
+										// while(true)
+										// {
+										// - ORIGINAL CODE
+										// if (FAKEPREDICATE ALWAYS RETURN TRUE) break;
+										// - TRASH CODE
+										// }
+										insertAfter.add(BogusJumps.createBogusJump(varIndex, predicateType, predicateInitialValue, startLabel, false));
+									}
+
+									insertAfter.add(endLabel);
+									fakeLoops.incrementAndGet();
 								}
 								else
 								{

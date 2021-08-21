@@ -60,28 +60,28 @@ public class FakeCatchBlocks extends FlowObfuscation
 				if (!ASMUtils.isInstruction(insn))
 					continue;
 
-				if (RandomUtils.getRandomInt(5) > 3)
+				if (RandomUtils.getRandomInt(5) > 3) // 40% chance
 				{
 					final LabelNode trapStart = new LabelNode();
 					final LabelNode trapEnd = new LabelNode();
 					final LabelNode catchStart = new LabelNode();
 					final LabelNode catchEnd = new LabelNode();
 
-					final InsnList catchBlock = new InsnList();
-					catchBlock.add(catchStart);
-					catchBlock.add(new InsnNode(DUP));
-					catchBlock.add(new MethodInsnNode(INVOKEVIRTUAL, fakeHandler.name, methodName, "()V", false));
-					catchBlock.add(new InsnNode(ATHROW));
-					catchBlock.add(catchEnd);
+					final InsnList inserted = new InsnList();
+					inserted.add(catchStart);
+					inserted.add(new InsnNode(DUP));
+					inserted.add(new MethodInsnNode(INVOKEVIRTUAL, fakeHandler.name, methodName, "()V", false));
+					inserted.add(new InsnNode(ATHROW));
+					inserted.add(catchEnd);
+					inserted.add(new JumpInsnNode(GOTO, catchEnd));
+					inserted.add(trapEnd);
 
 					insns.insertBefore(insn, trapStart);
-					insns.insert(insn, catchBlock);
-					insns.insert(insn, new JumpInsnNode(GOTO, catchEnd));
-					insns.insert(insn, trapEnd);
+					insns.insert(insn, inserted);
 
 					methodWrapper.getTryCatchBlocks().add(new TryCatchBlockNode(trapStart, trapEnd, catchStart, fakeHandler.name));
 
-					leeway -= 15;
+					leeway -= ASMUtils.evaluateMaxSize(inserted);
 					counter.incrementAndGet();
 				}
 			}

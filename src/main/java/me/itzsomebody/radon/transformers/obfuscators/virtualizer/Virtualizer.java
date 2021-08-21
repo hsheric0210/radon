@@ -51,7 +51,9 @@ import me.itzsomebody.vm.datatypes.JWrapper;
 /**
  * Translates Java bytecode into a custom bytecode instruction set.
  * Piece of trash and hackiest thing ever.
+ * <p>
  * TODO: rewrite
+ * </p>
  *
  * @author ItzSomebody
  */

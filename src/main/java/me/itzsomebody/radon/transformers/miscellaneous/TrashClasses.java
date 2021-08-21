@@ -53,6 +53,8 @@ public class TrashClasses extends Transformer
 		DESCRIPTORS.add("J");
 		DESCRIPTORS.add("D");
 		DESCRIPTORS.add("V");
+		DESCRIPTORS.add("Ljava/lang/Object;");
+		DESCRIPTORS.add("Ljava/lang/String;");
 	}
 
 	@Override
@@ -66,7 +68,7 @@ public class TrashClasses extends Transformer
 		{
 			final ClassNode classNode = generateClass();
 			final ClassWriter cw = new ClassWriter(0);
-			cw.newUTF8("RADON" + Main.VERSION);
+			cw.newUTF8(Main.WATERMARK);
 			classNode.accept(cw);
 
 			getResources().put(classNode.name + ".class", cw.toByteArray());
@@ -106,7 +108,7 @@ public class TrashClasses extends Transformer
 
 	private MethodNode methodGen(final String className)
 	{
-		final String randDesc = descGen();
+		final String randDesc = generateDescriptor();
 		final MethodNode method = new MethodNode(ACC_STATIC + ACC_PRIVATE, getMethodDictionary(className).randomString(), randDesc, null, null);
 		final int instructions = RandomUtils.getRandomInt(30) + 30;
 
@@ -126,7 +128,7 @@ public class TrashClasses extends Transformer
 			case Type.BYTE:
 			case Type.SHORT:
 			case Type.INT:
-				if (RandomUtils.getRandomInt(10) % 2 == 1)
+				if (RandomUtils.getRandomBoolean())
 					insns.add(new InsnNode(ICONST_0));
 				else
 					insns.add(new InsnNode(ICONST_1));
@@ -155,7 +157,7 @@ public class TrashClasses extends Transformer
 		return method;
 	}
 
-	private String descGen()
+	private static String generateDescriptor()
 	{
 		final StringBuilder sb = new StringBuilder("(");
 

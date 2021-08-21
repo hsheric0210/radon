@@ -38,7 +38,9 @@ import me.itzsomebody.radon.utils.RandomUtils;
 /**
  * Essentially the same thing as ADSS (https://www.sable.mcgill.ca/JBCO/examples.html#ADSS)
  *
+ * <p>
  * TODO: Improve strength as ZKM :)
+ * </p>
  */
 
 public class BogusSwitchJumpInserter extends FlowObfuscation

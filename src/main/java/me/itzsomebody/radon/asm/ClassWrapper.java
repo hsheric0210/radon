@@ -229,7 +229,7 @@ public class ClassWrapper
 
 		try
 		{
-			writer.newUTF8("RADON" + Main.VERSION);
+			writer.newUTF8(Main.WATERMARK);
 
 			// Populate writer with class info
 			classNode.accept(writer);
@@ -244,7 +244,7 @@ public class ClassWrapper
 			Main.warn(String.format("*** Error writing class %s. Skipping frames (might cause runtime errors).", getName() + ".class"), e);
 
 			writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-			writer.newUTF8("RADON" + Main.VERSION);
+			writer.newUTF8(Main.WATERMARK);
 
 			classNode.accept(writer);
 			strConsts.forEach(writer::newUTF8);
@@ -257,4 +257,5 @@ public class ClassWrapper
 	{
 		return entryPrefix + classNode.name + ".class";
 	}
-}
+
+	}
