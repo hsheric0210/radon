@@ -94,6 +94,56 @@ public class ReservedDeviceNamesDictionary implements Dictionary
 			"CoM4",
 			"COM4",
 
+			// com5
+			"com5",
+			"Com5",
+			"cOm5",
+			"coM5",
+			"COm5",
+			"cOM5",
+			"CoM5",
+			"COM5",
+
+			// com6
+			"com6",
+			"Com6",
+			"cOm6",
+			"coM6",
+			"COm6",
+			"cOM6",
+			"CoM6",
+			"COM6",
+
+			// com7
+			"com7",
+			"Com7",
+			"cOm7",
+			"coM7",
+			"COm7",
+			"cOM7",
+			"CoM7",
+			"COM7",
+
+			// com8
+			"com8",
+			"Com8",
+			"cOm8",
+			"coM8",
+			"COm8",
+			"cOM8",
+			"CoM8",
+			"COM8",
+
+			// com9
+			"com9",
+			"Com9",
+			"cOm9",
+			"coM9",
+			"COm9",
+			"cOM9",
+			"CoM9",
+			"COM9",
+
 			// lpt1
 			"lpt1",
 			"Lpt1",
@@ -132,7 +182,57 @@ public class ReservedDeviceNamesDictionary implements Dictionary
 			"LPt4",
 			"lPT4",
 			"LpT4",
-			"LPT4"
+			"LPT4",
+
+			// lpt5
+			"lpt5",
+			"Lpt5",
+			"lPt5",
+			"lpT5",
+			"LPt5",
+			"lPT5",
+			"LpT5",
+			"LPT5",
+
+			// lpt6
+			"lpt6",
+			"Lpt6",
+			"lPt6",
+			"lpT6",
+			"LPt6",
+			"lPT6",
+			"LpT6",
+			"LPT6",
+
+			// lpt7
+			"lpt7",
+			"Lpt7",
+			"lPt7",
+			"lpT7",
+			"LPt7",
+			"lPT7",
+			"LpT7",
+			"LPT7",
+
+			// lpt8
+			"lpt8",
+			"Lpt8",
+			"lPt8",
+			"lpT8",
+			"LPt8",
+			"lPT8",
+			"LpT8",
+			"LPT8",
+
+			// lpt9
+			"lpt9",
+			"Lpt9",
+			"lPt9",
+			"lpT9",
+			"LPt9",
+			"lPT9",
+			"LpT9",
+			"LPT9"
 	};
 
 	private int index;

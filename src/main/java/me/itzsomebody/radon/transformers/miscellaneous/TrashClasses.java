@@ -172,11 +172,10 @@ public class TrashClasses extends Transformer
 
 	private AbstractInsnNode junkInstructions()
 	{
-		final int index = RandomUtils.getRandomInt(20);
 		final String className = getClassDictionary("").nextUniqueString();
 		final String methodName = getMethodDictionary(className).randomString();
 		final String fieldName = getFieldDictionary(className).randomString();
-		switch (index)
+		switch (RandomUtils.getRandomInt(20))
 		{
 			case 0:
 				return new MethodInsnNode(INVOKESTATIC, className, methodName, "(Ljava/lang/String;)V", false);

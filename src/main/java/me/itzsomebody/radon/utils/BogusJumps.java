@@ -1,6 +1,7 @@
 package me.itzsomebody.radon.utils;
 
 import java.util.Optional;
+import java.util.stream.IntStream;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -28,46 +29,58 @@ public final class BogusJumps implements Opcodes
 	{
 		final InsnList insnList = new InsnList();
 
-		// Push the local variable to the stack
-		insnList.add(new VarInsnNode(ASMUtils.getVarOpcode(predicateType, false), predicateLocalVarIndex));
+		final int inversionFieldSize = RandomUtils.getRandomInt(32);
+		int inversionField = IntStream.range(0, inversionFieldSize).map(i -> (invertCondition && RandomUtils.getRandomBoolean() ? 1 : 0) << i).reduce(0, (a, b) -> a | b);
 
-		if (predicateType.getSort() == Type.BOOLEAN)
-			insnList.add(new JumpInsnNode((predicateValue == null || (int) predicateValue == 0) == invertCondition ? IFEQ : IFNE, jumpTo));
-		else if (RandomUtils.getRandomBoolean())
-			switch (predicateType.getSort())
-			{
-				case Type.LONG:
-					createBogusComparisonLong(insnList, predicateValue, jumpTo, invertCondition);
-					return insnList;
-				case Type.FLOAT:
-					createBogusComparisonFloat(predicateValue, jumpTo, invertCondition, insnList);
-					return insnList;
-				case Type.DOUBLE:
-					createBogusComparisonDouble(predicateValue, jumpTo, invertCondition, insnList);
-					return insnList;
-				default: // int, byte, char, etc.
-					createBogusComparisonInt(predicateValue, jumpTo, invertCondition, insnList);
-			}
-		else
-			switch (predicateType.getSort())
-			{
-				case Type.LONG:
-					createFakeEqualityCheckLong(predicateValue, jumpTo, invertCondition, insnList);
-					return insnList;
-				case Type.FLOAT:
-					createFakeEqualityCheckFloat(predicateValue, jumpTo, invertCondition, insnList);
-					return insnList;
-				case Type.DOUBLE:
-					createFakeEqualityCheckDouble(predicateValue, jumpTo, invertCondition, insnList);
-					return insnList;
-				default: // int, byte, char, etc.
-					createFakeEqualityCheckInt(predicateValue, jumpTo, invertCondition, insnList);
-			}
+		// Fail-safe
+		if (invertCondition && inversionField == 0)
+			inversionField |= 1 << RandomUtils.getRandomInt(inversionFieldSize);
+
+		for (int i = 0; i < inversionFieldSize; i++)
+		{
+			// Push the local variable to the stack
+			insnList.add(new VarInsnNode(ASMUtils.getVarOpcode(predicateType, false), predicateLocalVarIndex));
+
+			final int predicateTypeSort = predicateType.getSort();
+			final boolean invert = (inversionField >> i & 1) == 1;
+			if (predicateTypeSort == Type.BOOLEAN)
+				insnList.add(new JumpInsnNode((predicateValue == null || (int) predicateValue == 0) == invert ? IFEQ : IFNE, jumpTo));
+			else if (RandomUtils.getRandomBoolean())
+				switch (predicateTypeSort)
+				{
+					case Type.LONG:
+						createBogusComparisonLong(predicateValue, jumpTo, invert, insnList);
+						break;
+					case Type.FLOAT:
+						createBogusComparisonFloat(predicateValue, jumpTo, invert, insnList);
+						break;
+					case Type.DOUBLE:
+						createBogusComparisonDouble(predicateValue, jumpTo, invert, insnList);
+						break;
+					default: // int, byte, char, etc.
+						createBogusComparisonInt(predicateValue, jumpTo, invert, insnList);
+				}
+			else
+				switch (predicateTypeSort)
+				{
+					case Type.LONG:
+						createBogusZeroComparisonLong(predicateValue, jumpTo, invert, insnList);
+						break;
+					case Type.FLOAT:
+						createBogusZeroComparisonFloat(predicateValue, jumpTo, invert, insnList);
+						break;
+					case Type.DOUBLE:
+						createBogusZeroComparisonDouble(predicateValue, jumpTo, invert, insnList);
+						break;
+					default: // int, byte, char, etc.
+						createBogusZeroComparisonInt(predicateValue, jumpTo, invert, insnList);
+				}
+		}
 
 		return insnList;
 	}
 
-	private static void createFakeEqualityCheckInt(final Object predicateValue, final LabelNode jumpTo, final boolean invertCondition, final InsnList insnList)
+	private static void createBogusZeroComparisonInt(final Object predicateValue, final LabelNode jumpTo, final boolean invertCondition, final InsnList insnList)
 	{
 		final int value = Optional.ofNullable(predicateValue).map(o -> (int) o).orElse(0);
 
@@ -94,7 +107,7 @@ public final class BogusJumps implements Opcodes
 		insnList.add(new JumpInsnNode(jumpOpcode, jumpTo));
 	}
 
-	private static void createFakeEqualityCheckLong(final Object predicateValue, final LabelNode jumpTo, final boolean invertCondition, final InsnList insnList)
+	private static void createBogusZeroComparisonLong(final Object predicateValue, final LabelNode jumpTo, final boolean invertCondition, final InsnList insnList)
 	{
 		final long value = Optional.ofNullable(predicateValue).map(o -> (long) o).orElse(0L);
 
@@ -123,7 +136,7 @@ public final class BogusJumps implements Opcodes
 		insnList.add(new JumpInsnNode(jumpOpcode, jumpTo));
 	}
 
-	private static void createFakeEqualityCheckFloat(final Object predicateValue, final LabelNode jumpTo, final boolean invertCondition, final InsnList insnList)
+	private static void createBogusZeroComparisonFloat(final Object predicateValue, final LabelNode jumpTo, final boolean invertCondition, final InsnList insnList)
 	{
 		final float value = Optional.ofNullable(predicateValue).map(o -> (float) o).orElse(0.0F);
 		insnList.add(new InsnNode(FCONST_0));
@@ -161,7 +174,7 @@ public final class BogusJumps implements Opcodes
 		insnList.add(new JumpInsnNode(jumpOpcode, jumpTo));
 	}
 
-	private static void createFakeEqualityCheckDouble(final Object predicateValue, final LabelNode jumpTo, final boolean invertCondition, final InsnList insnList)
+	private static void createBogusZeroComparisonDouble(final Object predicateValue, final LabelNode jumpTo, final boolean invertCondition, final InsnList insnList)
 	{
 		final double value = Optional.ofNullable(predicateValue).map(o -> (double) o).orElse(0.0);
 		insnList.add(new InsnNode(DCONST_0));
@@ -242,7 +255,7 @@ public final class BogusJumps implements Opcodes
 		insnList.add(new JumpInsnNode(jumpOpcode, jumpTo));
 	}
 
-	private static void createBogusComparisonLong(final InsnList insnList, final Object predicateValue, final LabelNode jumpTo, final boolean invertCondition)
+	private static void createBogusComparisonLong(final Object predicateValue, final LabelNode jumpTo, final boolean invertCondition, final InsnList insnList)
 	{
 		final long value = Optional.ofNullable(predicateValue).map(o -> (long) o).orElse(0L);
 		final long operand;
@@ -392,104 +405,6 @@ public final class BogusJumps implements Opcodes
 		insnList.add(ASMUtils.getNumberInsn(operand));
 		insnList.add(new InsnNode(compareOpcode));
 		insnList.add(new JumpInsnNode(jumpConditionOpcode, jumpTo));
-	}
-
-	public static InsnList createBogusExit(final MethodNode mn)
-	{
-		final InsnList insnList = new InsnList();
-
-		AbstractInsnNode pushNode = null;
-		int popNodeOpcode;
-
-		switch (RandomUtils.getRandomInt(3))
-		{
-			case 0:
-			{
-				switch (RandomUtils.getRandomInt(2))
-				{
-					case 0:
-					{
-						// System.exit(n)
-						insnList.add(new LdcInsnNode(RandomUtils.getRandomInt()));
-						insnList.add(new MethodInsnNode(INVOKESTATIC, "java/lang/System", "exit", "(I)V", false));
-						break;
-					}
-
-					case 1:
-					{
-						insnList.add(new MethodInsnNode(INVOKESTATIC, "java/lang/Runtime", "getRuntime", "()Ljava/lang/Runtime;", false));
-						insnList.add(new LdcInsnNode(RandomUtils.getRandomInt()));
-						insnList.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Runtime", RandomUtils.getRandomBoolean() ? "halt" : "exit", "(I)V", false));
-						break;
-					}
-				}
-
-				popNodeOpcode = IRETURN;
-				switch (Type.getReturnType(mn.desc).getSort())
-				{
-					case Type.VOID:
-						pushNode = null;
-						popNodeOpcode = RETURN;
-						break;
-					case Type.BOOLEAN:
-						pushNode = ASMUtils.getNumberInsn(RandomUtils.getRandomInt(2));
-						break;
-					case Type.CHAR:
-						pushNode = ASMUtils.getNumberInsn(RandomUtils.getRandomInt(Character.MAX_VALUE + 1));
-						break;
-					case Type.BYTE:
-						pushNode = ASMUtils.getNumberInsn(RandomUtils.getRandomInt(Byte.MAX_VALUE + 1));
-						break;
-					case Type.SHORT:
-						pushNode = ASMUtils.getNumberInsn(RandomUtils.getRandomInt(Short.MAX_VALUE + 1));
-						break;
-					case Type.INT:
-						pushNode = ASMUtils.getNumberInsn(RandomUtils.getRandomInt());
-						break;
-					case Type.LONG:
-						pushNode = ASMUtils.getNumberInsn(RandomUtils.getRandomLong());
-						popNodeOpcode = LRETURN;
-						break;
-					case Type.FLOAT:
-						pushNode = ASMUtils.getNumberInsn(RandomUtils.getRandomFloat());
-						popNodeOpcode = FRETURN;
-						break;
-					case Type.DOUBLE:
-						pushNode = ASMUtils.getNumberInsn(RandomUtils.getRandomDouble());
-						popNodeOpcode = DRETURN;
-						break;
-					default:
-						pushNode = new InsnNode(ACONST_NULL);
-						popNodeOpcode = ARETURN;
-						break;
-				}
-				break;
-			}
-
-			case 1:
-			{
-				mn.maxStack++;
-				final String exceptionClass = RandomUtils.getRandomElement(Throwables.getRandomThrowable());
-				insnList.add(new TypeInsnNode(NEW, exceptionClass));
-				insnList.add(new InsnNode(DUP));
-				insnList.add(new MethodInsnNode(INVOKESPECIAL, exceptionClass, "<init>", "()V", false));
-				popNodeOpcode = ATHROW;
-				break;
-			}
-
-			default:
-			{
-				pushNode = new InsnNode(ACONST_NULL);
-				popNodeOpcode = ATHROW;
-				break;
-			}
-		}
-
-		if (pushNode != null)
-			insnList.add(pushNode);
-		insnList.add(new InsnNode(popNodeOpcode));
-
-		return insnList;
 	}
 
 	private BogusJumps()

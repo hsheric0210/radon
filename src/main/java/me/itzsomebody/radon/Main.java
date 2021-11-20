@@ -72,6 +72,12 @@ public final class Main
 		return sb.toString();
 	}
 
+	public static boolean TEST_1 = true;
+	public static boolean TEST_2 = false;
+	public static boolean TEST_3 = false;
+	public static boolean TEST_4 = true;
+	public static boolean TEST_5 = false;
+
 	/**
 	 * Main method.
 	 *
@@ -80,6 +86,17 @@ public final class Main
 	 */
 	public static void main(final String[] args) throws IOException
 	{
+		if (TEST_1 || TEST_2 || TEST_3 || TEST_4 || TEST_5)
+			System.out.println("");
+		if (TEST_1 && TEST_2 && TEST_3 && TEST_4 && TEST_5)
+			System.out.println("");
+		if (TEST_1 || TEST_2 && TEST_3 && TEST_4 || TEST_5)
+			System.out.println("");
+		if (TEST_1 && (TEST_2 || TEST_3) && (TEST_4 || TEST_5))
+			System.out.println("");
+		if (TEST_1 || TEST_2 && TEST_3 || TEST_4 && TEST_5)
+			System.out.println("");
+
 		final CustomOutputStream cos = new CustomOutputStream(System.err);
 		System.setErr(new PrintStream(cos));
 

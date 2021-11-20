@@ -58,28 +58,28 @@ public class ConstantInterpreter extends Interpreter<AbstractValue> implements O
 		return new UnknownValue(insnNode, Type.DOUBLE_TYPE);
 	}
 
-	private static AbstractValue valueFromArrayInsn(final IntInsnNode iinsn)
+	private static AbstractValue valueFromArrayInsn(final IntInsnNode intInsn)
 	{
-		switch (iinsn.operand)
+		switch (intInsn.operand)
 		{
 			case T_BOOLEAN:
-				return new UnknownValue(iinsn, Type.getType("[Z"));
+				return new UnknownValue(intInsn, Type.getType("[Z"));
 			case T_CHAR:
-				return new UnknownValue(iinsn, Type.getType("[C"));
+				return new UnknownValue(intInsn, Type.getType("[C"));
 			case T_BYTE:
-				return new UnknownValue(iinsn, Type.getType("[B"));
+				return new UnknownValue(intInsn, Type.getType("[B"));
 			case T_SHORT:
-				return new UnknownValue(iinsn, Type.getType("[S"));
+				return new UnknownValue(intInsn, Type.getType("[S"));
 			case T_INT:
-				return new UnknownValue(iinsn, Type.getType("[I"));
+				return new UnknownValue(intInsn, Type.getType("[I"));
 			case T_FLOAT:
-				return new UnknownValue(iinsn, Type.getType("[F"));
+				return new UnknownValue(intInsn, Type.getType("[F"));
 			case T_DOUBLE:
-				return new UnknownValue(iinsn, Type.getType("[D"));
+				return new UnknownValue(intInsn, Type.getType("[D"));
 			case T_LONG:
-				return new UnknownValue(iinsn, Type.getType("[J"));
+				return new UnknownValue(intInsn, Type.getType("[J"));
 			default:
-				throw new IllegalArgumentException("Invalid array type");
+				throw new IllegalArgumentException("Unexpected array type: " + intInsn.operand);
 		}
 	}
 
@@ -149,24 +149,18 @@ public class ConstantInterpreter extends Interpreter<AbstractValue> implements O
 					final int sort = ((Type) cst).getSort();
 					if (sort == Type.OBJECT || sort == Type.ARRAY || sort == Type.METHOD)
 						return new UnknownValue(insnNode, (Type) cst);
-					throw new IllegalArgumentException("Illegal LDC constant " + cst);
+					throw new IllegalArgumentException("Unexpected LDC constant: " + cst);
 				}
-				throw new IllegalArgumentException("Illegal LDC constant " + cst);
+				throw new IllegalArgumentException("Unexpected LDC constant: " + cst);
 			}
 			case JSR:
 				throw new UnsupportedOperationException("Do not support instruction types JSR - Deprecated in Java 6");
 			case GETSTATIC:
-			{
-				final FieldInsnNode f = (FieldInsnNode) insnNode;
-				return new UnknownValue(insnNode, Type.getType(f.desc));
-			}
+				return new UnknownValue(insnNode, Type.getType(((FieldInsnNode) insnNode).desc));
 			case NEW:
-			{
-				final TypeInsnNode type = (TypeInsnNode) insnNode;
-				return new UnknownValue(insnNode, Type.getObjectType(type.desc));
-			}
+				return new UnknownValue(insnNode, Type.getObjectType(((TypeInsnNode) insnNode).desc));
 			default:
-				throw new IllegalArgumentException("Invalid instruction opcode.");
+				throw new IllegalArgumentException("Unexpected new operation instruction opcode: " + insnNode.getOpcode());
 		}
 	}
 
@@ -233,27 +227,15 @@ public class ConstantInterpreter extends Interpreter<AbstractValue> implements O
 			case ATHROW:
 				return null;
 			case GETFIELD:
-			{
-				final FieldInsnNode f = (FieldInsnNode) insnNode;
-				return new UnknownValue(insnNode, Type.getType(f.desc));
-			}
+				return new UnknownValue(insnNode, Type.getType(((FieldInsnNode) insnNode).desc));
 			case NEWARRAY:
-			{
-				final IntInsnNode iinsn = (IntInsnNode) insnNode;
-				return valueFromArrayInsn(iinsn);
-			}
+				return valueFromArrayInsn((IntInsnNode) insnNode);
 			case ANEWARRAY:
-			{
-				final TypeInsnNode tinsn = (TypeInsnNode) insnNode;
-				return new UnknownValue(insnNode, Type.getType("[" + Type.getObjectType(tinsn.desc)));
-			}
+				return new UnknownValue(insnNode, Type.getType("[" + Type.getObjectType(((TypeInsnNode) insnNode).desc)));
 			case CHECKCAST:
-			{
-				final TypeInsnNode tinsn = (TypeInsnNode) insnNode;
-				return new UnknownValue(insnNode, Type.getObjectType(tinsn.desc));
-			}
+				return new UnknownValue(insnNode, Type.getObjectType(((TypeInsnNode) insnNode).desc));
 			default:
-				throw new IllegalArgumentException("Invalid instruction opcode.");
+				throw new IllegalArgumentException("Unexpected unary operation instruction opcode: " + insnNode.getOpcode());
 		}
 	}
 
@@ -335,7 +317,7 @@ public class ConstantInterpreter extends Interpreter<AbstractValue> implements O
 			case PUTFIELD:
 				return null;
 			default:
-				throw new IllegalArgumentException("Invalid instruction opcode.");
+				throw new IllegalArgumentException("Unexpected binary operation instruction opcode: " + insnNode.getOpcode());
 		}
 	}
 
@@ -353,28 +335,20 @@ public class ConstantInterpreter extends Interpreter<AbstractValue> implements O
 	{
 		for (final AbstractValue abstractValue : list)
 			abstractValue.addUsage(insnNode);
+
 		switch (insnNode.getOpcode())
 		{
 			case INVOKEVIRTUAL:
 			case INVOKESPECIAL:
 			case INVOKESTATIC:
 			case INVOKEINTERFACE:
-			{
-				final MethodInsnNode invoke = (MethodInsnNode) insnNode;
-				return new UnknownValue(insnNode, Type.getReturnType(invoke.desc));
-			}
+				return new UnknownValue(insnNode, Type.getReturnType(((MethodInsnNode) insnNode).desc));
 			case INVOKEDYNAMIC:
-			{
-				final InvokeDynamicInsnNode invoke = (InvokeDynamicInsnNode) insnNode;
-				return new UnknownValue(insnNode, Type.getReturnType(invoke.desc));
-			}
+				return new UnknownValue(insnNode, Type.getReturnType(((InvokeDynamicInsnNode) insnNode).desc));
 			case MULTIANEWARRAY:
-			{
-				final MultiANewArrayInsnNode arr = (MultiANewArrayInsnNode) insnNode;
-				return new UnknownValue(insnNode, Type.getType(arr.desc));
-			}
+				return new UnknownValue(insnNode, Type.getType(((MultiANewArrayInsnNode) insnNode).desc));
 			default:
-				throw new IllegalArgumentException("Invalid instruction opcode.");
+				throw new IllegalArgumentException("Unexpected nary operation instruction opcode: " + insnNode.getOpcode());
 		}
 	}
 

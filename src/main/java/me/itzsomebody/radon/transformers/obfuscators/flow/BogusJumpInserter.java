@@ -18,7 +18,6 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.flow;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -33,10 +32,7 @@ import me.itzsomebody.radon.asm.MethodWrapper;
 import me.itzsomebody.radon.asm.StackHeightZeroFinder;
 import me.itzsomebody.radon.exceptions.RadonException;
 import me.itzsomebody.radon.exceptions.StackEmulationException;
-import me.itzsomebody.radon.utils.ASMUtils;
-import me.itzsomebody.radon.utils.ArrayUtils;
-import me.itzsomebody.radon.utils.BogusJumps;
-import me.itzsomebody.radon.utils.RandomUtils;
+import me.itzsomebody.radon.utils.*;
 
 /**
  * Inserts opaque predicates which always evaluate to false but are meant to insert significantly more edges to a control flow graph.
@@ -77,7 +73,12 @@ import me.itzsomebody.radon.utils.RandomUtils;
  * </pre>
  * </p>
  *
- * TODO:
+ * <p>
+ * TODO: Jump To Random Label
+ * <pre>
+ *     IF (FAKECONDITION ALWAYS RETURN FALSE) GOTO [Random Label]
+ * </pre>
+ * </p>
  *
  * @author ItzSomebody
  */
@@ -102,7 +103,7 @@ public class BogusJumpInserter extends FlowObfuscation
 
 			final FieldNode predicate = new FieldNode(cw.access.isInterface() ? INTERFACE_PRED_ACCESS : CLASS_PRED_ACCESS, getFieldDictionary(cw.originalName).nextUniqueString(), predicateDescriptor, null, predicateInitialValue);
 
-			for (MethodWrapper mw : cw.methods)
+			for (final MethodWrapper mw : cw.methods)
 			{
 				if (included(mw) && mw.hasInstructions())
 				{
@@ -135,7 +136,7 @@ public class BogusJumpInserter extends FlowObfuscation
 					mw.methodNode.maxLocals += predicateType.getSize(); // Prevents breaking of other transformers which rely on this field.
 
 					final AbstractInsnNode[] untouchedList = insns.toArray();
-					final LabelNode jumpTo = createBogusJumpTarget(mw.methodNode);
+					final LabelNode trapLabel = createBogusJumpTarget(mw.methodNode);
 
 					final StackHeightZeroFinder shzf = new StackHeightZeroFinder(mw.methodNode, insns.getLast());
 					try
@@ -158,10 +159,8 @@ public class BogusJumpInserter extends FlowObfuscation
 						if (insn instanceof LabelNode)
 							currentLabel = insn;
 
-						if (insn instanceof FrameNode)
-
-							if (leeway < 10000)
-								break;
+						if (leeway < 10000)
+							break;
 
 						// Bad way of detecting if this class was instantiated
 						if (isCtor && !calledSuper)
@@ -187,15 +186,30 @@ public class BogusJumpInserter extends FlowObfuscation
 									insertedBefore.add(startLabel);
 									insertedBefore.add(ASMUtils.createStackMapFrame(F_NEW, currentFrame));
 
-									final int currentLabelIndex = labels.indexOf(currentLabel);
+//									final int currentLabelIndex = labels.indexOf(currentLabel);
 
 									insertAfter.add(new LabelNode());
 
 									if (RandomUtils.getRandomBoolean())
 									{
+										// while(true)
+										// {
+										// - ORIGINAL CODE
+										// if (FAKEPREDICATE ALWAYS RETURN TRUE) break;
+										// - TRASH CODE
+										// }
 
 										insertAfter.add(BogusJumps.createBogusJump(varIndex, predicateType, predicateInitialValue, endLabel, true));
 
+										insertAfter.add(new LabelNode());
+										insertAfter.add(new JumpInsnNode(GOTO, trapLabel));
+
+										// TODO: Random jump
+										// Exclude the current label and adjacent two labels
+										// insertAfter.add(new JumpInsnNode(GOTO, labels.get(RandomUtils.getRandomIntWithExclusion(0, labels.size(), Arrays.asList(currentLabelIndex - 1, currentLabelIndex, currentLabelIndex + 1)))));
+									}
+									else
+									{
 										// while(true)
 										// {
 										// if (FAKEPREDICATE ALWAYS RETURN FALSE)
@@ -205,20 +219,11 @@ public class BogusJumpInserter extends FlowObfuscation
 										// }
 										// - ORIGINAL CODE
 										// }
-										insertAfter.add(new LabelNode());
 
-										// Exclude the current label and adjacent two labels
-										insertAfter.add(new JumpInsnNode(GOTO, labels.get(RandomUtils.getRandomIntWithExclusion(0, labels.size(), Arrays.asList(currentLabelIndex - 1, currentLabelIndex, currentLabelIndex + 1)))));
-									}
-									else
-									{
-										// while(true)
-										// {
-										// - ORIGINAL CODE
-										// if (FAKEPREDICATE ALWAYS RETURN TRUE) break;
-										// - TRASH CODE
-										// }
 										insertAfter.add(BogusJumps.createBogusJump(varIndex, predicateType, predicateInitialValue, startLabel, false));
+
+										insertAfter.add(new LabelNode());
+										insertAfter.add(new JumpInsnNode(GOTO, trapLabel));
 									}
 
 									insertAfter.add(endLabel);
@@ -227,7 +232,7 @@ public class BogusJumpInserter extends FlowObfuscation
 								else
 								{
 									// Insert fake IF's
-									final InsnList inserted = BogusJumps.createBogusJump(varIndex, predicateType, predicateInitialValue, jumpTo, false);
+									final InsnList inserted = BogusJumps.createBogusJump(varIndex, predicateType, predicateInitialValue, trapLabel, false);
 									insns.insertBefore(insn, inserted);
 									leeway -= ASMUtils.evaluateMaxSize(inserted);
 									fakePredicates.incrementAndGet();
@@ -291,7 +296,7 @@ public class BogusJumpInserter extends FlowObfuscation
 		final InsnList pattern = new InsnList();
 		pattern.add(new JumpInsnNode(GOTO, escapeNode));
 		pattern.add(label);
-		pattern.add(BogusJumps.createBogusExit(mn));
+		pattern.add(FakeCodeGenerator.generateCodes(mn));
 		pattern.add(escapeNode);
 		ASMUtils.insertAfterConstructorCall(mn, pattern);
 

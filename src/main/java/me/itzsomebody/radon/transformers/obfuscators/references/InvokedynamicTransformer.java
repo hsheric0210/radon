@@ -37,6 +37,18 @@ import me.itzsomebody.radon.utils.Constants;
 /**
  * Hides INVOKESTATICs, INVOKEVIRTUALs, INVOKESPECIALs, GETSTATIC, PUTSTATIC, GETFIELD and PUTFIELD operations by swapping them out with an invokedynamic instruction.
  *
+ * FIXME
+ * 
+ * <pre>
+ *     java.lang.IllegalArgumentException: no argument type to remove[()int, 2, [class java.lang.String, long], 2, 0]
+ *         at java.base/java.lang.invoke.MethodHandleStatics.newIllegalArgumentException(MethodHandleStatics.java:134)
+ *         at java.base/java.lang.invoke.MethodHandles.dropArgumentChecks(MethodHandles.java:5263)
+ *         at java.base/java.lang.invoke.MethodHandles.dropArguments0(MethodHandles.java:5244)
+ *         at java.base/java.lang.invoke.MethodHandles.dropArguments(MethodHandles.java:5316)
+ *         at InvokedynamicDecryptor.resolveMethodHandle(Unknown Source)
+ *         ... 5 more
+ * </pre>
+ *
  * @author ItzSomebody
  */
 public class InvokedynamicTransformer extends ReferenceObfuscation
