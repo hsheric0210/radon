@@ -18,10 +18,14 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.flow;
 
+import static me.itzsomebody.radon.config.ConfigurationSetting.STRING_ENCRYPTION;
+
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.objectweb.asm.tree.*;
+
+import me.itzsomebody.radon.config.Configuration;
 
 /**
  * This splits a method's block of code into two blocks: P1 and P2 and then inserting P2 behind P1.
@@ -35,7 +39,7 @@ import org.objectweb.asm.tree.*;
 public class BlockSplitter extends FlowObfuscation
 {
 	// used to limit number of recursive calls on doSplit()
-	private static final int recursiveLimit = 11;
+	private int recursiveLimit;
 
 	@Override
 	public void transform()
@@ -53,7 +57,13 @@ public class BlockSplitter extends FlowObfuscation
 		return "Block Splitter";
 	}
 
-	private static void doSplit(final MethodNode methodNode, final AtomicInteger counter, final int callStackSize)
+	@Override
+	public void setConfiguration(final Configuration config)
+	{
+		recursiveLimit = config.getOrDefault(STRING_ENCRYPTION + "." + FlowObfuscationSetting.SPLIT_BLOCKS + ".recursionLimit", 11);
+	}
+
+	private void doSplit(final MethodNode methodNode, final AtomicInteger counter, final int callStackSize)
 	{
 		final InsnList insns = methodNode.instructions;
 
@@ -99,7 +109,7 @@ public class BlockSplitter extends FlowObfuscation
 
 			// We might have messed up variable ranges when rearranging the block order.
 			if (methodNode.localVariables != null)
-				new ArrayList<>(methodNode.localVariables).stream().filter(lvn -> insns.indexOf(lvn.end) < insns.indexOf(lvn.start)).forEach(methodNode.localVariables::remove);
+				methodNode.localVariables.removeIf(lvn -> insns.indexOf(lvn.end) < insns.indexOf(lvn.start));
 
 			doSplit(methodNode, counter, callStackSize + 1);
 		}

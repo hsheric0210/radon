@@ -85,10 +85,9 @@ public class InstanceofCheckMutilator extends FlowObfuscation
 						final InsnList tcInsns = new InsnList();
 						tcInsns.add(trapStart);
 						tcInsns.add(new TypeInsnNode(CHECKCAST, instCheck.desc));
-						tcInsns.add(new InsnNode(POP)); // Ignore the return value of method
+						tcInsns.add(new InsnNode(POP)); // Ignore the return value of method // TODO: Type check 후에 그냥 POP으로 결과를 버려버리는 것이 아니라, 하다못해 .hashCode()와 같은 쓸데없는 코드들을 삽입해야 조금 더 헷갈리게 할 수 있다. (가능하다면, 해당 타입 클래스를 불러와 그 내부에 존재하는 무작위의 메서드를 대충 급조한 인수들로 호출하는 식으로 꾸며도 좋다)
 						tcInsns.add(trapEnd);
 
-						// TODO: Insert Trash Codes
 						tcInsns.add(new JumpInsnNode(GOTO, opcode == IFEQ ? catchEnd : jumpTarget));
 						tcInsns.add(catchStart);
 						tcInsns.add(new InsnNode(POP)); // Ignore the catch block parameter

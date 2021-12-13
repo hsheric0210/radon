@@ -75,7 +75,12 @@ public class Packer extends Transformer
 			 * struct Stub { u4 nEntries; entries[nEntries]; };
 			 *
 			 * struct StubEntry { name; u4 nBytes; bytes[nBytes]; };
+			 *
+			 * TODO: 이 순서를 뒤집어버린다던지, 이상한 캐릭터를 섞어버린다던지, 또 뭔 이상한 짓을 한다던지 함으로써 나중에 이걸 열어보려 시도하는 사람들을 효과적으로 엿먹일 수 있지 않을까?
+			 * TODO: 하다못해, entry name에다가 string encryption을 걸어버린다던지...
 			 */
+
+			// Pack classes
 			getClasses().forEach((name, wrapper) ->
 			{
 				if (!included(wrapper))
@@ -99,6 +104,7 @@ public class Packer extends Transformer
 				}
 			});
 
+			// Pack resources
 			getResources().forEach((name, bytes) ->
 			{
 				if (!included(name))

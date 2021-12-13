@@ -45,6 +45,66 @@ import me.itzsomebody.radon.utils.Strings;
 /**
  * This class is how Radon processes the provided {@link ObfuscationConfiguration} to produce an obfuscated jar.
  *
+ * TODO: Radon's Motto: 진짜로 작정하고 뚫으려면 뚫을 수는 있지만, 그 과정이 너무나도 험난한, 마치 RSA 암호와 같은 java 난독화 프로그램
+ * * Deobfuscator 제작이 어렵도록 가능한 한 모든 과정을 그때그때 변하도록 Randomize시킨다. 예시로 매개 변수 같은 것들의 순서를 랜덤하게 바꿔버린다던지...
+ * *-* 거짓말 하나도 안 보태고, 지금 Radon이 가지고 있는 몇 안되는 obfuscation technique들도 싹다 랜덤하게 섞어버린다면 충분히 deobfuscate가 불가능한 수준까지 만들 수 있다. 진짜로.
+ * * String decryptor, Invokedynamic Decryptor같은 들키면 안되는 중요한 클래스들은 내부 코드를 가능한 한 꼴 수 있는 데까지 꼬와 놓아 사람뿐만 아니라 기계도 헷갈리게 (그렇다고 해서 프로그램의 실행 성능이 떨어지만 안된다) 만들어 버리기
+ * * Number obfuscation float, double형의 overflow, infinite 오류 고치기
+ * * ASM Crasher 원리 알아내고 적용하기
+ * * config 파일을 자동으로 만들어주는 기능 추가해보기 (어렵다면, '아무 parameter 없이 실행 시 default config file을 자동으로 만들어주는 기능'이라도 추가하기)
+ *
+ * * '모든 enum들을 int형으로 바꿔버리는' 기능 추가해보기 (이름은 'EnumMagicNumberizer'이 어떨까? https://namu.wiki/w/%EB%A7%A4%EC%A7%81%EB%84%98%EB%B2%84)
+ * {@code
+ * final ModeType mode = getMode()
+ * switch(mode)
+ * {
+ *     ModeType.A:
+ *     ...
+ *     break;
+ *     
+ *     ModeType.B:
+ *     ...
+ *     break;
+ *     
+ *     ModeType.C:
+ *     ...
+ *     break;
+ * }
+ * }
+ *
+ * ^ 위와 같은 코드를 아래처럼 v
+ *
+ * {@code
+ *
+ * enum형이 int형으로 바뀐 모습
+ *        v
+ * final int mode = getMode()
+ * switch(mode)
+ * {
+ *     3: (각각의 enum value에 대응되는 int형으로 바꾸기)
+ *     ...
+ *     break;
+ *
+ *     1: (이때 각각의 enum value에 대응되는 int형은, (그냥 enum에 대응되는 순서대로 가면 ㅈ되고) 반드시 랜덤하게 다시 배정시켜 준 후에 할당해야 한다.)
+ *     ...
+ *     break;
+ *
+ *     2:
+ *     ...
+ *     break;
+ * }
+ * }
+ *
+ * * 클래스, 메서드, 필드 등의 Generic 정보를 단순히 없애버리는 것이 아니라, 이상한 값으로 바꿔버리는 식으로 난독화하는 방법 한번 연구해보기 (아, 이거 혹시 BadSignature로 이미 구현되어있나?)
+ * * (AntiTamper로부터 영감 얻음) Constant pool size를 이용한 암호화/난독화 방법들에 대해 연구해보기
+ * -- 이때 만약 constant pool size를 통해서 무언가 암호화/난독화 하는 로직을 *추가했다면* 이는 곧 constant pool size가 추가된 로직들에 의해 늘어났다는 것이다. 이를 반드시 생각해야 한다.
+ * * Transformer.notifyRunningWith(final Transformer transformer) 메서드를 만들고, 이를 통해 한 transformer에 "지금부터 얘네얘네들이랑 같이 실행할 거니까 준비해!"라고 알려주기
+ * * LocalVariableTable을 효과적으로 망가뜨릴 수 있는 방법 고민해보기
+ *
+ * *-* 이외에도 코드를 난독화할 기발하거나 창의적인 방법이나 아이디어가 떠오른다면 그 즉시 하던 것들을 중단하고 손에 잡히는 아무 것에다가라도 연필 등으로 기록해놨다가 나중에 적용하기
+ * *-*-* 단순한 것이라도 좋으니, 코드의 가독성을 개떡같이 만들고, 보는 사람 입장에서 "뭐야 이건?!"이라는 소리가 절로 나오도록
+ * *-*-* 가역적인 훼손보다는 비가역적인 훼손일수록 더 좋다.
+ *
  * @author ItzSomebody
  */
 public class Radon

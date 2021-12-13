@@ -1,4 +1,4 @@
-package me.itzsomebody.radon.utils;
+package me.itzsomebody.radon.asm;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -10,7 +10,7 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 
-import me.itzsomebody.radon.asm.MethodWrapper;
+import me.itzsomebody.radon.utils.ASMUtils;
 
 /**
  * Local variable provider / index calculator

@@ -26,8 +26,8 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 import org.objectweb.asm.tree.analysis.*;
 
+import me.itzsomebody.radon.asm.LocalVariableProvider;
 import me.itzsomebody.radon.utils.ASMUtils;
-import me.itzsomebody.radon.utils.LocalVariableProvider;
 import me.itzsomebody.radon.utils.RandomUtils;
 
 /**
@@ -47,33 +47,24 @@ public class LocalVariableMutilator extends FlowObfuscation
 		{
 			final MethodNode mn = mw.methodNode;
 
-			final int maxStack = mn.maxStack;
-			final int maxLocals = mn.maxLocals;
-			mn.maxStack = mn.maxLocals = 1000;
-
 			final Frame<BasicValue>[] frames;
 			try
 			{
-				frames = new Analyzer<>(new BasicInterpreter()).analyze(mn.name, mn);
+				frames = ASMUtils.runAnalyzer(new Analyzer<>(new BasicInterpreter()), mn);
 			}
 			catch (final AnalyzerException e)
 			{
 				warn("Failed to analyze method " + mn.name, e);
 				return;
 			}
-			finally
-			{
-				mn.maxStack = maxStack;
-				mn.maxLocals = maxLocals;
-			}
 
-			final LocalVariableProvider provider = new LocalVariableProvider(mw);
+			final LocalVariableProvider varProvider = mw.variableProvider;
 
 			// Map of local variables and their types. They are added if the type of the variable is double, float, int or long
 			final Map<Integer, Set<Type>> localVarMap = new HashMap<>();
 
 			// KEY: Type of array
-			// VALUE: Array local variable index
+			// VALUE: local variable index of the array
 			final Map<Type, Integer> typeArrayVarIndexMap = new HashMap<>();
 
 			// KEY: Original Local variable
@@ -95,7 +86,7 @@ public class LocalVariableMutilator extends FlowObfuscation
 					final VarInsnNode varInsn = (VarInsnNode) insn;
 					final int varIndex = varInsn.var;
 
-					if (provider.isArgumentLocal(varIndex))
+					if (varProvider.isArgumentLocal(varIndex))
 						continue;
 
 					final int opcode = varInsn.getOpcode();
@@ -143,7 +134,7 @@ public class LocalVariableMutilator extends FlowObfuscation
 			for (final Set<Type> types : localVarMap.values())
 				for (final Type type : types)
 				{
-					typeArrayVarIndexMap.computeIfAbsent(type, i -> provider.allocateVar(1));
+					typeArrayVarIndexMap.computeIfAbsent(type, i -> varProvider.allocateVar(1));
 					final int arrayVarIndex = typeArrayVarIndexMap.get(type);
 					arrayIndices.put(arrayVarIndex, arrayIndices.getOrDefault(arrayVarIndex, 0) + 1);
 				}

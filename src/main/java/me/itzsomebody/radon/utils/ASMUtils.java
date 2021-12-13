@@ -26,8 +26,7 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.CodeSizeEvaluator;
 import org.objectweb.asm.tree.*;
-import org.objectweb.asm.tree.analysis.BasicValue;
-import org.objectweb.asm.tree.analysis.Frame;
+import org.objectweb.asm.tree.analysis.*;
 
 import me.itzsomebody.radon.exceptions.RadonException;
 
@@ -511,6 +510,24 @@ public final class ASMUtils implements Opcodes
 	public static boolean isIllegalMethodName(final char character)
 	{
 		return character == '.' || character == ';' || character == '[' || character == '/' || character == '<' || character == '>';
+	}
+
+	public static <T extends Value> Frame<T>[] runAnalyzer(final Analyzer<T> analyzer, final MethodNode mn) throws AnalyzerException
+	{
+		final int maxStack = mn.maxStack;
+		final int maxLocals = mn.maxLocals;
+
+		mn.maxStack = mn.maxLocals=1000;
+
+		try
+		{
+			return analyzer.analyze(mn.name, mn);
+		}
+		finally
+		{
+			mn.maxStack = maxStack;
+			mn.maxLocals = maxLocals;
+		}
 	}
 
 	private ASMUtils()

@@ -18,10 +18,7 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.strings;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.StringJoiner;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.objectweb.asm.FieldVisitor;
@@ -660,6 +657,9 @@ public class StringEncryption extends Transformer
 			// <editor-fold desc="key1">
 			if (contextCheckingEnabled)
 			{
+				// TODO: 반드시 'Object.hashCode()'를 쓸 필요는 없잖아? 'String.length()'도 있고... 'String.indexOf(int)'도 있고...
+				// TODO: 해시코드끼리 XOR연산을 하거나, Objects.hash(Object[])을(를) 이용함으로써 2개 이상의 해시코드를 합쳐서 하나의 키로 사용하는 것도 나쁘지 않을 것 같다.
+
 				mv.visitMethodInsn(INVOKESTATIC, "java/lang/Thread", "currentThread", "()Ljava/lang/Thread;", false);
 				mv.visitVarInsn(ASTORE, 18);
 				final Label l59 = new Label();
@@ -679,7 +679,7 @@ public class StringEncryption extends Transformer
 				mv.visitInsn(AALOAD);
 				mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/StackTraceElement", "getClassName", "()Ljava/lang/String;", false);
 				mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/String", "hashCode", "()I", false);
-				mv.visitInsn(IADD);
+				mv.visitInsn(IADD);// TODO: 여기에 굳이 ADD 말고도 다른 연산자들도 사용할 수 있지 않을까? (SUB, MUL, DIV, MOD, AND, OR, XOR 등등...)
 				mv.visitVarInsn(ALOAD, 19);
 				mv.visitInsn(ICONST_2);
 				mv.visitInsn(AALOAD);
@@ -688,17 +688,18 @@ public class StringEncryption extends Transformer
 				mv.visitInsn(IADD);
 			}
 
-			final int[] randomKeys =
+			final int[] randomKeyVar =
 			{
 					1, 2, 3
 			};
 			for (int i = 0; i < 3; i++)
-				ArrayUtils.swap(randomKeys, i, randomKeyOrder[i]);
+				ArrayUtils.swap(randomKeyVar, i, randomKeyOrder[i]);
 
-			mv.visitVarInsn(ILOAD, randomKeys[0]); // Random Key #1
+			// TODO: 반드시 KEY1 ^ KEY2, KEY1 ^ KEY2 ^ KEY3처럼 2~3개의 키를 섞어서 사용하라는 법은 없잖아? KEY1, KEY2 이런식으로 키 1개만 사용해도 되고...
+			mv.visitVarInsn(ILOAD, randomKeyVar[0]); // Random Key #1
 			if (contextCheckingEnabled)
-				mv.visitInsn(IXOR); // TODO: not only xor, more bit-wise operations
-			mv.visitVarInsn(ILOAD, randomKeys[1]); // Random Key #2
+				mv.visitInsn(IXOR); // TODO: 단순히 XOR로 끝나지 않고, 다른 bitwise 연산들(AND, OR, NOT 등등)도 사용하도록 개선하기!
+			mv.visitVarInsn(ILOAD, randomKeyVar[1]); // Random Key #2
 			mv.visitInsn(IXOR);
 
 			mv.visitVarInsn(ISTORE, 20);
@@ -728,10 +729,10 @@ public class StringEncryption extends Transformer
 				mv.visitInsn(IADD);
 			}
 
-			mv.visitVarInsn(ILOAD, randomKeys[1]); // Random Key #2
+			mv.visitVarInsn(ILOAD, randomKeyVar[1]); // Random Key #2
 			if (contextCheckingEnabled)
 				mv.visitInsn(IXOR);
-			mv.visitVarInsn(ILOAD, randomKeys[2]); // Random Key #3
+			mv.visitVarInsn(ILOAD, randomKeyVar[2]); // Random Key #3
 			mv.visitInsn(IXOR);
 
 			mv.visitVarInsn(ISTORE, 21);
@@ -761,10 +762,10 @@ public class StringEncryption extends Transformer
 				mv.visitInsn(IADD);
 			}
 
-			mv.visitVarInsn(ILOAD, randomKeys[0]); // Random Key #1
+			mv.visitVarInsn(ILOAD, randomKeyVar[0]); // Random Key #1
 			if (contextCheckingEnabled)
 				mv.visitInsn(IXOR);
-			mv.visitVarInsn(ILOAD, randomKeys[2]); // Random Key #3
+			mv.visitVarInsn(ILOAD, randomKeyVar[2]); // Random Key #3
 			mv.visitInsn(IXOR);
 
 			mv.visitVarInsn(ISTORE, 22);
@@ -794,12 +795,12 @@ public class StringEncryption extends Transformer
 				mv.visitInsn(IADD);
 			}
 
-			mv.visitVarInsn(ILOAD, randomKeys[0]); // Random Key #1
+			mv.visitVarInsn(ILOAD, randomKeyVar[0]); // Random Key #1
 			if (contextCheckingEnabled)
 				mv.visitInsn(IXOR);
-			mv.visitVarInsn(ILOAD, randomKeys[1]); // Random Key #2
+			mv.visitVarInsn(ILOAD, randomKeyVar[1]); // Random Key #2
 			mv.visitInsn(IXOR);
-			mv.visitVarInsn(ILOAD, randomKeys[2]); // Random Key #3
+			mv.visitVarInsn(ILOAD, randomKeyVar[2]); // Random Key #3
 			mv.visitInsn(IXOR);
 
 			mv.visitVarInsn(ISTORE, 23);
@@ -1003,7 +1004,7 @@ public class StringEncryption extends Transformer
 			mv.visitLabel(l83);
 			mv.visitVarInsn(ALOAD, 10);
 			mv.visitMethodInsn(INVOKEVIRTUAL, "java/util/concurrent/atomic/AtomicInteger", "get", "()I", false);
-			mv.visitVarInsn(ILOAD, randomKeys[0] + 1);
+			mv.visitVarInsn(ILOAD, randomKeyVar[0] + 1);
 			mv.visitInsn(IXOR);
 			mv.visitVarInsn(ISTORE, 28);
 			final Label l84 = new Label();

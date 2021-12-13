@@ -44,6 +44,7 @@ public class MethodWrapper
 
 	public final Access access;
 	public final ClassWrapper owner;
+	public final LocalVariableProvider variableProvider;
 
 	/**
 	 * Creates a MethodWrapper object.
@@ -60,6 +61,7 @@ public class MethodWrapper
 		originalDescription = methodNode.desc;
 		originalLocals = methodNode.localVariables;
 		access = new MethodAccess(this);
+		variableProvider = new LocalVariableProvider(this);
 		this.owner = owner;
 	}
 

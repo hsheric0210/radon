@@ -25,8 +25,8 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 
 import me.itzsomebody.radon.utils.ASMUtils;
-import me.itzsomebody.radon.utils.LocalVariableProvider;
-import me.itzsomebody.radon.utils.LocalVariableProvider.Local;
+import me.itzsomebody.radon.asm.LocalVariableProvider;
+import me.itzsomebody.radon.asm.LocalVariableProvider.Local;
 import me.itzsomebody.radon.utils.RandomUtils;
 
 /**
@@ -48,7 +48,7 @@ public class LocalVariablePacker extends FlowObfuscation
 		{
 			final InsnList insns = mw.getInstructions();
 
-			final LocalVariableProvider varProvider = new LocalVariableProvider(mw);
+			final LocalVariableProvider varProvider = mw.variableProvider;
 
 			final List<Local> locals = varProvider.localVariables;
 

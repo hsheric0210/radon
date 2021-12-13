@@ -101,7 +101,8 @@ public abstract class Transformer implements Opcodes
 			if (secondName.contains("$"))
 				secondName = secondName.substring(0, secondName.indexOf('$'));
 			result = first + '$' + secondName;
-		} while(list.contains(result));
+		}
+		while (list.contains(result));
 		return result;
 	}
 
@@ -191,6 +192,10 @@ public abstract class Transformer implements Opcodes
 	public abstract String getName();
 
 	public abstract ExclusionType getExclusionType();
+
+	public void nowRunningWith(final Set<String> transformerNames)
+	{
+	}
 
 	public abstract void setConfiguration(Configuration config);
 

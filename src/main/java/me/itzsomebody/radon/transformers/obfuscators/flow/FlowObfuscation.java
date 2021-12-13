@@ -22,6 +22,8 @@ import static me.itzsomebody.radon.config.ConfigurationSetting.FLOW_OBFUSCATION;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 import me.itzsomebody.radon.config.Configuration;
@@ -62,14 +64,26 @@ public class FlowObfuscation extends Transformer
 	@Override
 	public void setConfiguration(final Configuration config)
 	{
-		Stream.of(FlowObfuscationSetting.values()).filter(setting ->
+		Stream.of(FlowObfuscationSetting.values()).map(setting ->
 		{
 			final String path = FLOW_OBFUSCATION + "." + setting.getName();
 
 			if (config.contains(path))
-				return config.get(path);
+			{
+				final FlowObfuscation obfuscation = setting.getFlowObfuscation();
 
-			return false;
-		}).forEach(setting -> flowObfuscators.add(setting.getFlowObfuscation()));
+				final Object value = config.get(path);
+				if (value instanceof Boolean)
+					return obfuscation;
+				if (value instanceof Map)
+				{
+					// Apply configurations
+					obfuscation.setConfiguration(config);
+					return obfuscation;
+				}
+			}
+
+			return null;
+		}).filter(Objects::nonNull).forEach(flowObfuscators::add);
 	}
 }

@@ -25,6 +25,7 @@ import org.yaml.snakeyaml.Yaml;
 
 /**
  * Wrapper around the {@link Map} from {@link Yaml#load(InputStream)}.
+ * TODO: JSON support
  *
  * @author ItzSomebody
  */

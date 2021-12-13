@@ -32,11 +32,14 @@ import me.itzsomebody.radon.utils.ASMUtils;
 import me.itzsomebody.radon.utils.Constants;
 import me.itzsomebody.radon.utils.RandomUtils;
 
-public class StringPooler extends StringEncryption
+// TODO: StringSplitter
+// Original code: public boolean isContains() { return "abcdef".concat("ghijkl").contains("abcd"); }
+// Obfuscated code: public boolean isContains() { (Boolean.FALSE.toString().charAt(1) + "zarb".subString(3) + "cze".replace('z', 'd') + "gjilrfziffizg".charAt(8)).concat("GHI".toLowerCase() + "jkl").contains("ab" + Thread.currentThread().getStackTrace()[2].getMethodName().charAt(2).toLowerCase() + "e".replace('e', 'd')); }
+public class StringSplitter extends StringEncryption
 {
 	private final StringEncryption master;
 
-	public StringPooler(final StringEncryption master)
+	public StringSplitter(final StringEncryption master)
 	{
 		this.master = master;
 	}
@@ -240,7 +243,7 @@ public class StringPooler extends StringEncryption
 
 				rngExclusions.add(i);
 				leeway -= ASMUtils.evaluateMaxSize(mv);
-				if (leeway < 100)
+				if (leeway < 30000)
 				{
 					flags |= LOOP_REQUIRED;
 					break;
@@ -256,9 +259,6 @@ public class StringPooler extends StringEncryption
 			if ((flags & LOOP_REQUIRED) == 0)
 				return pools;
 			flags &= ~LOOP_REQUIRED;
-			
-			// TODO: Method의 instruction count 제한 때문에 여러 개의 메서드에 걸쳐 String pool을 초기화할 정도라면, Class의 Constant pool size 제한도 무시하지 못할 수준이 될 것이다.
-			// TODO: ㄴ Constant pool size 제한을 회피하기 위해, 여러 개의 String pool 클래스를 만드는 식으로 개선하도록 한다.
 		}
 	}
 
