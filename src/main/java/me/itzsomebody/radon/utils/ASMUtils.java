@@ -333,7 +333,7 @@ public final class ASMUtils implements Opcodes
 			case Type.ARRAY:
 				return new InsnNode(ACONST_NULL);
 			default:
-				throw new AssertionError();
+				throw new AssertionError("Unexpected type sort: " + type.getSort());
 		}
 	}
 
@@ -384,7 +384,7 @@ public final class ASMUtils implements Opcodes
 			case Type.OBJECT:
 				return new InsnNode(ACONST_NULL);
 			default:
-				throw new AssertionError();
+				throw new AssertionError("Unexpected type sort: " + type.getSort());
 		}
 	}
 

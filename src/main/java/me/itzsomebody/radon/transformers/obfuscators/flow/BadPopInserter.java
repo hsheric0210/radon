@@ -23,6 +23,7 @@ import static me.itzsomebody.radon.config.ConfigurationSetting.FLOW_OBFUSCATION;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.objectweb.asm.Type;
@@ -118,7 +119,7 @@ public class BadPopInserter extends FlowObfuscation
 		info("+ Inserted " + counter.get() + " bad POP instructions");
 	}
 
-	private InsnList createBadPOP(final int popOpcode, final List<LocalVariableNode> originalLocals, final WrappedDictionary ldcStringDictionary)
+	private InsnList createBadPOP(final int popOpcode, final List<? extends LocalVariableNode> availableLocals, final WrappedDictionary ldcStringDictionary)
 	{
 		final InsnList insns = new InsnList();
 
@@ -139,28 +140,377 @@ public class BadPopInserter extends FlowObfuscation
 		}
 
 		// JObf BadPop
+		final String stringInStack = getRandomString(ldcStringDictionary);
+		insns.add(new LdcInsnNode(ldcStringDictionary.randomString()));
+		insns.add(generateStringInvokeVirtualRecursive(new InsnList(), stringInStack, ldcStringDictionary));
+
 		// TODO: String 말고도 LocalVar을 불러온다던지, Field를 불러온다던지 하는 등의 Trash code의 종류를 다양화해야만이 deobfuscation을 방지할 수 있다.
-		insns.add(createRandomStringPushInsn(ldcStringDictionary));
-		// TODO: String.length() 말고도 다른 것들도 좀 호출해봐 좀...
-		insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/String", "length", "()I", false));
+		// switch (RandomUtils.getRandomInt(3))
+		// {
+		// 	case 0:
+		// 	{
+		// 		// String push
+		// 		final String stringInStack = getRandomString(ldcStringDictionary);
+		// 		insns.add(new LdcInsnNode(ldcStringDictionary));
+		// 		insns.add(generateStringInvokeVirtualRecursive(new InsnList(), stringInStack, ldcStringDictionary));
+		// 		break;
+		// 	}
+		//
+		// 	case 1:
+		// 	{
+		// 		// Local variable load
+		// 		final LocalVariableNode choice = availableLocals.get(RandomUtils.getRandomInt(availableLocals.size()));
+		// 		insns.add(new VarInsnNode(ASMUtils.getVarOpcode(Type.getType(choice.desc), false), choice.index));
+		// 		break;
+		// 	}
+		//
+		// 	case 2:
+		// 	{
+		// 		// Field load
+		//
+		// 		break;
+		// 	}
+		// }
+
 		insns.add(new InsnNode(popOpcode));
 		return insns;
+	}
+
+	public static InsnList generateStringInvokeVirtual(final InsnList insns, final CharSequence stringInStack, final WrappedDictionary ldcStringDictionary)
+	{
+		final String methodName;
+		final String methodDesc;
+
+		final int length = stringInStack.length();
+		if (length <= 0 || RandomUtils.getRandomFloat() > 0.7f)
+		{
+			final Supplier<AbstractInsnNode> randomStringNode = () -> new LdcInsnNode(ldcStringDictionary.randomString());
+			final Supplier<AbstractInsnNode> randomCharacterNode = () -> ASMUtils.getNumberInsn(RandomUtils.getRandomInt(Character.MIN_SUPPLEMENTARY_CODE_POINT));
+
+			switch (RandomUtils.getRandomInt(19))
+			{
+				case 0:
+					methodName = "length";
+					methodDesc = "()I";
+					break;
+
+				case 1:
+					methodName = "isEmpty";
+					methodDesc = "()Z";
+					break;
+
+				case 2:
+					insns.add(new LdcInsnNode("UTF-8"));
+					methodName = "getBytes";
+					methodDesc = "(Ljava/lang/String;)[B";
+					break;
+
+				case 3:
+					methodName = "getBytes";
+					methodDesc = "()[B";
+					break;
+
+				case 4:
+					insns.add(randomStringNode.get());
+					methodName = "contentEquals";
+					methodDesc = "(Ljava/lang/CharSequence;)Z";
+					break;
+
+				case 5:
+					insns.add(randomStringNode.get());
+					methodName = "equalsIgnoreCase";
+					methodDesc = "(Ljava/lang/String;)Z";
+					break;
+
+				case 6:
+					insns.add(randomStringNode.get());
+					methodName = "compareTo";
+					methodDesc = "(Ljava/lang/String;)I";
+					break;
+
+				case 7:
+					insns.add(randomStringNode.get());
+					methodName = "compareToIgnoreCase";
+					methodDesc = "(Ljava/lang/String;)I";
+					break;
+
+				case 8:
+					insns.add(randomStringNode.get());
+					methodName = "startsWith";
+					methodDesc = "(Ljava/lang/String;)Z";
+					break;
+
+				case 9:
+					insns.add(randomStringNode.get());
+					methodName = "endsWith";
+					methodDesc = "(Ljava/lang/String;)Z";
+					break;
+
+				case 10:
+					methodName = "hashCode";
+					methodDesc = "()I";
+					break;
+
+				case 11:
+					insns.add(randomCharacterNode.get());
+					methodName = "indexOf";
+					methodDesc = "(I)I";
+					break;
+
+				case 12:
+					insns.add(randomCharacterNode.get());
+					methodName = "lastIndexOf";
+					methodDesc = "(I)I";
+					break;
+
+				case 13:
+					insns.add(randomStringNode.get());
+					methodName = "indexOf";
+					methodDesc = "(Ljava/lang/String;)I";
+					break;
+
+				case 14:
+					insns.add(randomStringNode.get());
+					methodName = "lastIndexOf";
+					methodDesc = "(Ljava/lang/String;)I";
+					break;
+
+				case 15:
+					insns.add(randomStringNode.get());
+					methodName = "contains";
+					methodDesc = "(Ljava/lang/CharSequence;)Z";
+					break;
+
+				case 16:
+					insns.add(randomStringNode.get());
+					insns.add(ASMUtils.getNumberInsn(RandomUtils.getRandomInt(32)));
+					methodName = "split";
+					methodDesc = "(Ljava/lang/String;I)[Ljava/lang/String;";
+					break;
+
+				case 17:
+					insns.add(randomStringNode.get());
+					methodName = "split";
+					methodDesc = "(Ljava/lang/String;)[Ljava/lang/String;";
+					break;
+
+				case 18:
+					methodName = "toCharArray";
+					methodDesc = "()[C";
+					break;
+
+				default:
+					throw new AssertionError();
+			}
+		}
+		else
+		{
+			final int startIndex = RandomUtils.getRandomInt(length);
+			final int endIndex = RandomUtils.getRandomInt(startIndex, length);
+
+			insns.add(ASMUtils.getNumberInsn(startIndex));
+			final Supplier<AbstractInsnNode> endIndexNode = () -> ASMUtils.getNumberInsn(endIndex);
+
+			switch (RandomUtils.getRandomInt(5))
+			{
+				case 0:
+					methodName = "charAt";
+					methodDesc = "(I)C";
+					break;
+
+				case 1:
+					methodName = "codePointAt";
+					methodDesc = "(I)I";
+					break;
+
+				case 2:
+
+					methodName = "codePointBefore";
+					methodDesc = "(I)I";
+					break;
+
+				case 3:
+					insns.add(endIndexNode.get());
+
+					methodName = "codePointCount";
+					methodDesc = "(II)I";
+					break;
+
+				case 4:
+					insns.add(endIndexNode.get());
+
+					methodName = "offsetByCodePoints";
+					methodDesc = "(II)I";
+					break;
+
+				default:
+					throw new AssertionError();
+			}
+		}
+
+		insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/String", methodName, methodDesc, false));
+		return insns;
+	}
+
+	public static InsnList generateStringInvokeVirtualRecursive(final InsnList insns, String stringInStack, final WrappedDictionary ldcStringDictionary)
+	{
+		final float random = RandomUtils.getRandomFloat();
+		if (random > 0.8f)
+			return insns;
+
+		if (random < 0.2f)
+			return generateStringInvokeVirtual(insns, stringInStack, ldcStringDictionary);
+
+		final String methodName;
+		final String methodDesc;
+
+		final int length = stringInStack.length();
+
+		if (length <= 0 || RandomUtils.getRandomFloat() > 0.7f)
+			switch (RandomUtils.getRandomInt(9))
+			{
+				case 0:
+					final String other = ldcStringDictionary.randomString();
+
+					insns.add(new LdcInsnNode(other));
+					methodName = "concat";
+					methodDesc = "(Ljava/lang/String;)Ljava/lang/String;";
+
+					stringInStack += other;
+					break;
+
+				case 1:
+				{
+					final int from = RandomUtils.getRandomInt(Character.MAX_VALUE);
+					final int to = RandomUtils.getRandomInt(Character.MAX_VALUE);
+
+					insns.add(ASMUtils.getNumberInsn(from));
+					insns.add(ASMUtils.getNumberInsn(to));
+
+					methodName = "replace";
+					methodDesc = "(CC)Ljava/lang/String;";
+
+					stringInStack = stringInStack.replace((char) from, (char) to);
+					break;
+				}
+
+				case 2:
+				{
+					final String from = ldcStringDictionary.randomString();
+					final String to = ldcStringDictionary.randomString();
+
+					insns.add(new LdcInsnNode(from));
+					insns.add(new LdcInsnNode(to));
+
+					methodName = "replaceFirst";
+					methodDesc = "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;";
+
+					stringInStack = stringInStack.replaceFirst(from, to);
+					break;
+				}
+
+				case 3:
+				{
+					final String from = ldcStringDictionary.randomString();
+					final String to = ldcStringDictionary.randomString();
+
+					insns.add(new LdcInsnNode(from));
+					insns.add(new LdcInsnNode(to));
+
+					methodName = "replaceAll";
+					methodDesc = "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;";
+
+					stringInStack = stringInStack.replaceAll(from, to);
+					break;
+				}
+
+				case 4:
+				{
+					final String from = ldcStringDictionary.randomString();
+					final String to = ldcStringDictionary.randomString();
+
+					insns.add(new LdcInsnNode(from));
+					insns.add(new LdcInsnNode(to));
+
+					methodName = "replace";
+					methodDesc = "(Ljava/lang/CharSequence;Ljava/lang/CharSequence;)Ljava/lang/String;";
+
+					stringInStack = stringInStack.replace(from, to);
+					break;
+				}
+
+				case 5:
+					methodName = "toLowerCase";
+					methodDesc = "()Ljava/lang/String;";
+					break;
+
+				case 6:
+					methodName = "toUpperCase";
+					methodDesc = "()Ljava/lang/String;";
+					break;
+
+				case 7:
+					methodName = "trim";
+					methodDesc = "()Ljava/lang/String;";
+					break;
+
+				case 8:
+					// xd
+					methodName = "toString";
+					methodDesc = "()Ljava/lang/String;";
+					break;
+
+				default:
+					throw new AssertionError();
+			}
+		else
+		{
+			final int startIndex = RandomUtils.getRandomInt(length);
+			insns.add(ASMUtils.getNumberInsn(startIndex));
+
+			switch (RandomUtils.getRandomInt(2))
+			{
+				case 0:
+					methodName = "substring";
+					methodDesc = "(I)Ljava/lang/String;";
+
+					stringInStack = stringInStack.substring(startIndex);
+					break;
+
+				case 1:
+					final int endIndex = RandomUtils.getRandomInt(startIndex, length);
+
+					insns.add(ASMUtils.getNumberInsn(endIndex));
+					methodName = "substring";
+					methodDesc = "(II)Ljava/lang/String;";
+
+					stringInStack = stringInStack.substring(startIndex, endIndex);
+					break;
+
+				default:
+					throw new AssertionError();
+			}
+		}
+
+		insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/String", methodName, methodDesc, false));
+
+		return generateStringInvokeVirtualRecursive(insns, stringInStack, ldcStringDictionary);
 	}
 
 	private AbstractInsnNode createRandomPushInsn(final WrappedDictionary ldcStringDictionary)
 	{
 		final Type type = ASMUtils.getRandomType();
 		if (type.getSize() > 1) // wide types(long, double) are not supported
-			return createRandomStringPushInsn(ldcStringDictionary);
+			return new LdcInsnNode(getRandomString(ldcStringDictionary));
 		return ASMUtils.getRandomInsn(type);
 	}
 
-	private AbstractInsnNode createRandomStringPushInsn(final WrappedDictionary dictionary)
+	private String getRandomString(final WrappedDictionary dictionary)
 	{
 		if (RandomUtils.getRandomInt(50) == 0)
-			return new LdcInsnNode(Main.ATTRIBUTION);
+			return Main.ATTRIBUTION;
 
-		return new LdcInsnNode(dictionary.randomString());
+		return dictionary.randomString();
 	}
 
 	@Override

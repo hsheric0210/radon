@@ -52,9 +52,10 @@ public class LocalVariableProvider implements Opcodes
 
 		localVariables = new ArrayList<>();
 
-		for (final LocalVariableNode local : mw.originalLocals)
-			if (!isArgumentLocal(local.index))
-				localVariables.add(new Local(local.index, Type.getType(local.desc), local.start, local.end, insns));
+		if (mw.originalLocals != null)
+			for (final LocalVariableNode local : mw.originalLocals)
+				if (!isArgumentLocal(local.index))
+					localVariables.add(new Local(local.index, Type.getType(local.desc), local.start, local.end, insns));
 	}
 
 	private void registerExisting(final int varIndex, final int typeSize)

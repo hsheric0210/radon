@@ -86,6 +86,7 @@ public final class Main
 	 */
 	public static void main(final String[] args) throws IOException
 	{
+		// Test code for flow obfuscation
 		if (TEST_1 || TEST_2 || TEST_3 || TEST_4 || TEST_5)
 			System.out.println("");
 		if (TEST_1 && TEST_2 && TEST_3 && TEST_4 && TEST_5)
