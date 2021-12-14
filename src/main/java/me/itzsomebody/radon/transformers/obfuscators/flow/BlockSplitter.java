@@ -38,7 +38,6 @@ import me.itzsomebody.radon.config.Configuration;
  */
 public class BlockSplitter extends FlowObfuscation
 {
-	// used to limit number of recursive calls on doSplit()
 	private int recursiveLimit;
 
 	@Override
@@ -60,6 +59,7 @@ public class BlockSplitter extends FlowObfuscation
 	@Override
 	public void setConfiguration(final Configuration config)
 	{
+		// used to limit number of recursive calls on doSplit()
 		recursiveLimit = config.getOrDefault(STRING_ENCRYPTION + "." + FlowObfuscationSetting.SPLIT_BLOCKS + ".recursionLimit", 11);
 	}
 

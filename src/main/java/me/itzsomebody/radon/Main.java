@@ -58,11 +58,6 @@ public final class Main
 
 	public static final String WATERMARK = "RADON" + VERSION;
 
-	public static boolean getBoolean()
-	{
-		return false;
-	}
-
 	private static String formatContributorList()
 	{
 		final StringBuilder sb = new StringBuilder();
@@ -72,12 +67,6 @@ public final class Main
 		return sb.toString();
 	}
 
-	public static boolean TEST_1 = true;
-	public static boolean TEST_2 = false;
-	public static boolean TEST_3 = false;
-	public static boolean TEST_4 = true;
-	public static boolean TEST_5 = false;
-
 	/**
 	 * Main method.
 	 *
@@ -86,18 +75,6 @@ public final class Main
 	 */
 	public static void main(final String[] args) throws IOException
 	{
-		// Test code for flow obfuscation
-		if (TEST_1 || TEST_2 || TEST_3 || TEST_4 || TEST_5)
-			System.out.println("");
-		if (TEST_1 && TEST_2 && TEST_3 && TEST_4 && TEST_5)
-			System.out.println("");
-		if (TEST_1 || TEST_2 && TEST_3 && TEST_4 || TEST_5)
-			System.out.println("");
-		if (TEST_1 && (TEST_2 || TEST_3) && (TEST_4 || TEST_5))
-			System.out.println("");
-		if (TEST_1 || TEST_2 && TEST_3 || TEST_4 && TEST_5)
-			System.out.println("");
-
 		final CustomOutputStream cos = new CustomOutputStream(System.err);
 		System.setErr(new PrintStream(cos));
 
@@ -259,16 +236,6 @@ public final class Main
 	private static void showLicense()
 	{
 		System.out.println(new String(IOUtils.toByteArray(Objects.requireNonNull(Main.class.getResourceAsStream("/license.txt"))), StandardCharsets.UTF_8));
-	}
-
-	private static byte dummyByteOp(final byte a)
-	{
-		return a;
-	}
-
-	private static short dummyShortOp(final short a)
-	{
-		return a;
 	}
 
 	private Main()

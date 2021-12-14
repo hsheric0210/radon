@@ -439,7 +439,7 @@ public final class ASMUtils implements Opcodes
 		throw new IllegalArgumentException("Unexpected offset: " + offset);
 	}
 
-	public static boolean isSuperInitializerCall(final MethodNode mn, final AbstractInsnNode insn)
+	public static boolean isSuperInitializerCall(final AbstractInsnNode insn)
 	{
 		return insn != null && insn.getOpcode() == INVOKESPECIAL && "<init>".equals(((MethodInsnNode) insn).name) // Check if the current instruction is INVOKESPECIAL which calling <init>
 				&& insn.getPrevious() != null && insn.getPrevious().getOpcode() == ALOAD && ((VarInsnNode) insn.getPrevious()).var == 0;
@@ -454,7 +454,7 @@ public final class ASMUtils implements Opcodes
 	public static void insertAfterConstructorCall(final MethodNode mn, final InsnList inserted)
 	{
 		final InsnList insns = mn.instructions;
-		final Optional<AbstractInsnNode> optSuperCall = "<init>".equals(mn.name) ? Arrays.stream(insns.toArray()).filter(insn -> isSuperInitializerCall(mn, insn)).findFirst() : Optional.empty();
+		final Optional<AbstractInsnNode> optSuperCall = "<init>".equals(mn.name) ? Arrays.stream(insns.toArray()).filter(insn -> isSuperInitializerCall(insn)).findFirst() : Optional.empty();
 		if (optSuperCall.isPresent())
 		{
 			insns.insert(optSuperCall.get(), inserted);
@@ -512,12 +512,13 @@ public final class ASMUtils implements Opcodes
 		return character == '.' || character == ';' || character == '[' || character == '/' || character == '<' || character == '>';
 	}
 
-	public static <T extends Value> Frame<T>[] runAnalyzer(final Analyzer<T> analyzer, final MethodNode mn) throws AnalyzerException
+	public static <T extends Value> Frame<T>[] runAnalyzer(final Analyzer<T> analyzer, final MethodNode mn, final boolean maxValues) throws AnalyzerException
 	{
 		final int maxStack = mn.maxStack;
 		final int maxLocals = mn.maxLocals;
 
-		mn.maxStack = mn.maxLocals=1000;
+		if (maxValues)
+			mn.maxStack = mn.maxLocals = 1337;
 
 		try
 		{

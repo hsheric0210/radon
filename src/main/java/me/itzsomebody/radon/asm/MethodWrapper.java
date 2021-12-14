@@ -44,7 +44,6 @@ public class MethodWrapper
 
 	public final Access access;
 	public final ClassWrapper owner;
-	public final LocalVariableProvider variableProvider;
 
 	/**
 	 * Creates a MethodWrapper object.
@@ -61,7 +60,6 @@ public class MethodWrapper
 		originalDescription = methodNode.desc;
 		originalLocals = methodNode.localVariables;
 		access = new MethodAccess(this);
-		variableProvider = new LocalVariableProvider(this);
 		this.owner = owner;
 	}
 
@@ -174,5 +172,10 @@ public class MethodWrapper
 	public int getLeewaySize()
 	{
 		return Constants.MAX_CODE_SIZE - getCodeSize();
+	}
+
+	public LocalVariableProvider getVarProvider()
+	{
+		return new LocalVariableProvider(this);
 	}
 }

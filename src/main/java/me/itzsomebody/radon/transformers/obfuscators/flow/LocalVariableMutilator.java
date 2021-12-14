@@ -50,7 +50,7 @@ public class LocalVariableMutilator extends FlowObfuscation
 			final Frame<BasicValue>[] frames;
 			try
 			{
-				frames = ASMUtils.runAnalyzer(new Analyzer<>(new BasicInterpreter()), mn);
+				frames = ASMUtils.runAnalyzer(new Analyzer<>(new BasicInterpreter()), mn, true);
 			}
 			catch (final AnalyzerException e)
 			{
@@ -58,7 +58,7 @@ public class LocalVariableMutilator extends FlowObfuscation
 				return;
 			}
 
-			final LocalVariableProvider varProvider = mw.variableProvider;
+			final LocalVariableProvider varProvider = mw.getVarProvider();
 
 			// Map of local variables and their types. They are added if the type of the variable is double, float, int or long
 			final Map<Integer, Set<Type>> localVarMap = new HashMap<>();

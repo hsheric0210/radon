@@ -46,10 +46,10 @@ public abstract class Transformer implements Opcodes
 {
 	protected Radon radon;
 
-	private Map<String, WrappedDictionary> packageDictionaries;
-	private Map<String, WrappedDictionary> classDictionaries;
-	private Map<String, WrappedDictionary> methodDictionaries;
-	private Map<String, WrappedDictionary> fieldDictionaries;
+	private static Map<String, WrappedDictionary> packageDictionaries;
+	private static Map<String, WrappedDictionary> classDictionaries;
+	private static Map<String, WrappedDictionary> methodDictionaries;
+	private static Map<String, WrappedDictionary> fieldDictionaries;
 
 	public final void init(final Radon radon)
 	{

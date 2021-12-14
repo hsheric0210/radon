@@ -26,7 +26,7 @@ import org.objectweb.asm.tree.*;
 
 import me.itzsomebody.radon.utils.ASMUtils;
 import me.itzsomebody.radon.utils.BogusJumps;
-import me.itzsomebody.radon.utils.FakeCodeGenerator;
+import me.itzsomebody.radon.utils.CodeGenerator;
 import me.itzsomebody.radon.utils.RandomUtils;
 
 /**
@@ -37,7 +37,7 @@ import me.itzsomebody.radon.utils.RandomUtils;
  */
 public class GotoReplacer extends FlowObfuscation
 {
-	private static final int CLASS_PRED_ACCESS = ACC_PRIVATE | ACC_STATIC | ACC_FINAL | ACC_SYNTHETIC;
+	private static final int CLASS_PRED_ACCESS = ACC_PRIVATE | ACC_STATIC | ACC_SYNTHETIC;
 	private static final int INTERFACE_PRED_ACCESS = ACC_PUBLIC | ACC_STATIC | ACC_FINAL;
 
 	@Override
@@ -51,7 +51,7 @@ public class GotoReplacer extends FlowObfuscation
 
 			final Type predicateType = ASMUtils.getRandomType();
 			final String predicateDescriptor = predicateType.getDescriptor();
-			final Object predicateInitialValue = RandomUtils.getRandomBoolean() ? RandomUtils.getRandomValue(predicateType) : null;
+			final Object predicateInitialValue = RandomUtils.getRandomFloat() > 0.2F ? RandomUtils.getRandomValue(predicateType) : null;
 
 			final FieldNode predicate = new FieldNode(cw.access.isInterface() ? INTERFACE_PRED_ACCESS : CLASS_PRED_ACCESS, getFieldDictionary(cw.originalName).nextUniqueString(), predicateDescriptor, null, predicateInitialValue);
 
@@ -72,17 +72,17 @@ public class GotoReplacer extends FlowObfuscation
 
 					// Bad way of detecting if this class was instantiated
 					if (isCtor && !calledSuper)
-						calledSuper = ASMUtils.isSuperInitializerCall(mw.methodNode, insn);
+						calledSuper = ASMUtils.isSuperInitializerCall(insn);
 
 					if (insn.getOpcode() == GOTO && !(isCtor && !calledSuper))
 					{
 						final InsnList bogusJump = new InsnList();
 						bogusJump.add(BogusJumps.createBogusJump(varIndex, predicateType, predicateInitialValue, ((JumpInsnNode) insn).label, true));
-						bogusJump.add(FakeCodeGenerator.generateCodes(mw.methodNode));
+						bogusJump.add(CodeGenerator.generateTrapInstructions(mw.methodNode)); // TODO: 단순히 미리 만들어둔 trap label로 점프시키는 것이 아니라, if문의 'else' branch 내의 코드의 내용을 교묘하게 변조한 후 그 코드로 점프하게 함으로써 더 헷갈리게 할 수 있지 않을까?
+						leeway -= ASMUtils.evaluateMaxSize(bogusJump);
+
 						insns.insert(insn, bogusJump);
 						insns.remove(insn);
-
-						leeway -= ASMUtils.evaluateMaxSize(bogusJump);
 
 						counter.incrementAndGet();
 						shouldAdd.set(true);

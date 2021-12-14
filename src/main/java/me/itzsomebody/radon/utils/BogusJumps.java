@@ -29,12 +29,12 @@ public final class BogusJumps implements Opcodes
 	{
 		final InsnList insnList = new InsnList();
 
-		final int inversionFieldSize = RandomUtils.getRandomInt(32);
+		final int inversionFieldSize = RandomUtils.getRandomInt(1, 8);
 		int inversionField = IntStream.range(0, inversionFieldSize).map(i -> (invertCondition && RandomUtils.getRandomBoolean() ? 1 : 0) << i).reduce(0, (a, b) -> a | b);
 
 		// Fail-safe
 		if (invertCondition && inversionField == 0)
-			inversionField |= 1 << RandomUtils.getRandomInt(inversionFieldSize);
+			inversionField |= 1 << RandomUtils.getRandomInt(0, inversionFieldSize);
 
 		for (int i = 0; i < inversionFieldSize; i++)
 		{
@@ -156,7 +156,7 @@ public final class BogusJumps implements Opcodes
 					break;
 				default:
 					compareOpcode = FCMPL;
-					jumpOpcode = invertCondition ? IFNE : IFGT;
+					jumpOpcode = invertCondition ? IFLE : IFGT; // 오타 하나 때문에 금같은 4시간이 날라감...
 					break;
 			}
 		else if (RandomUtils.getRandomBoolean()) // The predicate is not zero

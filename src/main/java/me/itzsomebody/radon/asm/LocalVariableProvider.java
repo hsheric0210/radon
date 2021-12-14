@@ -1,9 +1,7 @@
 package me.itzsomebody.radon.asm;
 
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.objectweb.asm.Opcodes;
@@ -87,7 +85,7 @@ public class LocalVariableProvider implements Opcodes
 
 	public Type getLocalType(final int varIndex, final AbstractInsnNode insn)
 	{
-		return localVariables.stream().filter(entry -> entry.varIndex == varIndex && entry.availableOn.contains(insn)).findFirst().map(entry -> entry.type).orElse(null);
+		return localVariables.stream().filter(entry -> entry.varIndex == varIndex && entry.isAvailableOn(insn)).findFirst().map(entry -> entry.type).orElse(null);
 	}
 
 	public static class Local
@@ -96,14 +94,13 @@ public class LocalVariableProvider implements Opcodes
 		public Type type;
 		public int typeSort;
 		public int size;
-		public List<AbstractInsnNode> availableOn;
+		private final Set<AbstractInsnNode> availableOn;
 
 		public Local(final int varIndex, final Type type, final LabelNode start, final LabelNode end, final InsnList insns)
 		{
 			this.varIndex = varIndex;
 			this.type = type;
 
-			availableOn = new ArrayList<>();
 			if (insns != null && start != null && end != null)
 			{
 				if (!insns.contains(start))
@@ -116,9 +113,13 @@ public class LocalVariableProvider implements Opcodes
 
 				// A list which only contain LabelNode's
 				final List<LabelNode> labelList = insnList.stream().filter(insn -> insn instanceof LabelNode).map(insn -> (LabelNode) insn).collect(Collectors.toList());
-				final int actualStartIndex = insnList.indexOf(labelList.get(Math.max(labelList.indexOf(start) - 1, 0)));
-				availableOn.addAll(insnList.subList(actualStartIndex, insns.indexOf(end)));
+				final List<AbstractInsnNode> availableOn = insnList.subList(insnList.indexOf(labelList.get(Math.max(labelList.indexOf(start) - 1, 0))), insns.indexOf(end));
+
+				this.availableOn = new HashSet<>(availableOn.size());
+				this.availableOn.addAll(availableOn);
 			}
+			else
+				availableOn = new HashSet<>(0);
 
 			this.type = type;
 			typeSort = type.getSort();
@@ -141,6 +142,11 @@ public class LocalVariableProvider implements Opcodes
 				default:
 					size = 32;
 			}
+		}
+
+		public boolean isAvailableOn(final AbstractInsnNode insn)
+		{
+			return availableOn.contains(insn);
 		}
 	}
 }

@@ -48,7 +48,7 @@ public class LocalVariablePacker extends FlowObfuscation
 		{
 			final InsnList insns = mw.getInstructions();
 
-			final LocalVariableProvider varProvider = mw.variableProvider;
+			final LocalVariableProvider varProvider = mw.getVarProvider();
 
 			final List<Local> locals = varProvider.localVariables;
 
@@ -162,7 +162,7 @@ public class LocalVariablePacker extends FlowObfuscation
 
 					if (insn.getOpcode() == ISTORE)
 					{
-						final Optional<Local> optLocal = locals.stream().filter(entry -> entry.varIndex == varIndex && entry.availableOn.contains(insn)).findAny();
+						final Optional<Local> optLocal = locals.stream().filter(entry -> entry.varIndex == varIndex && entry.isAvailableOn(insn)).findAny();
 						if (optLocal.isPresent())
 						{
 							final Local intLocal = optLocal.get();
@@ -197,7 +197,7 @@ public class LocalVariablePacker extends FlowObfuscation
 
 					if (insn.getOpcode() == ILOAD)
 					{
-						final Optional<Local> optLocal = locals.stream().filter(entry -> entry.varIndex == varIndex && entry.availableOn.contains(insn)).findAny();
+						final Optional<Local> optLocal = locals.stream().filter(entry -> entry.varIndex == varIndex && entry.isAvailableOn(insn)).findAny();
 						if (optLocal.isPresent())
 						{
 							final Local intLocal = optLocal.get();
@@ -236,7 +236,7 @@ public class LocalVariablePacker extends FlowObfuscation
 				{
 					final IincInsnNode ii = (IincInsnNode) insn;
 					final int varIndex = ii.var;
-					final Optional<Local> optLocal = locals.stream().filter(entry -> entry.varIndex == varIndex && entry.availableOn.contains(insn)).findAny();
+					final Optional<Local> optLocal = locals.stream().filter(entry -> entry.varIndex == varIndex && entry.isAvailableOn(insn)).findAny();
 					if (optLocal.isPresent())
 					{
 						final Local intLocal = optLocal.get();

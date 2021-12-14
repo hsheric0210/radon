@@ -45,7 +45,7 @@ import me.itzsomebody.radon.utils.RandomUtils;
 
 public class BogusSwitchJumpInserter extends FlowObfuscation
 {
-	private static final int CLASS_PRED_ACCESS = ACC_PRIVATE | ACC_STATIC | ACC_FINAL | ACC_SYNTHETIC;
+	private static final int CLASS_PRED_ACCESS = ACC_PRIVATE | ACC_STATIC | ACC_SYNTHETIC;
 	private static final int INTERFACE_PRED_ACCESS = ACC_PUBLIC | ACC_STATIC | ACC_FINAL;
 
 	@Override

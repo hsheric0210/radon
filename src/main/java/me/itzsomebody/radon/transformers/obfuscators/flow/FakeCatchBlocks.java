@@ -29,7 +29,7 @@ import me.itzsomebody.radon.utils.Throwables;
 
 /**
  * Traps random instructions using a fake handler.
- * Essentially the same thing as Zelix's exception obfuscation or Dasho's fake try catches.
+ * Essentially the same thing as Zelix's exception obfuscation or DashO's fake try catches.
  *
  * @author ItzSomebody
  */
