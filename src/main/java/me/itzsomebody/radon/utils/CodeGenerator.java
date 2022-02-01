@@ -602,8 +602,8 @@ public final class CodeGenerator implements Opcodes
 						// while(true) {} - Infinite loop
 						final LabelNode loopStart = new LabelNode();
 						insnList.add(loopStart);
-						insnList.add(new FrameNode(F_NEW, 0, new Object[0], 0, new Object[0]));
-						insnList.add(new LabelNode());
+						insnList.add(new LabelNode()); // TODO: Insert dummy code here and un-comment leading commented label node
+						// insnList.add(new LabelNode());
 						insnList.add(new JumpInsnNode(GOTO, loopStart));
 						break;
 					}

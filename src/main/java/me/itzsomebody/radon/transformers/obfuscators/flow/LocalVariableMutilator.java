@@ -27,12 +27,16 @@ import org.objectweb.asm.tree.*;
 import org.objectweb.asm.tree.analysis.*;
 
 import me.itzsomebody.radon.asm.LocalVariableProvider;
+import me.itzsomebody.radon.config.Configuration;
 import me.itzsomebody.radon.utils.ASMUtils;
 import me.itzsomebody.radon.utils.RandomUtils;
 
 /**
  * Pack all local variables into array(s) and randomizes its index
- * Original source code: https://github.com/superblaubeere27/obfuscator/blob/master/obfuscator-core/src/main/java/me/superblaubeere27/jobf/processors/flowObfuscation/LocalVariableMangler.java
+ *
+ * <ul>
+ * <li>Original source code: https://github.com/superblaubeere27/obfuscator/blob/master/obfuscator-core/src/main/java/me/superblaubeere27/jobf/processors/flowObfuscation/LocalVariableMangler.java</li>
+ * </ul>
  *
  * @author superblaubeere27
  */
@@ -300,4 +304,9 @@ public class LocalVariableMutilator extends FlowObfuscation
 		return "Local Variable Mutilator";
 	}
 
+	@Override
+	public void setConfiguration(final Configuration config)
+	{
+		// Not needed
+	}
 }

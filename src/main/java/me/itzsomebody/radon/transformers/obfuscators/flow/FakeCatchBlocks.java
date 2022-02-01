@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.objectweb.asm.tree.*;
 
 import me.itzsomebody.radon.asm.ClassWrapper;
+import me.itzsomebody.radon.config.Configuration;
 import me.itzsomebody.radon.utils.ASMUtils;
 import me.itzsomebody.radon.utils.RandomUtils;
 import me.itzsomebody.radon.utils.Throwables;
@@ -30,6 +31,8 @@ import me.itzsomebody.radon.utils.Throwables;
 /**
  * Traps random instructions using a fake handler.
  * Essentially the same thing as Zelix's exception obfuscation or DashO's fake try catches.
+ *
+ * <p>TODO: Insert counterfeit codes to exception handler</p>
  *
  * @author ItzSomebody
  */
@@ -97,5 +100,11 @@ public class FakeCatchBlocks extends FlowObfuscation
 	public String getName()
 	{
 		return "Fake Catch Blocks";
+	}
+
+	@Override
+	public void setConfiguration(final Configuration config)
+	{
+		// Not needed
 	}
 }

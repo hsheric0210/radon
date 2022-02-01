@@ -23,6 +23,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 
+import me.itzsomebody.radon.config.Configuration;
+
 /**
  * Separate return from computation(s) of return value
  * Original source code: https://github.com/superblaubeere27/obfuscator/blob/master/obfuscator-core/src/main/java/me/superblaubeere27/jobf/processors/flowObfuscation/ReturnMangler.java
@@ -82,5 +84,11 @@ public class ReturnMutilator extends FlowObfuscation
 	public String getName()
 	{
 		return "Return Mutilator";
+	}
+
+	@Override
+	public void setConfiguration(final Configuration config)
+	{
+		// Not needed
 	}
 }

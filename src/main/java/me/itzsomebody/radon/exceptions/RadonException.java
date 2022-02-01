@@ -33,4 +33,9 @@ public class RadonException extends RuntimeException
 	{
 		super(t);
 	}
+
+	public RadonException(final String msg, final Throwable t)
+	{
+		super(msg, t);
+	}
 }

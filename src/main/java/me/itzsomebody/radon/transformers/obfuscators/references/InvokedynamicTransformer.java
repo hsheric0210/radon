@@ -49,6 +49,10 @@ import me.itzsomebody.radon.utils.Constants;
  *         ... 5 more
  * </pre>
  *
+ * <p>
+ * TODO: Support INVOKESPECIAL with {@code MethodHandles.findSpecial}(it doesn't works well with constructors!) and {@code MethodHandles.findConstructor}(it only works with constructors)
+ * </p>
+ *
  * @author ItzSomebody
  */
 public class InvokedynamicTransformer extends ReferenceObfuscation

@@ -34,6 +34,10 @@ public enum FlowObfuscationSetting
 	DUPLICATE_VARS(new VariableDuplicator()),
 	PACK_LOCAL_VARIABLES(new LocalVariablePacker()),
 	MUTILATE_LOCAL_VARIABLES(new LocalVariableMutilator());
+	// TODO: ComparisonMutilator - replace every value comparison(IFEQ, IFNE, IF_ICMPLT, IF_ACMPEQ, etc.) with method calls - inspired by Superblaubeere27's JObf
+	// TODO: CounterfeitElseBranchInserter - for every if's without corresponding 'else' branches, copy codes from 'if' branch, counterfeit and insert counterfeit 'else' - inspired by zelix klassmaster
+	// TODO: StaticFieldMerger - merge private static fields into list or array - inspired by Superblaubeere27's JObf
+	// TODO: StaticMethodMerger - merge static methods into a method - inspired by Binscure
 
 	private final FlowObfuscation flowObfuscation;
 
@@ -50,5 +54,11 @@ public enum FlowObfuscationSetting
 	public String getName()
 	{
 		return name().toLowerCase(Locale.ENGLISH);
+	}
+
+	@Override
+	public String toString()
+	{
+		return getName();
 	}
 }

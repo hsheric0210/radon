@@ -25,13 +25,17 @@ import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
+import me.itzsomebody.radon.config.Configuration;
 import me.itzsomebody.radon.utils.ASMUtils;
 
 /**
  * Duplicates vars. Uglifies opcodes / stack
- * Original source code of Javari VarDuplicator: https://github.com/whosnero/Javari/blob/master/roman/finn/javari/obfmethods/VarDuplicator.java
- * Original source code of SkidSuite duplicateVars: https://github.com/GenericException/SkidSuite/blob/master/archive/skidsuite-2/obfu/src/main/java/me/lpk/obfuscation/MiscAnti.java
- *
+ * 
+ * <ul>
+ * <li>Original source code of Javari VarDuplicator: https://github.com/whosnero/Javari/blob/master/roman/finn/javari/obfmethods/VarDuplicator.java</li>
+ * <li>Original source code of SkidSuite duplicateVars: https://github.com/GenericException/SkidSuite/blob/master/archive/skidsuite-2/obfu/src/main/java/me/lpk/obfuscation/MiscAnti.java</li>
+ * </ul>
+ * 
  * @author Roman, GenericException
  */
 public class VariableDuplicator extends FlowObfuscation
@@ -68,5 +72,17 @@ public class VariableDuplicator extends FlowObfuscation
 		}));
 
 		info("+ Duplicated " + counter.get() + " local variable stores");
+	}
+
+	@Override
+	public String getName()
+	{
+		return "Variable Duplicator";
+	}
+
+	@Override
+	public void setConfiguration(final Configuration config)
+	{
+		// Not needed
 	}
 }

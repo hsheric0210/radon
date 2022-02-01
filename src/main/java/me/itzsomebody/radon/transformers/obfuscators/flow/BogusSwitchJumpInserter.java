@@ -20,7 +20,6 @@ package me.itzsomebody.radon.transformers.obfuscators.flow;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -29,6 +28,7 @@ import java.util.stream.IntStream;
 import org.objectweb.asm.tree.*;
 
 import me.itzsomebody.radon.asm.StackHeightZeroFinder;
+import me.itzsomebody.radon.config.Configuration;
 import me.itzsomebody.radon.exceptions.RadonException;
 import me.itzsomebody.radon.exceptions.StackEmulationException;
 import me.itzsomebody.radon.utils.ASMUtils;
@@ -38,9 +38,7 @@ import me.itzsomebody.radon.utils.RandomUtils;
 /**
  * Essentially the same thing as ADSS (https://www.sable.mcgill.ca/JBCO/examples.html#ADSS)
  *
- * <p>
- * TODO: Improve strength as ZKM :)
- * </p>
+ * <p>TODO: Improve strength as ZKM :)</p>
  */
 
 public class BogusSwitchJumpInserter extends FlowObfuscation
@@ -77,8 +75,7 @@ public class BogusSwitchJumpInserter extends FlowObfuscation
 					throw new RadonException(String.format("Error happened while trying to emulate the stack of %s.%s%s", cw.getName(), mw.getName(), mw.getDescription()));
 				}
 
-				final Set<AbstractInsnNode> check = shzf.getEmptyAt();
-				final ArrayList<AbstractInsnNode> emptyAt = new ArrayList<>(check);
+				final List<AbstractInsnNode> emptyAt = new ArrayList<>(shzf.getEmptyAt());
 
 				if (emptyAt.size() <= 5 || leeway <= 30000)
 					return;
@@ -134,5 +131,11 @@ public class BogusSwitchJumpInserter extends FlowObfuscation
 	public String getName()
 	{
 		return "Bogus Switch Jump Inserter";
+	}
+
+	@Override
+	public void setConfiguration(final Configuration config)
+	{
+		// Not needed
 	}
 }

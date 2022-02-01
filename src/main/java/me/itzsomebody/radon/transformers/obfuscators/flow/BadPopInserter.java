@@ -43,12 +43,15 @@ import me.itzsomebody.radon.utils.CodeGenerator;
 import me.itzsomebody.radon.utils.RandomUtils;
 
 /**
- * Inserts redundant instructions + POP instruction which literally does nothing to confuse decompilers and skidders.
- * Original source code of Javari BadPop Obfuscator: https://github.com/NeroReal/Javari/blob/master/roman/finn/javari/obfmethods/BadPop.java
- * Original source code of JObf BadPop Obfuscator: https://github.com/superblaubeere27/obfuscator/blob/master/obfuscator-core/src/main/java/me/superblaubeere27/jobf/processors/flowObfuscation/FlowObfuscator.java
- * Original source code of LdcSwapInvokeSwapPopRemover: https://github.com/java-deobfuscator/deobfuscator/blob/master/src/main/java/com/javadeobfuscator/deobfuscator/transformers/general/peephole/LdcSwapInvokeSwapPopRemover.java
- * Original source code of SkidSuite BadPop: https://github.com/GenericException/SkidSuite/blob/master/archive/skidsuite-2/obfu/src/main/java/me/lpk/obfuscation/MiscAnti.java
- * Original source code of Allatori JunkRemover: https://github.com/GraxCode/threadtear/blob/master/core/src/main/java/me/nov/threadtear/execution/allatori/JunkRemoverAllatori.java
+ * Inserts redundant instructions + {@code POP} instruction which literally does nothing to confuse decompilers and skidders.
+ *
+ * <ul>
+ * <li>Original source code of Javari BadPop Obfuscator: https://github.com/NeroReal/Javari/blob/master/roman/finn/javari/obfmethods/BadPop.java</li>
+ * <li>Original source code of JObf BadPop Obfuscator: https://github.com/superblaubeere27/obfuscator/blob/master/obfuscator-core/src/main/java/me/superblaubeere27/jobf/processors/flowObfuscation/FlowObfuscator.java</li>
+ * <li>Original source code of LdcSwapInvokeSwapPopRemover: https://github.com/java-deobfuscator/deobfuscator/blob/master/src/main/java/com/javadeobfuscator/deobfuscator/transformers/general/peephole/LdcSwapInvokeSwapPopRemover.java</li>
+ * <li>Original source code of SkidSuite BadPop: https://github.com/GenericException/SkidSuite/blob/master/archive/skidsuite-2/obfu/src/main/java/me/lpk/obfuscation/MiscAnti.java</li>
+ * <li>Original source code of Allatori JunkRemover: https://github.com/GraxCode/threadtear/blob/master/core/src/main/java/me/nov/threadtear/execution/allatori/JunkRemoverAllatori.java</li>
+ * </ul>
  *
  * @author superblaubeere27, Roman, samczsun, GenericException
  */
@@ -198,7 +201,7 @@ public class BadPopInserter extends FlowObfuscation
 				// String push
 				final String stringInStack = generateRandomString(ldcStringDictionary);
 				insns.add(new LdcInsnNode(stringInStack));
-				
+
 				final InsnList dummyInsns = new InsnList();
 				CodeGenerator.generateStringCallRecursive(dummyInsns, stringInStack, ldcStringDictionary, true);
 				insns.add(dummyInsns);

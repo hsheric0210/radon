@@ -29,7 +29,7 @@ public final class BogusJumps implements Opcodes
 	{
 		final InsnList insnList = new InsnList();
 
-		final int inversionFieldSize = RandomUtils.getRandomInt(1, 8);
+		final int inversionFieldSize = RandomUtils.getRandomInt(1, 1);
 		int inversionField = IntStream.range(0, inversionFieldSize).map(i -> (invertCondition && RandomUtils.getRandomBoolean() ? 1 : 0) << i).reduce(0, (a, b) -> a | b);
 
 		// Fail-safe

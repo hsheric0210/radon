@@ -73,9 +73,7 @@ public class FlowObfuscation extends Transformer
 				final FlowObfuscation obfuscation = setting.getFlowObfuscation();
 
 				final Object value = config.get(path);
-				if (value instanceof Boolean && (boolean) value)
-					return obfuscation;
-				if (value instanceof Map)
+				if (value instanceof Boolean && (boolean) value || value instanceof Map)
 				{
 					// Apply configurations
 					obfuscation.setConfiguration(config);

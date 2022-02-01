@@ -95,7 +95,16 @@ public final class Configuration
 		for (int i = 0, j = parts.length - 1; i < j; i++)
 		{
 			final String part = parts[i];
-			current = (Map) current.get(part);
+
+			if (current == null)
+				return null;
+
+			final Object value = current.get(part);
+
+			if (!(value instanceof Map))
+				return null;
+
+			current = (Map) value;
 		}
 
 		return (T) current.get(parts[parts.length - 1]);

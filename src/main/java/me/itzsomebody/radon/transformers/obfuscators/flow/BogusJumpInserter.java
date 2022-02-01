@@ -27,6 +27,7 @@ import org.objectweb.asm.tree.*;
 
 import me.itzsomebody.radon.asm.MethodWrapper;
 import me.itzsomebody.radon.asm.StackHeightZeroFinder;
+import me.itzsomebody.radon.config.Configuration;
 import me.itzsomebody.radon.exceptions.RadonException;
 import me.itzsomebody.radon.exceptions.StackEmulationException;
 import me.itzsomebody.radon.utils.ASMUtils;
@@ -40,45 +41,56 @@ import me.itzsomebody.radon.utils.RandomUtils;
  * This leads to less complication when applying obfuscation.
  *
  * <p>
- * TODO: Bogus jumps based on INSTANCEOF
- * </p>
- * 
+ * <ul>
+ * <li>TODO: Bogus jumps based on {@code instanceof} operator ({@code INSTANCEOF + IFEQ/IFNE})</li>
+ * <li>TODO: 여러 개의 필드를 만든 후, 메서드에서 필드 값을 가져와 로컬변수에 저장할 때, (미리 만들어 놓은 여러 개의 필드들 중에서) 손에 잡히는 대로 골라잡아(랜덤하게) 쓰면 조금 더 헷갈리게 할 수 있지 않을까?</li>
+ * <li>TODO: Trap Label을 여러 개를 만든 후, 랜덤하게 골라잡아 사용하면 더 헷갈리게 할 수 있지 않을까?</li>
+ * <li>
+ * TODO: 단순히 미리 만들어둔 trap label로 점프시키는 것이 아니라, if문의 'else' branch 내의 코드의 내용을 교묘하게 변조한 후 그 코드로 점프하게 함으로써 더 헷갈리게 할 수 있지 않을까?
+ * 이때, BogusSwitchJumpInserter를 참고하면 편하게 코딩할 수 있을 것 같다.
+ * </li>
+ * <li>
+ * TODO: 현재의 구현은, 미리 만들어 둔 필드에서 값을 읽어와 이를 위해 새로 만든 로컬 변수에 저장한 후, 그 로컬 변수를 읽어들인 후 조건문을 작성하는 식으로 구현이 되어있다.
+ * 이를 asm에서 제공하는(또는 직접 만들어서) Analyzer을 새로 만든 것이 아닌 이미 이전부터 존재했던 로컬 변수들의 현재 값을 추적하고, 이를 기반으로 bogus jump를 작성하는 식으로 하면 효율과 코드 길이, 난독성 모든 면에서 이득을 볼 수 있을 것으로 보인다.
+ * 보아하니, 이전부터 존재했던 로컬 변수들의 값을 추적하는 것에 사용할 Analyzer는 그냥 내가 새로 만드는 것이 제일 빠르고 편할 것 같다.
+ * </li>
+ * <li>
  * <p>
- * TODO: Insert bogus conditions between original conditions
+ * TODO: Insert opaque bogus conditions between original conditions
  * 
  * <pre>
- *     FROM:
- *     if (a == 0 && b == 1)
- *     {
- *         - ORIGINAL CODE 1
- *     }
- *     else
- *     {
- *         - ORIGINAL CODE 2
- *     }
- *
- *     TO:
- *     if (FAKECONDITION ALWAYS RETURN TRUE && a == 0 && b == 1 || FAKECONDITION ALWAYS RETURN FALSE)
- *     {
- *         - ORIGINAL CODE 1
- *     }
- *     else if (FAKECONDITION ALWAYS RETURN TRUE)
- *     {
- *         - ORIGINAL CODE 2
- *     }
- *     else
- *     {
- *         - TRASH CODE
- *     }
- * </pre>
- * </p>
- *
- * <p>
- * TODO: Jump To Random Label
+ * FROM:
+ * {@code
+ * if (a == 0 && b == 1)
+ * {
+ *     *** Original code in 'if' branch
+ * }
+ * else
+ * {
+ *     *** Original code in 'else' branch
+ * }
+ * }
  * 
- * <pre>
- *     IF (FAKECONDITION ALWAYS RETURN FALSE) GOTO [Random Label]
+ * TO:
+ * {@code
+ * if (opaqueConditionAlwaysReturnTrue && a == 0 && b == 1 || opaqueConditionAlwaysReturnFalse)
+ * {
+ *     *** Original code in 'if' branch
+ * }
+ * else if (FAKECONDITION ALWAYS RETURN TRUE)
+ * {
+ *     *** Original code in 'else' branch
+ * }
+ * else
+ *     *** Dummy code
+ * }
+ * 
  * </pre>
+ * 
+ * 
+ * </p>
+ * </li>
+ * </ul>
  * </p>
  *
  * @author ItzSomebody
@@ -88,11 +100,18 @@ public class BogusJumpInserter extends FlowObfuscation
 	private static final int CLASS_PRED_ACCESS = ACC_PRIVATE | ACC_STATIC | ACC_SYNTHETIC;
 	private static final int INTERFACE_PRED_ACCESS = ACC_PUBLIC | ACC_STATIC | ACC_FINAL;
 
+	private boolean insertAlwaysSucceedingPredicate;
+	private boolean insertAlwaysFailingPredicate;
+	private boolean insertAlwaysSucceedingLoop;
+	private boolean insertAlwaysFailingLoop;
+
 	@Override
 	public void transform()
 	{
-		final AtomicInteger bogusPredicates = new AtomicInteger();
-		final AtomicInteger bogusLoops = new AtomicInteger();
+		final AtomicInteger bogusSucceedingPredicates = new AtomicInteger();
+		final AtomicInteger bogusFailingPredicates = new AtomicInteger();
+		final AtomicInteger bogusSucceedingLoops = new AtomicInteger();
+		final AtomicInteger bogusFailingLoops = new AtomicInteger();
 
 		getClassWrappers().stream().filter(this::included).forEach(cw ->
 		{
@@ -102,25 +121,22 @@ public class BogusJumpInserter extends FlowObfuscation
 			final String predicateDescriptor = predicateType.getDescriptor();
 			final Object predicateInitialValue = RandomUtils.getRandomFloat() > 0.2F ? RandomUtils.getRandomValue(predicateType) : null;
 
-			// TODO: 여러 개의 필드를 만든 후, 메서드에서 필드 값을 가져와 로컬변수에 저장할 때, (미리 만들어 놓은 여러 개의 필드들 중에서) 손에 잡히는 대로 골라잡아(랜덤하게) 쓰면 조금 더 헷갈리게 할 수 있지 않을까?
 			final FieldNode predicate = new FieldNode(cw.access.isInterface() ? INTERFACE_PRED_ACCESS : CLASS_PRED_ACCESS, getFieldDictionary(cw.originalName).nextUniqueString(), predicateDescriptor, null, predicateInitialValue);
 
 			for (final MethodWrapper mw : cw.methods)
 				if (included(mw) && mw.hasInstructions())
 				{
-					final InsnList insns = mw.getInstructions();
+					final MethodNode methodNode = mw.methodNode;
 
 					int leeway = mw.getLeewaySize();
 					final int varIndex = mw.getMaxLocals();
-					mw.methodNode.maxLocals += predicateType.getSize(); // Prevents breaking of other transformers which rely on this field.
+					methodNode.maxLocals += predicateType.getSize(); // Prevents breaking of other transformers which rely on this field.
 
+					final InsnList insns = mw.getInstructions();
 					final AbstractInsnNode[] untouchedList = insns.toArray();
+					final LabelNode predefinedTrapLabel = createTrap(methodNode);
 
-					// TODO: Trap Label을 여러 개를 만든 후, 랜덤하게 골라잡아 사용하면 더 헷갈리게 할 수 있지 않을까?
-					// TODO: 단순히 미리 만들어둔 trap label로 점프시키는 것이 아니라, if문의 'else' branch 내의 코드의 내용을 교묘하게 변조한 후 그 코드로 점프하게 함으로써 더 헷갈리게 할 수 있지 않을까?
-					final LabelNode trapLabel = createTrap(mw.methodNode);
-
-					final StackHeightZeroFinder shzf = new StackHeightZeroFinder(mw.methodNode, insns.getLast());
+					final StackHeightZeroFinder shzf = new StackHeightZeroFinder(methodNode, insns.getLast());
 					try
 					{
 						shzf.execute();
@@ -145,42 +161,91 @@ public class BogusJumpInserter extends FlowObfuscation
 
 						if (insn != insns.getFirst() && !(insn instanceof LineNumberNode))
 						{
-							if (isCtor && !calledSuper)
+							// We need to make sure stack is empty before making jumps
+							if (isCtor && !calledSuper || !emptyAt.contains(insn))
 								continue;
 
-							// We need to make sure stack is empty before making jumps
-							if (emptyAt.contains(insn))
+							// Insert bogus opaque conditional expressions
+							if (RandomUtils.getRandomBoolean())
 							{
-								// Insert bogus opaque conditional expressions
-								if (/* RandomUtils.getRandomBoolean() */false)
-								{
-									// if (false) throw null;
-									// original code...
+								final InsnList insertBefore = new InsnList();
+								final InsnList insert = new InsnList();
 
-									final InsnList bogusJump = BogusJumps.createBogusJump(varIndex, predicateType, predicateInitialValue, trapLabel, false);
-									insns.insertBefore(insn, bogusJump);
-									leeway -= ASMUtils.evaluateMaxSize(bogusJump);
+								final LabelNode loopStartLabel = new LabelNode();
+								final LabelNode originalCodeStartLabel = new LabelNode();
+
+								insertBefore.add(loopStartLabel); // Label that indicates 'start of loop'
+
+								if (RandomUtils.getRandomBoolean())
+								{
+									// do-while with false-predicate trap and continue
+									final LabelNode trapLabel = new LabelNode();
+
+									insert.add(new LabelNode());
+									insert.add(BogusJumps.createBogusJump(varIndex, predicateType, predicateInitialValue, trapLabel, false));
+									insert.add(new LabelNode());
+									insert.add(new JumpInsnNode(GOTO, originalCodeStartLabel));
+									insert.add(trapLabel);
+									insert.add(CodeGenerator.generateTrapInstructions(methodNode));
+									insert.add(new JumpInsnNode(GOTO, loopStartLabel)); // Loop
+									insert.add(originalCodeStartLabel);
+
+									bogusFailingLoops.incrementAndGet();
 								}
 								else
 								{
-									// if (true) goto labelSkip
-									// - throw null;
-									// labelSkip:
-									// - original code...
-									final InsnList insnList = new InsnList();
-									final LabelNode rescueLabel = new LabelNode();
-									final InsnList bogusJump = BogusJumps.createBogusJump(varIndex, predicateType, predicateInitialValue, rescueLabel, true);
-									insnList.add(bogusJump);
-									insnList.add(new JumpInsnNode(GOTO, trapLabel));
-									insnList.add(rescueLabel);
+									// while with true-condition trap and continue
+									final LabelNode firstAfterLoopEndLabel = new LabelNode();
 
-									insns.insertBefore(insn, insnList);
-									leeway -= ASMUtils.evaluateMaxSize(insnList);
+									insertBefore.add(BogusJumps.createBogusJump(varIndex, predicateType, predicateInitialValue, originalCodeStartLabel, true));
+									insertBefore.add(new LabelNode());
+									insertBefore.add(CodeGenerator.generateTrapInstructions(methodNode));
+									insertBefore.add(new LabelNode());
+									insertBefore.add(new JumpInsnNode(GOTO, loopStartLabel));
+									insertBefore.add(originalCodeStartLabel);
+
+									insert.add(new LabelNode());
+									insert.add(new JumpInsnNode(GOTO, firstAfterLoopEndLabel));
+									insert.add(firstAfterLoopEndLabel);
+
+									bogusSucceedingLoops.incrementAndGet();
 								}
-								bogusPredicates.incrementAndGet();
 
-								shouldAdd.set(true);
+								insns.insertBefore(insn, insertBefore);
+								insns.insert(insn, insert);
+								leeway -= ASMUtils.evaluateMaxSize(insertBefore) + ASMUtils.evaluateMaxSize(insert);
 							}
+							else if (RandomUtils.getRandomBoolean())
+							{
+								// if (false) throw null;
+								// original code...
+
+								final InsnList bogusJump = BogusJumps.createBogusJump(varIndex, predicateType, predicateInitialValue, predefinedTrapLabel, false);
+								insns.insertBefore(insn, bogusJump);
+								leeway -= ASMUtils.evaluateMaxSize(bogusJump);
+
+								bogusFailingPredicates.incrementAndGet();
+							}
+							else
+							{
+								// if (true) goto labelSkip
+								// - throw null;
+								// labelSkip:
+								// - original code...
+								final InsnList insnList = new InsnList();
+								final LabelNode originalCodeStartLabel = new LabelNode();
+								final InsnList bogusJump = BogusJumps.createBogusJump(varIndex, predicateType, predicateInitialValue, originalCodeStartLabel, true);
+								insnList.add(bogusJump);
+								insnList.add(new JumpInsnNode(GOTO, predefinedTrapLabel));
+								insnList.add(originalCodeStartLabel);
+
+								insns.insertBefore(insn, insnList);
+								leeway -= ASMUtils.evaluateMaxSize(insnList);
+
+								bogusSucceedingPredicates.incrementAndGet();
+							}
+
+							shouldAdd.set(true);
 						}
 					}
 
@@ -204,7 +269,7 @@ public class BogusJumpInserter extends FlowObfuscation
 								break;
 						}
 
-						ASMUtils.insertAfterConstructorCall(mw.methodNode, initializer);
+						ASMUtils.insertAfterConstructorCall(methodNode, initializer);
 					}
 				}
 
@@ -212,14 +277,22 @@ public class BogusJumpInserter extends FlowObfuscation
 				cw.addField(predicate);
 		});
 
-		info("+ Inserted " + bogusPredicates.get() + " bogus predicates.");
-		info("+ Inserted " + bogusLoops.get() + " bogus loops.");
+		info("+ Inserted " + bogusSucceedingPredicates.get() + " always-succeeding bogus predicates." + (insertAlwaysSucceedingPredicate ? "" : " (Disabled in config)"));
+		info("+ Inserted " + bogusFailingPredicates.get() + " always-failing bogus predicates." + (insertAlwaysFailingPredicate ? "" : " (Disabled in config)"));
+		info("+ Inserted " + bogusSucceedingLoops.get() + " always-succeeding bogus loops." + (insertAlwaysSucceedingLoop ? "" : " (Disabled in config)"));
+		info("+ Inserted " + bogusFailingLoops.get() + " always-failing bogus loops." + (insertAlwaysFailingLoop ? "" : " (Disabled in config)"));
 	}
 
 	@Override
 	public String getName()
 	{
 		return "Bogus Jump Inserter";
+	}
+
+	@Override
+	public void setConfiguration(final Configuration config)
+	{
+		// Not needed
 	}
 
 	/**

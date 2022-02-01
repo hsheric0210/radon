@@ -32,6 +32,7 @@ import me.itzsomebody.radon.utils.ASMUtils;
 import me.itzsomebody.radon.utils.Constants;
 import me.itzsomebody.radon.utils.RandomUtils;
 
+// TODO: Pack strings into a file(not class). for example: create fake dll file and pool all strings into them. don't forget to spoof it as a 'real' dll file (MZ header)!
 public class StringPooler extends StringEncryption
 {
 	private final StringEncryption master;

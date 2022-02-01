@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.objectweb.asm.tree.*;
 
 import me.itzsomebody.radon.asm.StackHeightZeroFinder;
+import me.itzsomebody.radon.config.Configuration;
 import me.itzsomebody.radon.exceptions.RadonException;
 import me.itzsomebody.radon.exceptions.StackEmulationException;
 import me.itzsomebody.radon.utils.ASMUtils;
@@ -55,8 +56,7 @@ public class NullCheckMutilator extends FlowObfuscation
 			}
 			catch (final StackEmulationException e)
 			{
-				e.printStackTrace();
-				throw new RadonException(String.format("Error happened while trying to emulate the stack of %s.%s%s", cw.getName(), mw.getName(), mw.getDescription()));
+				throw new RadonException(String.format("Error happened while trying to emulate the stack of %s.%s%s", cw.getName(), mw.getName(), mw.getDescription()), e);
 			}
 			final Set<AbstractInsnNode> emptyAt = shzf.getEmptyAt();
 			int leeway = mw.getLeewaySize();
@@ -116,8 +116,15 @@ public class NullCheckMutilator extends FlowObfuscation
 		return "Null Check Mutilator";
 	}
 
+	@Override
+	public void setConfiguration(final Configuration config)
+	{
+		// Not needed
+	}
+
 	private static InsnList createNPERaiser()
 	{
+		// TODO: 더 다양하게!
 		final int methodOpcode;
 		final String methodOwner;
 		final String methodName;

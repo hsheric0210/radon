@@ -7,6 +7,8 @@ import me.itzsomebody.radon.utils.RandomUtils;
 
 /**
  * https://en.wikipedia.org/wiki/List_of_Java_keywords
+ *
+ * NOTE: I don't recommend using it as package-name or class-name dictionary because it doesn't have many names to use as
  * 
  * @author hsheric0210
  */
@@ -67,6 +69,7 @@ public class JavaKeywordsDictionary implements Dictionary
 			"volatile",
 			"while",
 
+			// Java 9
 			"permits",
 			"record",
 			"sealed",
@@ -78,7 +81,19 @@ public class JavaKeywordsDictionary implements Dictionary
 			"null",
 
 			"@interface",
-			"_"
+			"_",
+
+			"+",
+			"-",
+			"*",
+			"/",
+			"=",
+			"%",
+			"&",
+			"|",
+			"^",
+			"!",
+			"~"
 	};
 
 	private int index;

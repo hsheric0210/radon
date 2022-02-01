@@ -24,17 +24,22 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 
-import me.itzsomebody.radon.utils.ASMUtils;
 import me.itzsomebody.radon.asm.LocalVariableProvider;
 import me.itzsomebody.radon.asm.LocalVariableProvider.Local;
+import me.itzsomebody.radon.config.Configuration;
+import me.itzsomebody.radon.utils.ASMUtils;
 import me.itzsomebody.radon.utils.RandomUtils;
 
 /**
  * https://www.sable.mcgill.ca/JBCO/examples.html#PLVB
  *
+ * <p>
  * Original source code: https://github.com/soot-oss/soot/blob/develop/src/main/java/soot/jbco/bafTransformations/LocalsToBitField.java
+ * </p>
  *
+ * <p>
  * FIXME: HANG
+ * </p>
  */
 public class LocalVariablePacker extends FlowObfuscation
 {
@@ -302,6 +307,12 @@ public class LocalVariablePacker extends FlowObfuscation
 	public String getName()
 	{
 		return "Local Variable Packer";
+	}
+
+	@Override
+	public void setConfiguration(final Configuration config)
+	{
+		// Not needed
 	}
 
 	private static Type getType(final Type t)

@@ -149,9 +149,9 @@ public class ConstantInterpreter extends Interpreter<AbstractValue> implements O
 					final int sort = ((Type) cst).getSort();
 					if (sort == Type.OBJECT || sort == Type.ARRAY || sort == Type.METHOD)
 						return new UnknownValue(insnNode, (Type) cst);
-					throw new IllegalArgumentException("Unexpected LDC constant: " + cst);
+					throw new IllegalArgumentException("Unexpected/Unsuppored Type LDC constant: " + cst);
 				}
-				throw new IllegalArgumentException("Unexpected LDC constant: " + cst);
+				throw new IllegalArgumentException("Unexpected/Unsupported LDC constant: " + cst);
 			}
 			case JSR:
 				throw new UnsupportedOperationException("Do not support instruction types JSR - Deprecated in Java 6");

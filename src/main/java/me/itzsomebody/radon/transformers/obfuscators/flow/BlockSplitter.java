@@ -18,7 +18,7 @@
 
 package me.itzsomebody.radon.transformers.obfuscators.flow;
 
-import static me.itzsomebody.radon.config.ConfigurationSetting.STRING_ENCRYPTION;
+import static me.itzsomebody.radon.config.ConfigurationSetting.FLOW_OBFUSCATION;
 
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -30,7 +30,7 @@ import me.itzsomebody.radon.config.Configuration;
 /**
  * This splits a method's block of code into two blocks: P1 and P2 and then inserting P2 behind P1.
  * <p>
- * P1->P2 becomes GOTO_P1->P2->P1->GOTO_P2
+ * {@code P1 -> P2} becomes {@code GOTO_P1 -> P2 -> P1 -> GOTO_P2}
  * </p>
  * This is similar in functionality to http://www.sable.mcgill.ca/JBCO/examples.html#GIA but is done recursively on the method to ensure maximum effectiveness.
  *
@@ -60,7 +60,7 @@ public class BlockSplitter extends FlowObfuscation
 	public void setConfiguration(final Configuration config)
 	{
 		// used to limit number of recursive calls on doSplit()
-		recursiveLimit = config.getOrDefault(STRING_ENCRYPTION + "." + FlowObfuscationSetting.SPLIT_BLOCKS + ".recursionLimit", 11);
+		recursiveLimit = config.getOrDefault(FLOW_OBFUSCATION + "." + FlowObfuscationSetting.SPLIT_BLOCKS + ".recursionLimit", 11);
 	}
 
 	private void doSplit(final MethodNode methodNode, final AtomicInteger counter, final int callStackSize)

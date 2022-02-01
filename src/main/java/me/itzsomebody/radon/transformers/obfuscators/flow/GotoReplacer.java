@@ -24,14 +24,19 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
 
+import me.itzsomebody.radon.config.Configuration;
 import me.itzsomebody.radon.utils.ASMUtils;
 import me.itzsomebody.radon.utils.BogusJumps;
 import me.itzsomebody.radon.utils.CodeGenerator;
 import me.itzsomebody.radon.utils.RandomUtils;
 
 /**
- * Replaces GOTO instructions with an expression which is always true.
- * This does nothing more than adding a one more edge to a control flow graph for every GOTO instruction present.
+ * Replaces {@code GOTO} instructions with an expression which is always true.
+ * This does nothing more than adding a one more edge to a control flow graph for every {@code GOTO} instruction present.
+ *
+ * <p>
+ * TODO: 단순히 미리 만들어둔 trap label로 점프시키는 것이 아니라, if문의 'else' branch 내의 코드의 내용을 교묘하게 변조한 후 그 코드로 점프하게 함으로써 더 헷갈리게 할 수 있지 않을까?
+ * </p>
  *
  * @author ItzSomebody
  */
@@ -78,7 +83,7 @@ public class GotoReplacer extends FlowObfuscation
 					{
 						final InsnList bogusJump = new InsnList();
 						bogusJump.add(BogusJumps.createBogusJump(varIndex, predicateType, predicateInitialValue, ((JumpInsnNode) insn).label, true));
-						bogusJump.add(CodeGenerator.generateTrapInstructions(mw.methodNode)); // TODO: 단순히 미리 만들어둔 trap label로 점프시키는 것이 아니라, if문의 'else' branch 내의 코드의 내용을 교묘하게 변조한 후 그 코드로 점프하게 함으로써 더 헷갈리게 할 수 있지 않을까?
+						bogusJump.add(CodeGenerator.generateTrapInstructions(mw.methodNode));
 						leeway -= ASMUtils.evaluateMaxSize(bogusJump);
 
 						insns.insert(insn, bogusJump);
@@ -124,5 +129,11 @@ public class GotoReplacer extends FlowObfuscation
 	public String getName()
 	{
 		return "GOTO Replacer";
+	}
+
+	@Override
+	public void setConfiguration(final Configuration config)
+	{
+		// Not needed
 	}
 }

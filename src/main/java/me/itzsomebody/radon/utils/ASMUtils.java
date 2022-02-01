@@ -390,6 +390,9 @@ public final class ASMUtils implements Opcodes
 
 	public static int evaluateMaxSize(final InsnList insns)
 	{
+		if (insns == null || insns.size() <= 0)
+			return 0;
+
 		final CodeSizeEvaluator cse = new CodeSizeEvaluator(null);
 		insns.accept(cse);
 		return cse.getMaxSize();
@@ -397,6 +400,9 @@ public final class ASMUtils implements Opcodes
 
 	public static int evaluateMaxSize(final MethodNode methodNode)
 	{
+		if (methodNode.instructions == null || methodNode.instructions.size() <= 0)
+			return 0;
+
 		final CodeSizeEvaluator cse = new CodeSizeEvaluator(null);
 		methodNode.accept(cse);
 		return cse.getMaxSize();

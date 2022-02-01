@@ -90,7 +90,7 @@ public class StackHeightZeroFinder implements Opcodes
 				stackSize = 1; // Stack gets cleared and exception is pushed.
 
 			if (stackSize < 0) // Should never happen
-				throw new StackEmulationException("Stack underrun (stackSize < 0)");
+				throw new StackEmulationException("Stack underrun (stackSize < 0) BCI: " + i + ", Opcode: " + insn.getOpcode());
 
 			if (stackSize == 0)
 				emptyAt.add(insn);

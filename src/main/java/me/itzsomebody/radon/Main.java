@@ -43,6 +43,9 @@ import me.itzsomebody.radon.utils.WatermarkUtils;
  * <p>
  * TODO: Clean code up in general.
  * </p>
+ * <p>
+ * TODO: Should we convert Radon into Kotlin?
+ * </p>
  *
  * @author ItzSomebody
  */
@@ -57,6 +60,13 @@ public final class Main
 	public static final String ATTRIBUTION = String.format(String.join(Constants.LINE_SEPARATOR, "Radon is a free and open-source Java obfuscator with contributions from %s.", "Version: %s", "Original website: https://github.com/ItzSomebody/Radon", "Forked version website: https://github.com/hsheric0210/Radon"), formatContributorList(), VERSION);
 
 	public static final String WATERMARK = "RADON" + VERSION;
+
+	public static void FLOW_OBFUSCATION_TEST()
+	{
+		System.out.println("test1");
+		System.out.println("test2");
+		System.out.println("test3");
+	}
 
 	private static String formatContributorList()
 	{

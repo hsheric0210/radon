@@ -1,8 +1,8 @@
 # Input
-input: "radon-2.0.0-SNAPSHOT.jar"
+input: "obf-sample-test.jar"
 
 # Output
-output: "radon-2.0.0-SNAPSHOT.obf.jar"
+output: "obf-sample-test.obf.jar"
 
 # Classpath to build class hierarchy from
 # Note: if you're on Java 9 or higher, the Java API classes are located in the "jmod" files
@@ -75,25 +75,22 @@ verbose_logging: true
 # Obfuscates the flow of the bytecode
 flow_obfuscation:
   # Insert fake switches in the bytecode more CFG edges
-  insert_bogus_switch_jumps: false
+  insert_bogus_switch_jumps: true
 
   # Insert fake if-confitions to create more CFG edges
-  insert_bogus_jumps: false
+  insert_bogus_jumps: true
 
   # Reorder the bytecode by splitting it in half multiple times
-  split_blocks:
-    recursionLimit: 25
+  split_blocks: true
 
   # Replace IF_ACMP<EQ/NE> with try-catch blocks
-  mutilate_null_check: false
+  mutilate_null_check: true
 
   replace_goto: true
 
-  pack_local_variables: false
+  pack_local_variables: true
 
-  insert_bad_pops: false
-
-  mutilate_local_variables: false
+  insert_bad_pops: true
 
 # Obfuscate API references
 #reference_obfuscation:
